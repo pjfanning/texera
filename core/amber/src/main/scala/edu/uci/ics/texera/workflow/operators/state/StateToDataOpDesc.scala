@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, Workf
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, Schema}
+import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
 class StateToDataOpDesc extends LogicalOp {
   @JsonProperty
@@ -57,6 +57,9 @@ class StateToDataOpDesc extends LogicalOp {
   override def getOutputSchema(schemas: Array[Schema]): Schema = throw new NotImplementedError()
 
   override def getOutputSchemas(schemas: Array[Schema]): Array[Schema] =
-    Array(Schema.builder().add(outputColumns).build(), schemas(0))
+    Array(
+      Schema.builder().add(outputColumns).add("passToAllDownstream", AttributeType.BOOLEAN).build(),
+      schemas(0)
+    )
 
 }

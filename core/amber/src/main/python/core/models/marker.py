@@ -39,6 +39,9 @@ class State(Marker):
     def get(self, key: str) -> any:
         return self.data[key]
 
+    def pass_to_all_downstream(self) -> bool:
+        return self.data["passToAllDownstream"]
+
     def to_table(self) -> Table:
         return Table.from_pandas(df=DataFrame([self.data]), schema=self.schema.as_arrow_schema(),)
 

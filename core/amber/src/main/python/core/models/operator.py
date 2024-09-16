@@ -48,14 +48,15 @@ class Operator(ABC):
         """
         pass
 
-    def process_state(self, state_: State, port: int) -> State:
+    def process_state(self, state: State, port: int) -> Optional[State]:
         """
         Process an input State from the given link.
-        :param state_: State, a State from an input port to be processed.
+        :param state: State, a State from an input port to be processed.
         :param port: int, input port index of the current exhausted port.
         :return: State, producing one State object
         """
-        return state_
+        if state.pass_to_all_downstream():
+            return state
 
     def produce_state_on_start(self, port: int) -> State:
         """
