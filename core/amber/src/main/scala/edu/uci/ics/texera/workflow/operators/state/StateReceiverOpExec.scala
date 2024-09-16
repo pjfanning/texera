@@ -11,8 +11,8 @@ class StateReceiverOpExec extends OperatorExecutor {
     Iterator(tuple)
   }
 
-  override def processState(state: State, port: Int): State = {
+  override def processState(state: State, port: Int): Option[State] = {
     println(state)
-    state
+    Some(state)
   }
 }

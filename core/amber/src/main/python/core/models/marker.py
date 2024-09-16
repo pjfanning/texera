@@ -39,7 +39,7 @@ class State(Marker):
     def get(self, key: str) -> any:
         return self.data[key]
 
-    def pass_to_all_downstream(self) -> bool:
+    def is_pass_to_all_downstream(self) -> bool:
         return self.data["passToAllDownstream"]
 
     def to_table(self) -> Table:

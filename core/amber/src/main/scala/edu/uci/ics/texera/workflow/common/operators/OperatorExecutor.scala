@@ -9,9 +9,16 @@ trait OperatorExecutor {
 
   def open(): Unit = {}
 
-  def onStartProduceState(port: Int): Option[State] = None
+  def produceStateOnStart(port: Int): Option[State] = None
 
-  def processState(state: State, port: Int): State = state
+  def processState(state: State, port: Int): Option[State] = {
+    if (state.isPassToAllDownstream) {
+      Some(state)
+    }
+    else {
+      None
+    }
+  }
 
   def processTupleMultiPort(
       tuple: Tuple,
@@ -22,7 +29,7 @@ trait OperatorExecutor {
 
   def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike]
 
-  def onFinishProduceState(port: Int): Option[State] = None
+  def produceStateOnFinish(port: Int): Option[State] = None
 
   def onFinishMultiPort(port: Int): Iterator[(TupleLike, Option[PortIdentity])] = {
     onFinish(port).map(t => (t, None))

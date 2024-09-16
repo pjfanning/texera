@@ -9,10 +9,10 @@ import edu.uci.ics.texera.workflow.common.tuple.Tuple
 class StateToDataOpExec extends OperatorExecutor {
   private var stateTuple: Tuple = _
 
-  override def processState(state: State, port: Int): State = {
+  override def processState(state: State, port: Int): Option[State] = {
     if (state.size > 0)
       stateTuple = state.toTuple
-    State()
+    Some(State())
   }
 
   override def processTupleMultiPort(
@@ -28,5 +28,6 @@ class StateToDataOpExec extends OperatorExecutor {
     }
   }
 
-  override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] = throw new NotImplementedError()
+  override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] =
+    throw new NotImplementedError()
 }

@@ -13,14 +13,14 @@ class DualInputStateReceiverOpExec extends OperatorExecutor {
   }
 
   override def processTupleMultiPort(
-                             tuple: Tuple,
-                             port: Int
-                           ): Iterator[(TupleLike, Option[PortIdentity])] = {
+      tuple: Tuple,
+      port: Int
+  ): Iterator[(TupleLike, Option[PortIdentity])] = {
     processTuple(tuple, port).map(t => (t, None))
   }
 
-  override def processState(state: State, port: Int): State = {
+  override def processState(state: State, port: Int): Option[State] = {
     println(port, state)
-    state
+    Some(state)
   }
 }

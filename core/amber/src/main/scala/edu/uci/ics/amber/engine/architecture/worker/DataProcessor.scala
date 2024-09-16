@@ -94,7 +94,16 @@ class DataProcessor(
   }
 
   private[this] def processInputState(state: State, port: Int): Unit = {
-    outputManager.emitMarker(executor.processState(state, port))
+    try {
+      val outputState = executor.processState(state, port)
+      if (outputState.isDefined) {
+        outputManager.emitMarker(outputState.get)
+      }
+    } catch safely {
+      case e =>
+        // forward input tuple to the user and pause DP thread
+        handleExecutorException(e)
+    }
   }
 
   /**
@@ -104,7 +113,7 @@ class DataProcessor(
   private[this] def processStartOfUpstream(portId: Int): Unit = {
     try {
       outputManager.emitMarker(StartOfUpstream())
-      val outputState = executor.onStartProduceState(portId)
+      val outputState = executor.produceStateOnStart(portId)
       if (outputState.isDefined) {
         outputManager.emitMarker(outputState.get)
       }
@@ -121,7 +130,7 @@ class DataProcessor(
     */
   private[this] def processEndOfUpstream(portId: Int): Unit = {
     try {
-      val outputState = executor.onFinishProduceState(portId)
+      val outputState = executor.produceStateOnFinish(portId)
       if (outputState.isDefined) {
         outputManager.emitMarker(outputState.get)
       }
