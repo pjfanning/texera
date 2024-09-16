@@ -89,7 +89,16 @@ export class HubWorkflowSearchComponent {
     }
     this.searchResultsComponent.reset(async (start, count) => {
       const results = await firstValueFrom(
-        this.searchService.search([""], filterParams, start, count, "workflow", this.sortMethod, this.isLogin, this.includePublic)
+        this.searchService.search(
+          [""],
+          filterParams,
+          start,
+          count,
+          "workflow",
+          this.sortMethod,
+          this.isLogin,
+          this.includePublic
+        )
       );
 
       const userIds = new Set<number>();

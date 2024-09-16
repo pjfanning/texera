@@ -18,7 +18,7 @@ import { switchMap } from "rxjs/operators";
   styleUrls: ["./filters.component.scss"],
 })
 export class FiltersComponent implements OnInit {
-  public isLogin = this.userService.isLogin()
+  public isLogin = this.userService.isLogin();
   private _masterFilterList: ReadonlyArray<string> = [];
   // receive input from parent components (UserProjectSection), if any
   @Input() public pid?: number = undefined;
@@ -129,7 +129,7 @@ export class FiltersComponent implements OnInit {
         });
         this.operatorGroups = opdata.groups.map(group => group.groupName);
       });
-    if(this.isLogin){
+    if (this.isLogin) {
       this.workflowPersistService
         .retrieveOwners()
         .pipe(untilDestroyed(this))
