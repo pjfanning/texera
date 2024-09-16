@@ -168,9 +168,13 @@ class DashboardResource {
   @Path("/publicSearch")
   def searchAllPublicResourceCall(
       @BeanParam params: SearchQueryParams,
-      @QueryParam("includePublic") includePublic: Boolean = true
+      @QueryParam("includePublic ") includePublic: Boolean = true
   ): DashboardSearchResult = {
-    DashboardResource.searchAllResources(new SessionUser(new User()), params, includePublic = includePublic)
+    DashboardResource.searchAllResources(
+      new SessionUser(new User()),
+      params,
+      includePublic = includePublic
+    )
   }
 
   @GET
@@ -197,5 +201,19 @@ class DashboardResource {
       .asJava
 
     userIdToInfoMap
+  }
+
+  @GET
+  @Path("/workflowUserAccess")
+  def workflowUserAccess(
+      @QueryParam("wid") wid: UInteger
+  ): util.List[UInteger] = {
+    val records = context
+      .select(WORKFLOW_USER_ACCESS.UID)
+      .from(WORKFLOW_USER_ACCESS)
+      .where(WORKFLOW_USER_ACCESS.WID.eq(wid))
+      .fetch()
+
+    records.getValues(WORKFLOW_USER_ACCESS.UID)
   }
 }

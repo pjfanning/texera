@@ -17,7 +17,7 @@ import { DashboardEntry, UserInfo } from "../../../../dashboard/type/dashboard-e
   styleUrls: ["hub-workflow-search.component.scss"],
 })
 export class HubWorkflowSearchComponent {
-  private isLogin = this.userService.isLogin()
+  currentUid = this.userService.getCurrentUser()?.uid
   private _searchResultsComponent?: SearchResultsComponent;
   @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
     if (this._searchResultsComponent) {
@@ -54,7 +54,7 @@ export class HubWorkflowSearchComponent {
       .userChanged()
       .pipe(untilDestroyed(this))
       .subscribe(() => {
-        this.isLogin = this.userService.isLogin();
+        this.currentUid = this.userService.getCurrentUser()?.uid
       });
   }
 
@@ -95,7 +95,7 @@ export class HubWorkflowSearchComponent {
           count,
           "workflow",
           this.sortMethod,
-          this.isLogin,
+          false,
           true
         )
       );

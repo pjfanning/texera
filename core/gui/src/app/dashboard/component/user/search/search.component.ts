@@ -21,6 +21,7 @@ export class SearchComponent implements AfterViewInit {
   sortMethod = SortMethod.EditTimeDesc;
   lastSortMethod: SortMethod | null = null;
   private isLogin = this.userService.isLogin()
+  currentUid = this.userService.getCurrentUser()?.uid
 
   selectedType: "project" | "workflow" | "dataset" | null = null;
   lastSelectedType: "project" | "workflow" | "dataset" | null = null;
@@ -52,6 +53,7 @@ export class SearchComponent implements AfterViewInit {
       .pipe(untilDestroyed(this))
       .subscribe(() => {
         this.isLogin = this.userService.isLogin();
+        this.currentUid = this.userService.getCurrentUser()?.uid
       });
   }
 

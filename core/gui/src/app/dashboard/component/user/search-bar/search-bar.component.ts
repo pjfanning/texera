@@ -56,9 +56,7 @@ export class SearchBarComponent {
     if (this.searchCache.has(query)) {
       return of(this.searchCache.get(query)!);
     } else {
-      const searchObservable = this.isLogin
-        ? this.searchService.search([query], this.params, 0, 5, null, SortMethod.NameAsc, true)
-        : this.searchService.publicSearch([query], this.params, 0, 5, null, SortMethod.NameAsc);
+      const searchObservable = this.searchService.search([query], this.params, 0, 5, null, SortMethod.NameAsc, this.isLogin, true);
 
       return searchObservable.pipe(
         switchMap((result: SearchResult) => {

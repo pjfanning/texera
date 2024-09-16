@@ -6,11 +6,11 @@ import { AppSettings } from "../../../common/app-setting";
 import { SearchFilterParameters, toQueryStrings } from "../../type/search-filter-parameters";
 import { SortMethod } from "../../type/sort-method";
 import { UserInfo } from "../../type/dashboard-entry";
-import { UserService } from "../../../common/service/user/user.service";
-import { untilDestroyed } from "@ngneat/until-destroy";
 
 const DASHBOARD_SEARCH_URL = "dashboard/search";
 const DASHBOARD_PUBLIC_SEARCH_URL = "dashboard/publicSearch";
+const DASHBOARD_USER_INFO_URL = "dashboard/resultsOwnersInfo"
+const DASHBOARD_GET_OWNERS_URL = "dashboard/workflowUserAccess"
 
 @Injectable({
   providedIn: "root",
@@ -44,32 +44,14 @@ export class SearchService {
     );
   }
 
-
-  public publicSearch(
-    keywords: string[],
-    params: SearchFilterParameters,
-    start: number,
-    count: number,
-    type: "workflow" | "project" | "file" | "dataset" | null,
-    orderBy: SortMethod,
-    includePublic: boolean = true
-  ): Observable<SearchResult> {
-    return this.http.get<SearchResult>(
-      `${AppSettings.getApiEndpoint()}/${DASHBOARD_PUBLIC_SEARCH_URL}?${toQueryStrings(
-        keywords,
-        params,
-        start,
-        count,
-        type,
-        orderBy
-      )}&includePublic=${includePublic}`
-    );
-  }
-
   public getUserInfo(userIds: number[]): Observable<{ [key: number]: UserInfo }> {
     const queryString = userIds.map(id => `userIds=${encodeURIComponent(id)}`).join("&");
     return this.http.get<{ [key: number]: UserInfo }>(
-      `${AppSettings.getApiEndpoint()}/dashboard/resultsOwnersInfo?${queryString}`
+      `${AppSettings.getApiEndpoint()}/${DASHBOARD_USER_INFO_URL}?${queryString}`
     );
+  }
+
+  public getWorkflowOwners(wid: number): Observable<number[]> {
+    return this.http.get<number[]>(`${AppSettings.getApiEndpoint()}/${DASHBOARD_GET_OWNERS_URL}?wid=${wid}`);
   }
 }
