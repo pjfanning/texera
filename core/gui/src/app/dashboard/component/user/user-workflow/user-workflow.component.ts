@@ -61,6 +61,7 @@ export class UserWorkflowComponent implements AfterViewInit {
   public ROUTER_WORKFLOW_BASE_URL = "/dashboard/user/workspace";
   private _searchResultsComponent?: SearchResultsComponent;
   public isLogin = this.userService.isLogin();
+  private includePublic = false;
   public currentUid = this.userService.getCurrentUser()?.uid;
   @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
     if (this._searchResultsComponent) {
@@ -182,7 +183,7 @@ export class UserWorkflowComponent implements AfterViewInit {
           "workflow",
           this.sortMethod,
           this.isLogin,
-          false
+          this.includePublic
         )
       );
 

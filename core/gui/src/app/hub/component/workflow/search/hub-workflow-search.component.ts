@@ -18,6 +18,8 @@ import { DashboardEntry, UserInfo } from "../../../../dashboard/type/dashboard-e
 })
 export class HubWorkflowSearchComponent {
   currentUid = this.userService.getCurrentUser()?.uid;
+  private isLogin = false;
+  private includePublic = true;
   private _searchResultsComponent?: SearchResultsComponent;
   @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
     if (this._searchResultsComponent) {
@@ -87,7 +89,7 @@ export class HubWorkflowSearchComponent {
     }
     this.searchResultsComponent.reset(async (start, count) => {
       const results = await firstValueFrom(
-        this.searchService.search([""], filterParams, start, count, "workflow", this.sortMethod, false, true)
+        this.searchService.search([""], filterParams, start, count, "workflow", this.sortMethod, this.isLogin, this.includePublic)
       );
 
       const userIds = new Set<number>();

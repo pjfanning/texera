@@ -20,6 +20,7 @@ export class UserDatasetComponent implements AfterViewInit {
   public sortMethod = SortMethod.EditTimeDesc;
   lastSortMethod: SortMethod | null = null;
   public isLogin = this.userService.isLogin();
+  private includePublic = false;
   public currentUid = this.userService.getCurrentUser()?.uid;
   private _searchResultsComponent?: SearchResultsComponent;
   @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
@@ -95,7 +96,7 @@ export class UserDatasetComponent implements AfterViewInit {
           "dataset",
           this.sortMethod,
           this.isLogin,
-          false
+          this.includePublic
         )
       );
 

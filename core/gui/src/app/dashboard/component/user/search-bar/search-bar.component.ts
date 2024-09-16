@@ -17,6 +17,7 @@ import { debounceTime, switchMap } from "rxjs/operators";
 })
 export class SearchBarComponent {
   @Input() isLogin!: boolean;
+  private includePublic = true;
   public searchParam: string = "";
   public listOfResult: string[] = [];
   private searchSubject = new Subject<string>();
@@ -64,7 +65,7 @@ export class SearchBarComponent {
         null,
         SortMethod.NameAsc,
         this.isLogin,
-        true
+        this.includePublic
       );
 
       return searchObservable.pipe(
