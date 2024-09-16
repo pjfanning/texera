@@ -31,7 +31,7 @@ import { Params } from "@angular/router";
 })
 export class ListItemComponent implements OnInit, OnChanges {
   private owners: number[] = [];
-  @Input() currentUid: number | undefined
+  @Input() currentUid: number | undefined;
   @ViewChild("nameInput") nameInput!: ElementRef;
   @ViewChild("descriptionInput") descriptionInput!: ElementRef;
   editingName = false;
@@ -40,7 +40,7 @@ export class ListItemComponent implements OnInit, OnChanges {
   ROUTER_WORKFLOW_BASE_URL = "/dashboard/user/workspace";
   ROUTER_USER_PROJECT_BASE_URL = "/dashboard/user/project";
   ROUTER_DATASET_BASE_URL = "/dashboard/user/dataset";
-  ROUTER_WORKFLOW_DETAIL_BASE_URL = "/dashboard/hub/workflow/search/result/detail"
+  ROUTER_WORKFLOW_DETAIL_BASE_URL = "/dashboard/hub/workflow/search/result/detail";
   entryLink: string[] = [];
   queryParams: Params = {};
   public iconType: string = "";

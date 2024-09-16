@@ -60,8 +60,8 @@ import { DashboardWorkflow } from "../../../type/dashboard-workflow.interface";
 export class UserWorkflowComponent implements AfterViewInit {
   public ROUTER_WORKFLOW_BASE_URL = "/dashboard/user/workspace";
   private _searchResultsComponent?: SearchResultsComponent;
-  public isLogin = this.userService.isLogin()
-  public currentUid = this.userService.getCurrentUser()?.uid
+  public isLogin = this.userService.isLogin();
+  public currentUid = this.userService.getCurrentUser()?.uid;
   @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
     if (this._searchResultsComponent) {
       return this._searchResultsComponent;
@@ -105,7 +105,7 @@ export class UserWorkflowComponent implements AfterViewInit {
       .pipe(untilDestroyed(this))
       .subscribe(() => {
         this.isLogin = this.userService.isLogin();
-        this.currentUid = this.userService.getCurrentUser()?.uid
+        this.currentUid = this.userService.getCurrentUser()?.uid;
       });
   }
 

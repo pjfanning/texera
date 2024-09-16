@@ -19,8 +19,8 @@ import { firstValueFrom } from "rxjs";
 export class UserDatasetComponent implements AfterViewInit {
   public sortMethod = SortMethod.EditTimeDesc;
   lastSortMethod: SortMethod | null = null;
-  public isLogin = this.userService.isLogin()
-  public currentUid = this.userService.getCurrentUser()?.uid
+  public isLogin = this.userService.isLogin();
+  public currentUid = this.userService.getCurrentUser()?.uid;
   private _searchResultsComponent?: SearchResultsComponent;
   @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
     if (this._searchResultsComponent) {
@@ -59,7 +59,7 @@ export class UserDatasetComponent implements AfterViewInit {
       .pipe(untilDestroyed(this))
       .subscribe(() => {
         this.isLogin = this.userService.isLogin();
-        this.currentUid = this.userService.getCurrentUser()?.uid
+        this.currentUid = this.userService.getCurrentUser()?.uid;
       });
   }
 

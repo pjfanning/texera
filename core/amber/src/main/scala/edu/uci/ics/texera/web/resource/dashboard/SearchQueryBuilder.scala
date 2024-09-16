@@ -22,7 +22,11 @@ trait SearchQueryBuilder {
 
   protected val mappedResourceSchema: UnifiedResourceSchema
 
-  protected def constructFromClause(uid: UInteger, params: SearchQueryParams, includePublic: Boolean = false): TableLike[_]
+  protected def constructFromClause(
+      uid: UInteger,
+      params: SearchQueryParams,
+      includePublic: Boolean = false
+  ): TableLike[_]
 
   protected def constructWhereClause(uid: UInteger, params: SearchQueryParams): Condition
 

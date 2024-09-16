@@ -64,7 +64,8 @@ object WorkflowSearchQueryBuilder extends SearchQueryBuilder {
     if (uid == null) {
       condition = WORKFLOW.IS_PUBLISHED.eq(1.toByte)
     } else {
-      val privateAccessCondition = WORKFLOW_USER_ACCESS.UID.eq(uid).or(PROJECT_USER_ACCESS.UID.eq(uid))
+      val privateAccessCondition =
+        WORKFLOW_USER_ACCESS.UID.eq(uid).or(PROJECT_USER_ACCESS.UID.eq(uid))
       if (includePublic) {
         condition = privateAccessCondition.or(WORKFLOW.IS_PUBLISHED.eq(1.toByte))
       } else {

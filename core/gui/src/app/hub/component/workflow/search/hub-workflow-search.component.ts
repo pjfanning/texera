@@ -17,7 +17,7 @@ import { DashboardEntry, UserInfo } from "../../../../dashboard/type/dashboard-e
   styleUrls: ["hub-workflow-search.component.scss"],
 })
 export class HubWorkflowSearchComponent {
-  currentUid = this.userService.getCurrentUser()?.uid
+  currentUid = this.userService.getCurrentUser()?.uid;
   private _searchResultsComponent?: SearchResultsComponent;
   @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
     if (this._searchResultsComponent) {
@@ -54,7 +54,7 @@ export class HubWorkflowSearchComponent {
       .userChanged()
       .pipe(untilDestroyed(this))
       .subscribe(() => {
-        this.currentUid = this.userService.getCurrentUser()?.uid
+        this.currentUid = this.userService.getCurrentUser()?.uid;
       });
   }
 
@@ -64,7 +64,6 @@ export class HubWorkflowSearchComponent {
       .pipe(untilDestroyed(this))
       .subscribe(() => this.search());
   }
-
 
   /**
    * Searches workflows with keywords and filters given in the masterFilterList.
@@ -88,16 +87,7 @@ export class HubWorkflowSearchComponent {
     }
     this.searchResultsComponent.reset(async (start, count) => {
       const results = await firstValueFrom(
-        this.searchService.search(
-          [""],
-          filterParams,
-          start,
-          count,
-          "workflow",
-          this.sortMethod,
-          false,
-          true
-        )
+        this.searchService.search([""], filterParams, start, count, "workflow", this.sortMethod, false, true)
       );
 
       const userIds = new Set<number>();

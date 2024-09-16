@@ -9,14 +9,13 @@ import { UserInfo } from "../../type/dashboard-entry";
 
 const DASHBOARD_SEARCH_URL = "dashboard/search";
 const DASHBOARD_PUBLIC_SEARCH_URL = "dashboard/publicSearch";
-const DASHBOARD_USER_INFO_URL = "dashboard/resultsOwnersInfo"
-const DASHBOARD_GET_OWNERS_URL = "dashboard/workflowUserAccess"
+const DASHBOARD_USER_INFO_URL = "dashboard/resultsOwnersInfo";
+const DASHBOARD_GET_OWNERS_URL = "dashboard/workflowUserAccess";
 
 @Injectable({
   providedIn: "root",
 })
 export class SearchService {
-
   constructor(private http: HttpClient) {}
 
   /**
@@ -31,7 +30,7 @@ export class SearchService {
     type: "workflow" | "project" | "file" | "dataset" | null,
     orderBy: SortMethod,
     isLogin: boolean,
-    includePublic: boolean = false,
+    includePublic: boolean = false
   ): Observable<SearchResult> {
     const url = isLogin
       ? `${AppSettings.getApiEndpoint()}/${DASHBOARD_SEARCH_URL}`
