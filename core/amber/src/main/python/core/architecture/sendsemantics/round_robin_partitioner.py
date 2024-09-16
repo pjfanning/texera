@@ -3,7 +3,6 @@ from typing import Iterator
 
 from overrides import overrides
 
-from copy import deepcopy
 from core.architecture.sendsemantics.partitioner import Partitioner
 from core.models import Tuple, State
 from core.models.marker import EndOfUpstream, Marker
@@ -43,4 +42,5 @@ class RoundRobinPartitioner(Partitioner):
         for receiver, batch in self.receivers:
             if len(batch) > 0:
                 yield receiver, batch
+                batch.clear()
             yield receiver, marker

@@ -210,8 +210,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
 
     def _process_state(self, state_: State):
         self.context.marker_processing_manager.current_input_marker = state_
+        self.process_input_state()
         self._check_and_process_control()
-        self._switch_context()
 
     def _process_start_of_upstream(self, start_of_upstream: StartOfUpstream):
         self.context.marker_processing_manager.current_input_marker = start_of_upstream
