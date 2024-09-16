@@ -79,11 +79,9 @@ export class ListItemComponent implements OnInit, OnChanges {
           this.owners = data;
 
           if (this.currentUid !== undefined && this.owners.includes(this.currentUid)) {
-            console.log("in workspace");
             this.entryLink = [this.ROUTER_WORKFLOW_BASE_URL, String(this.entry.id)];
             this.queryParams = {};
           } else {
-            console.log("in detail page");
             this.entryLink = [this.ROUTER_WORKFLOW_DETAIL_BASE_URL];
             this.queryParams = { wid: this.entry.id };
           }
