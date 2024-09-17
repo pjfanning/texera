@@ -2,17 +2,17 @@ from typing import Iterator, Optional, Union, Dict, List
 
 from core.models import Tuple, ArrowTableTupleProvider, Schema
 from core.models.internal_marker import (
-    EndOfOutputPorts,
     InternalMarker,
-    SenderChange,
     StartOfOutputPorts,
+    EndOfOutputPorts,
+    SenderChange
 )
 from core.models.marker import EndOfUpstream, State, StartOfUpstream
 from core.models.payload import DataFrame, DataPayload, MarkerFrame
 from proto.edu.uci.ics.amber.engine.common import (
     ActorVirtualIdentity,
     PortIdentity,
-    ChannelIdentity,
+    ChannelIdentity
 )
 
 
@@ -84,7 +84,7 @@ class InputManager:
 
     def process_data_payload(
         self, from_: ActorVirtualIdentity, payload: DataPayload
-    ) -> Iterator[Union[Tuple, EndOfUpstream, InternalMarker]]:
+    ) -> Iterator[Union[Tuple, InternalMarker]]:
         # special case used to yield for source op
         if from_ == InputManager.SOURCE_STARTER:
             yield EndOfUpstream()

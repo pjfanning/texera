@@ -63,19 +63,18 @@ class NetworkReceiver(Runnable, Stoppable):
             :return: sender credits
             """
             data_header = PythonDataHeader().parse(command)
-            payload_type = data_header.payload_type
-            if payload_type == "Data":
-                payload = DataFrame(table)
-            elif payload_type == "State":
-                payload = MarkerFrame(State(table))
-            elif payload_type == "StartOfUpstream":
-                payload = MarkerFrame(StartOfUpstream())
-            elif payload_type == "EndOfUpstream":
-                payload = MarkerFrame(EndOfUpstream())
+
+            payload_map = {
+                "Data": lambda table: DataFrame(table),
+                "State": lambda table: MarkerFrame(State(table)),
+                "StartOfUpstream": lambda _: MarkerFrame(StartOfUpstream()),
+                "EndOfUpstream": lambda _: MarkerFrame(EndOfUpstream())
+            }
+
             shared_queue.put(
                 DataElement(
                     tag=data_header.tag,
-                    payload=payload,
+                    payload=payload_map[data_header.payload_type](table),
                 )
             )
 
