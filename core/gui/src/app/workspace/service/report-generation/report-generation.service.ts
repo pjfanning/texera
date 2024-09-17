@@ -77,13 +77,13 @@ export class ReportGenerationService {
 
   /**
    * Retrieves and processes results for all specified operators within the workflow.
-   * This function iterates over each operator ID, fetches the corresponding result details via retrieveOperatorInfoReport,
+   * * This function iterates over each operator ID, fetches the corresponding result details via `retrieveOperatorInfoReport`,
    * and collects these results into an array. The function returns an observable that emits the processed results,
    * which can be used to generate a comprehensive HTML report or for further processing.
    *
    * @param {string[]} operatorIds - An array of operator IDs representing each operator in the workflow.
    * @returns {Observable<{operatorId: string, html: string}[]>} - An observable that emits an array of objects,
-   * each containing an operatorId and its corresponding HTML representation of the result.
+   * each containing an `operatorId` and its corresponding HTML representation of the result.
    * This result array can be used to generate an HTML report or for other purposes.
    */
   public getAllOperatorResults(operatorIds: string[]): Observable<{ operatorId: string; html: string }[]> {
