@@ -254,7 +254,6 @@ export class MenuComponent implements OnInit {
    * get the html to export all results.
    */
   public onClickGenerateReport(): void {
-
     this.isReportGenerating = true;
 
     // Get notification
