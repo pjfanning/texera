@@ -10,17 +10,22 @@ from .schema.attribute_type import FROM_PYOBJECT_MAPPING
 class Marker:
     pass
 
+
 @dataclass
 class StartOfUpstream(Marker):
     pass
+
 
 @dataclass
 class EndOfUpstream(Marker):
     pass
 
+
 @dataclass
 class State(Marker):
-    def __init__(self, table: Optional[Table] = None, pass_to_all_downstream: bool = False):
+    def __init__(
+        self, table: Optional[Table] = None, pass_to_all_downstream: bool = False
+    ):
         if table is None:
             self.data = {}
             self.schema = Schema()
@@ -29,7 +34,9 @@ class State(Marker):
             self.data = table.to_pandas().iloc[0].to_dict()
             self.schema = Schema(table.schema)
 
-    def add(self, key: str, value: any, value_type: Optional[AttributeType] = None) -> None:
+    def add(
+        self, key: str, value: any, value_type: Optional[AttributeType] = None
+    ) -> None:
         self.data[key] = value
         if value_type is not None:
             self.schema.add(key, value_type)
@@ -43,7 +50,10 @@ class State(Marker):
         return self.data["passToAllDownstream"]
 
     def to_table(self) -> Table:
-        return Table.from_pandas(df=DataFrame([self.data]), schema=self.schema.as_arrow_schema(),)
+        return Table.from_pandas(
+            df=DataFrame([self.data]),
+            schema=self.schema.as_arrow_schema(),
+        )
 
     def __setitem__(self, key: str, value: any, value_type: AttributeType) -> None:
         self.add(key, value, value_type)

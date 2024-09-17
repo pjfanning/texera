@@ -21,8 +21,10 @@ class Partitioner(ABC):
         pass
 
     def flush(
-            self, marker: Marker
-    ) -> Iterator[typing.Tuple[ActorVirtualIdentity, typing.Union[Marker, typing.List[Tuple]]]]:
+        self, marker: Marker
+    ) -> Iterator[
+        typing.Tuple[ActorVirtualIdentity, typing.Union[Marker, typing.List[Tuple]]]
+    ]:
         pass
 
     def reset(self) -> None:

@@ -10,7 +10,7 @@ from core.models import (
     BatchOperator,
     SourceOperator,
     TupleOperatorV2,
-    State
+    State,
 )
 
 __all__ = [
@@ -25,5 +25,5 @@ __all__ = [
     "BatchOperator",
     "TupleOperatorV2",
     "SourceOperator",
-    "State"
+    "State",
 ]

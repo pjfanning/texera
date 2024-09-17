@@ -61,11 +61,14 @@ class NetworkSender(StoppableQueueBlockingRunnable):
             data_header = PythonDataHeader(
                 tag=to, payload_type=data_payload.frame.__class__.__name__
             )
-            table = data_payload.frame.to_table() if isinstance(data_payload.frame, State) else None
+            table = (
+                data_payload.frame.to_table()
+                if isinstance(data_payload.frame, State)
+                else None
+            )
             self._proxy_client.send_data(bytes(data_header), table)
         else:
             raise TypeError(f"Unexpected payload {data_payload}")
-
 
     @logger.catch(reraise=True)
     def _send_control(

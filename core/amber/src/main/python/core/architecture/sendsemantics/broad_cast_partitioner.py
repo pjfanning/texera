@@ -35,8 +35,10 @@ class BroadcastPartitioner(Partitioner):
 
     @overrides
     def flush(
-            self, marker: Marker
-    ) -> Iterator[typing.Tuple[ActorVirtualIdentity, typing.Union[Marker, typing.List[Tuple]]]]:
+        self, marker: Marker
+    ) -> Iterator[
+        typing.Tuple[ActorVirtualIdentity, typing.Union[Marker, typing.List[Tuple]]]
+    ]:
         if len(self.batch) > 0:
             for receiver in self.receivers:
                 yield receiver, self.batch

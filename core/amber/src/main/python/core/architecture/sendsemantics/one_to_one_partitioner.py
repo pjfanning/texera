@@ -34,8 +34,10 @@ class OneToOnePartitioner(Partitioner):
 
     @overrides
     def flush(
-            self, marker: Marker
-    ) -> Iterator[typing.Tuple[ActorVirtualIdentity, typing.Union[Marker, typing.List[Tuple]]]]:
+        self, marker: Marker
+    ) -> Iterator[
+        typing.Tuple[ActorVirtualIdentity, typing.Union[Marker, typing.List[Tuple]]]
+    ]:
         if len(self.batch) > 0:
             yield self.receiver, self.batch
         self.reset()

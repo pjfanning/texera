@@ -50,5 +50,5 @@ __all__ = [
     "AttributeType",
     "Field",
     "Schema",
-    "State"
+    "State",
 ]

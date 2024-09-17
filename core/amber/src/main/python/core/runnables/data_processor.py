@@ -45,8 +45,8 @@ class DataProcessor(Runnable, Stoppable):
             executor = self._context.executor_manager.executor
             port = self._context.tuple_processing_manager.get_input_port()
             with replace_print(
-                    self._context.worker_id,
-                    self._context.console_message_manager.print_buf,
+                self._context.worker_id,
+                self._context.console_message_manager.print_buf,
             ):
                 if isinstance(marker, StartOfUpstream):
                     self._set_output_state(executor.produce_state_on_start(port))
@@ -55,7 +55,6 @@ class DataProcessor(Runnable, Stoppable):
                 elif isinstance(marker, EndOfUpstream):
                     self._set_output_state(executor.produce_state_on_finish(port))
                     self._set_output_tuple(executor.on_finish(port))
-
 
         except Exception as err:
             logger.exception(err)
@@ -74,8 +73,8 @@ class DataProcessor(Runnable, Stoppable):
                 port = self._context.tuple_processing_manager.get_input_port()
                 tuple_ = self._context.tuple_processing_manager.get_input_tuple()
                 with replace_print(
-                        self._context.worker_id,
-                        self._context.console_message_manager.print_buf,
+                    self._context.worker_id,
+                    self._context.console_message_manager.print_buf,
                 ):
                     self._set_output_tuple(executor.process_tuple(tuple_, port))
 
@@ -93,8 +92,12 @@ class DataProcessor(Runnable, Stoppable):
             # output could be a None, a TupleLike, or a TableLike.
             for output_tuple in all_output_to_tuple(output):
                 if output_tuple is not None:
-                    output_tuple.finalize(self._context.output_manager.get_port().get_schema())
-                self._context.tuple_processing_manager.current_output_tuple = output_tuple
+                    output_tuple.finalize(
+                        self._context.output_manager.get_port().get_schema()
+                    )
+                self._context.tuple_processing_manager.current_output_tuple = (
+                    output_tuple
+                )
                 self._switch_context()
         self._context.tuple_processing_manager.finished_current.set()
 

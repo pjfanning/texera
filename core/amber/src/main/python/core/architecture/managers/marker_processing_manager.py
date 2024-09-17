@@ -1,6 +1,7 @@
 from typing import Optional
 from core.models.marker import State, Marker
 
+
 class MarkerProcessingManager:
     def __init__(self):
         self.current_input_marker: Optional[Marker] = None

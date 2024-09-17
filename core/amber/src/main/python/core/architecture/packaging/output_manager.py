@@ -99,7 +99,7 @@ class OutputManager:
         )
 
     def emit_marker(
-            self, marker: Marker
+        self, marker: Marker
     ) -> Iterable[typing.Tuple[ActorVirtualIdentity, DataPayload]]:
         return chain(
             *(

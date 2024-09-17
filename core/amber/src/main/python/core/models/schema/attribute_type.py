@@ -75,4 +75,3 @@ FROM_PYOBJECT_MAPPING = {
     bytes: AttributeType.BINARY,
     datetime.datetime: AttributeType.TIMESTAMP,
 }
-

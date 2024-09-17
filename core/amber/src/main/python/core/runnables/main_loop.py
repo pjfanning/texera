@@ -167,7 +167,9 @@ class MainLoop(StoppableQueueBlockingRunnable):
                 self.context.statistics_manager.increase_output_tuple_count(
                     PortIdentity(0)
                 )
-                for (to, batch) in self.context.output_manager.tuple_to_batch(output_data):
+                for to, batch in self.context.output_manager.tuple_to_batch(
+                    output_data
+                ):
                     self._output_queue.put(DataElement(tag=to, payload=batch))
 
     def process_input_state(self) -> None:
@@ -175,9 +177,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
         output_state = self.context.marker_processing_manager.get_output_state()
         self._switch_context()
         if output_state is not None:
-            for (to, batch) in self.context.output_manager.emit_marker(output_state):
+            for to, batch in self.context.output_manager.emit_marker(output_state):
                 self._output_queue.put(DataElement(tag=to, payload=batch))
-
 
     def process_tuple_with_udf(self) -> Iterator[Optional[Tuple]]:
         """
@@ -244,7 +245,6 @@ class MainLoop(StoppableQueueBlockingRunnable):
             self.context.input_manager.get_port_id(sender_change_marker.channel_id)
         )
 
-
     def _process_start_of_any_marker(self, _: StartOfAny) -> None:
         """
         Upon receipt of an StartOfAllMarker, which indicates the start of any input links,
@@ -255,7 +255,6 @@ class MainLoop(StoppableQueueBlockingRunnable):
         for to, batch in self.context.output_manager.emit_marker(StartOfUpstream()):
             self._output_queue.put(DataElement(tag=to, payload=batch))
             self._check_and_process_control()
-
 
     def _process_end_of_all_marker(self, _: EndOfAll) -> None:
         """

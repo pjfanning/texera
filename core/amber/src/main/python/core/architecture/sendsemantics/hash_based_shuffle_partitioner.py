@@ -43,8 +43,10 @@ class HashBasedShufflePartitioner(Partitioner):
 
     @overrides
     def flush(
-            self, marker: Marker
-    ) -> Iterator[typing.Tuple[ActorVirtualIdentity, typing.Union[Marker, typing.List[Tuple]]]]:
+        self, marker: Marker
+    ) -> Iterator[
+        typing.Tuple[ActorVirtualIdentity, typing.Union[Marker, typing.List[Tuple]]]
+    ]:
         for receiver, batch in self.receivers:
             if len(batch) > 0:
                 yield receiver, batch

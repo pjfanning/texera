@@ -1,7 +1,12 @@
 from typing import Iterator, Optional, Union, Dict, List
 
 from core.models import Tuple, ArrowTableTupleProvider, Schema
-from core.models.internal_marker import EndOfAll, InternalMarker, SenderChange, StartOfAny
+from core.models.internal_marker import (
+    EndOfAll,
+    InternalMarker,
+    SenderChange,
+    StartOfAny,
+)
 from core.models.marker import EndOfUpstream, State, StartOfUpstream
 from core.models.payload import DataFrame, DataPayload, MarkerFrame
 from proto.edu.uci.ics.amber.engine.common import (
@@ -108,12 +113,12 @@ class InputManager:
         elif isinstance(payload, MarkerFrame):
             if isinstance(payload.frame, State):
                 yield payload.frame
-            if isinstance(payload.frame, StartOfUpstream): #StartOfInputChannel()
+            if isinstance(payload.frame, StartOfUpstream):  # StartOfInputChannel()
                 if not self.started:
-                    yield StartOfAny() #StartOfOutputPorts()
+                    yield StartOfAny()  # StartOfOutputPorts()
                 self.started = True
-                yield StartOfUpstream() #StartOfInputChannel()
-            if isinstance(payload.frame, EndOfUpstream): #EndOfInputChannel()
+                yield StartOfUpstream()  # StartOfInputChannel()
+            if isinstance(payload.frame, EndOfUpstream):  # EndOfInputChannel()
                 channel = self._channels[self._current_channel_id]
                 channel.complete()
                 port_id = channel.port_id
@@ -125,14 +130,14 @@ class InputManager:
                 )
 
                 if port_completed:
-                    yield EndOfUpstream() #EndOfInputPort()
+                    yield EndOfUpstream()  # EndOfInputPort()
 
                 all_ports_completed = all(
                     map(lambda port: port.is_completed(), self._ports.values())
                 )
 
                 if all_ports_completed:
-                    yield EndOfAll() #EndOfOutputPorts()
+                    yield EndOfAll()  # EndOfOutputPorts()
 
         else:
             raise NotImplementedError()
