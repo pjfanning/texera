@@ -17,7 +17,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.InvocationConvertUtils.{
 import edu.uci.ics.amber.engine.common.ambermessage.{PythonControlMessage, _}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.texera.workflow.common.{EndOfUpstream, State}
+import edu.uci.ics.texera.workflow.common.State
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import org.apache.arrow.flight._
@@ -105,8 +105,9 @@ class PythonProxyClient(portNumberPromise: Promise[Int], val actorId: ActorVirtu
       case DataFrame(frame) => writeArrowStream(mutable.Queue(frame: _*), from, "Data")
       case MarkerFrame(marker) =>
         marker match {
-          case state: State => writeArrowStream(mutable.Queue(state.toTuple), from, marker.getClass.getSimpleName)
-          case _            => writeArrowStream(mutable.Queue.empty, from, marker.getClass.getSimpleName)
+          case state: State =>
+            writeArrowStream(mutable.Queue(state.toTuple), from, marker.getClass.getSimpleName)
+          case _ => writeArrowStream(mutable.Queue.empty, from, marker.getClass.getSimpleName)
         }
     }
   }

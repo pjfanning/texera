@@ -14,8 +14,7 @@ trait OperatorExecutor {
   def processState(state: State, port: Int): Option[State] = {
     if (state.isPassToAllDownstream) {
       Some(state)
-    }
-    else {
+    } else {
       None
     }
   }
