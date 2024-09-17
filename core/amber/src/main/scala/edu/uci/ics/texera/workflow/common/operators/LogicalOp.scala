@@ -140,13 +140,6 @@ import edu.uci.ics.texera.workflow.operators.visualization.ternaryPlot.TernaryPl
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
 import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.MachineLearningScorerOpDesc
-import edu.uci.ics.texera.workflow.operators.state.{
-  DataToStateOpDesc,
-  DualInputStateReceiverOpDesc,
-  ProduceStateOpDesc,
-  StateReceiverOpDesc,
-  StateToDataOpDesc
-}
 import edu.uci.ics.texera.workflow.operators.visualization.quiverPlot.QuiverPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.contourPlot.ContourPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.figureFactoryTable.FigureFactoryTableOpDesc
@@ -209,11 +202,6 @@ trait StateTransferFunc
     new Type(value = classOf[AsterixDBSourceOpDesc], name = "AsterixDBSource"),
     new Type(value = classOf[TypeCastingOpDesc], name = "TypeCasting"),
     new Type(value = classOf[LimitOpDesc], name = "Limit"),
-    new Type(value = classOf[DataToStateOpDesc], name = "DataToState"),
-    new Type(value = classOf[StateToDataOpDesc], name = "StateToData"),
-    new Type(value = classOf[StateReceiverOpDesc], name = "TestingStateReceiver"),
-    new Type(value = classOf[DualInputStateReceiverOpDesc], name = "DualInputTestingStateReceiver"),
-    new Type(value = classOf[ProduceStateOpDesc], name = "ProduceStateOpDesc"),
     new Type(value = classOf[RandomKSamplingOpDesc], name = "RandomKSampling"),
     new Type(value = classOf[ReservoirSamplingOpDesc], name = "ReservoirSampling"),
     new Type(value = classOf[HashJoinOpDesc[String]], name = "HashJoin"),
