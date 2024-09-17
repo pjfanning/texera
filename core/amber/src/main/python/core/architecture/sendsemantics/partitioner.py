@@ -4,8 +4,8 @@ from typing import Iterator
 
 from betterproto import Message
 
-from core.models import Tuple, State
-from core.models.marker import EndOfUpstream, Marker
+from core.models import Tuple
+from core.models.marker import Marker
 from core.util import get_one_of
 from proto.edu.uci.ics.amber.engine.architecture.sendsemantics import Partitioning
 from proto.edu.uci.ics.amber.engine.common import ActorVirtualIdentity

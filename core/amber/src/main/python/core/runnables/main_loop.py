@@ -1,7 +1,7 @@
 import threading
 import time
 import typing
-from typing import Iterator, Optional, Union
+from typing import Iterator, Optional
 
 from loguru import logger
 from overrides import overrides
@@ -150,8 +150,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
 
     def process_input_tuple(self) -> None:
         """
-        Process the current input tuple or state with the current input link. Send all result
-        Tuples or State to downstream workers.
+        Process the current input tuple or state with the current input link.
+        Send all result Tuples or State to downstream workers.
 
         This is being invoked for each Tuple/Marker that are unpacked from the
         DataElement.
@@ -247,7 +247,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
 
     def _process_start_of_output_ports(self, _: StartOfOutputPorts) -> None:
         """
-        Upon receipt of an StartOfAllMarker, which indicates the start of any input links,
+        Upon receipt of an StartOfAllMarker,
+        which indicates the start of any input links,
         send the StartOfUpstream to all downstream workers.
 
         :param _: StartOfAny Internal Marker

@@ -6,7 +6,7 @@ from threading import Event
 from loguru import logger
 from typing import Iterator, Optional
 from core.architecture.managers import Context
-from core.models import Tuple, ExceptionInfo, State, TupleLike
+from core.models import ExceptionInfo, State, TupleLike
 from core.models.marker import Marker, StartOfUpstream, EndOfUpstream
 from core.models.table import all_output_to_tuple
 from core.util import Stoppable
