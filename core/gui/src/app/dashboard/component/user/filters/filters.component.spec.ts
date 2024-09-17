@@ -8,8 +8,7 @@ import { StubWorkflowPersistService } from "src/app/common/service/workflow-pers
 import { testWorkflowEntries } from "../../user-dashboard-test-fixtures";
 import { HttpClient, HttpHandler } from "@angular/common/http";
 import { NzDropDownModule } from "ng-zorro-antd/dropdown";
-import { JwtHelperService, JWT_OPTIONS  } from "@auth0/angular-jwt";
-
+import { JwtHelperService, JWT_OPTIONS } from "@auth0/angular-jwt";
 
 describe("FiltersComponent", () => {
   let component: FiltersComponent;
