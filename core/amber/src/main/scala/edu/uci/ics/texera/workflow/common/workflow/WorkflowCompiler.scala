@@ -49,8 +49,32 @@ class WorkflowCompiler(
 
     // step1: come up with the physical plan and do the schema propagation
     // from logical plan to physical plan
-    // TODO: capture the error by operator id here
-    var physicalPlan: Option[PhysicalPlan] = Some(PhysicalPlan(context, logicalPlan))
+    var physicalPlan: Option[PhysicalPlan] = None
+    try {
+      physicalPlan = Some(PhysicalPlan(context, logicalPlan))
+    } catch {
+      case ex: Throwable =>
+        physicalPlan = None
+        errorList.append((new OperatorIdentity(""), ex))
+    }
+
+    if (physicalPlan.isEmpty) {
+      return WorkflowCompilationResult(
+        None,
+        Map.empty,
+        errorList.map {
+          case (opId, err) =>
+            logger.error("Error occurred in expanding logical plan to physical plan", err)
+            WorkflowFatalError(
+              COMPILATION_ERROR,
+              Timestamp(Instant.now),
+              err.getMessage,
+              getStackTraceWithAllCauses(err),
+              opId.id
+            )
+        }.toList
+      )
+    }
 
     // Extract physical input schemas, excluding internal ports
     val physicalInputSchemas = physicalPlan.get.operators.map { physicalOp =>
@@ -73,12 +97,8 @@ class WorkflowCompiler(
       logicalPlanPojo.opsToViewResult,
       logicalPlan
     )
-    try {
-      logicalPlan.propagateWorkflowSchema(context, Some(errorList))
-    } catch {
-      case ex: Throwable =>
-        errorList.append((new OperatorIdentity(""), ex))
-    }
+
+    logicalPlan.propagateWorkflowSchema(context, Some(errorList))
     if (errorList.nonEmpty) {
       // encounter errors during static error check,
       //   so directly return None as physical plan, schema map and non-empty error map
