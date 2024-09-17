@@ -1,16 +1,5 @@
 <div id="menu-container">
   <div
-    class="report-generation-spinner"
-    *ngIf="isReportGenerating">
-    <div class="spinner-content">
-      <nz-spin
-        [nzSize]="'large'"
-        nzTip="Generating">
-      </nz-spin>
-    </div>
-  </div>
-
-  <div
     *ngIf="!userSystemEnabled"
     id="logo">
     <a href="{{userSystemEnabled?'/dashboard/workflow':'/'}}">
@@ -21,6 +10,18 @@
     </a>
   </div>
   <div id="menu-content">
+
+    <div
+      class="report-generation-spinner"
+      *ngIf="isReportGenerating">
+      <div class="spinner-content">
+        <nz-spin
+          [nzSize]="'large'"
+          nzTip="Generating">
+        </nz-spin>
+      </div>
+    </div>
+
     <div
       id="menu-user"
       *ngIf="userSystemEnabled">
