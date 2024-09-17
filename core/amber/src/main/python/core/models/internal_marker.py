@@ -20,10 +20,10 @@ class SenderChange(InternalMarker):
 
 
 @dataclass
-class StartOfAny(InternalMarker):
+class StartOfOutputPorts(InternalMarker):
     pass
 
 
 @dataclass
-class EndOfAll(InternalMarker):
+class EndOfOutputPorts(InternalMarker):
     pass

@@ -2,10 +2,10 @@ from typing import Iterator, Optional, Union, Dict, List
 
 from core.models import Tuple, ArrowTableTupleProvider, Schema
 from core.models.internal_marker import (
-    EndOfAll,
+    EndOfOutputPorts,
     InternalMarker,
     SenderChange,
-    StartOfAny,
+    StartOfOutputPorts,
 )
 from core.models.marker import EndOfUpstream, State, StartOfUpstream
 from core.models.payload import DataFrame, DataPayload, MarkerFrame
@@ -88,7 +88,7 @@ class InputManager:
         # special case used to yield for source op
         if from_ == InputManager.SOURCE_STARTER:
             yield EndOfUpstream()
-            yield EndOfAll()
+            yield EndOfOutputPorts()
             return
         current_channel_id = None
         for channel_id, channel in self._channels.items():
@@ -115,7 +115,7 @@ class InputManager:
                 yield payload.frame
             if isinstance(payload.frame, StartOfUpstream):  # StartOfInputChannel()
                 if not self.started:
-                    yield StartOfAny()  # StartOfOutputPorts()
+                    yield StartOfOutputPorts()
                 self.started = True
                 yield StartOfUpstream()  # StartOfInputChannel()
             if isinstance(payload.frame, EndOfUpstream):  # EndOfInputChannel()
@@ -137,7 +137,7 @@ class InputManager:
                 )
 
                 if all_ports_completed:
-                    yield EndOfAll()  # EndOfOutputPorts()
+                    yield EndOfOutputPorts()
 
         else:
             raise NotImplementedError()

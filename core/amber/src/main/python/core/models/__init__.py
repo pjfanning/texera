@@ -2,7 +2,7 @@ from inspect import Traceback
 from typing import NamedTuple
 
 from .internal_queue import InternalQueue
-from .internal_marker import EndOfAll, InternalMarker, SenderChange
+from .internal_marker import InternalMarker, SenderChange
 from .tuple import Tuple, TupleLike, ArrowTableTupleProvider
 from .table import Table, TableLike
 from .batch import Batch, BatchLike
@@ -27,7 +27,6 @@ class ExceptionInfo(NamedTuple):
 
 __all__ = [
     "InternalQueue",
-    "EndOfAll",
     "InternalMarker",
     "SenderChange",
     "Tuple",
