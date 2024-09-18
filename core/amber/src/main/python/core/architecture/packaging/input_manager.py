@@ -1,5 +1,5 @@
 from typing import Iterator, Optional, Union, Dict, List
-
+from pyarrow.lib import Table
 from core.models import Tuple, ArrowTableTupleProvider, Schema
 from core.models.internal_marker import (
     InternalMarker,
@@ -7,7 +7,7 @@ from core.models.internal_marker import (
     EndOfOutputPorts,
     SenderChange
 )
-from core.models.marker import EndOfUpstream, State, StartOfUpstream
+from core.models.marker import EndOfUpstream, State, StartOfUpstream, Marker
 from core.models.payload import DataFrame, DataPayload, MarkerFrame
 from proto.edu.uci.ics.amber.engine.common import (
     ActorVirtualIdentity,
@@ -104,47 +104,47 @@ class InputManager:
             yield SenderChange(current_channel_id)
 
         if isinstance(payload, DataFrame):
-
-
+            yield from self._process_data(payload.frame)
         elif isinstance(payload, MarkerFrame):
-            frame = payload.frame
-            if isinstance(frame, State):
-                yield frame
-            if isinstance(frame, StartOfUpstream):  # StartOfInputChannel()
-                if not self.started:
-                    yield StartOfOutputPorts()
-                self.started = True
-                yield StartOfUpstream()  # StartOfInputChannel()
-            if isinstance(frame, EndOfUpstream):  # EndOfInputChannel()
-                channel = self._channels[self._current_channel_id]
-                channel.complete()
-                port_id = channel.port_id
-                port_completed = all(
-                    map(
-                        lambda channel: channel.is_completed(),
-                        self._ports[port_id].channels,
-                    )
-                )
-
-                if port_completed:
-                    yield EndOfUpstream()  # EndOfInputPort()
-
-                all_ports_completed = all(
-                    map(lambda port: port.is_completed(), self._ports.values())
-                )
-
-                if all_ports_completed:
-                    yield EndOfOutputPorts()
-
+            yield from self._process_marker(payload.frame)
         else:
             raise NotImplementedError()
 
-    def _process_data(self, frame: Table) -> Iterator[Tuple]:
+    def _process_data(self, table: Table) -> Iterator[Tuple]:
         schema = self._ports[
             self._channels[self._current_channel_id].port_id
         ].get_schema()
-        for field_accessor in ArrowTableTupleProvider(payload.frame):
+        for field_accessor in ArrowTableTupleProvider(table):
             yield Tuple(
-                {name: field_accessor for name in payload.frame.column_names},
+                {name: field_accessor for name in table.column_names},
                 schema=schema
             )
+
+    def _process_marker(self, marker: Marker) -> Iterator[InternalMarker]:
+        if isinstance(marker, State):
+            yield marker
+        if isinstance(marker, StartOfUpstream):  # StartOfInputChannel()
+            if not self.started:
+                yield StartOfOutputPorts()
+            self.started = True
+            yield StartOfUpstream()  # StartOfInputChannel()
+        if isinstance(marker, EndOfUpstream):  # EndOfInputChannel()
+            channel = self._channels[self._current_channel_id]
+            channel.complete()
+            port_id = channel.port_id
+            port_completed = all(
+                map(
+                    lambda channel: channel.is_completed(),
+                    self._ports[port_id].channels,
+                )
+            )
+
+            if port_completed:
+                yield EndOfUpstream()  # EndOfInputPort()
+
+            all_ports_completed = all(
+                map(lambda port: port.is_completed(), self._ports.values())
+            )
+
+            if all_ports_completed:
+                yield EndOfOutputPorts()
