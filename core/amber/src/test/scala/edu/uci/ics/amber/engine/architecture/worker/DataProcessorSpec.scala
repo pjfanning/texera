@@ -79,6 +79,12 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
         .expects(x, 0)
     }
     (
+      (
+        input: Int
+      ) => executor.produceStateOnFinish(input)
+      )
+      .expects(0)
+    (
         (
           input: Int
         ) => executor.onFinishMultiPort(input)
