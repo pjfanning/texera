@@ -181,7 +181,6 @@ class DataProcessor(
         )
         asyncRPCClient.send(WorkerExecutionCompleted(), CONTROLLER)
       case FinalizePort(portId, input) =>
-        //operator.onOutputFinish(portId.id)
         asyncRPCClient.send(PortCompleted(portId, input), CONTROLLER)
       case schemaEnforceable: SchemaEnforceable =>
         if (outputPortOpt.isEmpty) {
