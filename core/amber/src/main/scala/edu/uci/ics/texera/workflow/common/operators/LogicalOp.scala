@@ -134,8 +134,11 @@ import edu.uci.ics.texera.workflow.operators.visualization.scatter3DChart.Scatte
 import edu.uci.ics.texera.workflow.operators.visualization.ScatterMatrixChart.ScatterMatrixChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.funnelPlot.FunnelPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.tablesChart.TablesPlotOpDesc
+
 import edu.uci.ics.texera.workflow.operators.visualization.icicleChart.IcicleChartOpDesc
+
 import edu.uci.ics.texera.workflow.operators.visualization.continuousErrorBands.ContinuousErrorBandsOpDesc
+
 import edu.uci.ics.texera.workflow.operators.visualization.ternaryPlot.TernaryPlotOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
@@ -143,7 +146,6 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.MachineLearn
 import edu.uci.ics.texera.workflow.operators.visualization.quiverPlot.QuiverPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.contourPlot.ContourPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.figureFactoryTable.FigureFactoryTableOpDesc
-
 import java.util.UUID
 import scala.collection.mutable
 import scala.util.Try
