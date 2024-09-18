@@ -68,7 +68,7 @@ class NetworkReceiver(Runnable, Stoppable):
                 "Data": lambda table: DataFrame(table),
                 "State": lambda table: MarkerFrame(State(table)),
                 "StartOfUpstream": lambda _: MarkerFrame(StartOfUpstream()),
-                "EndOfUpstream": lambda _: MarkerFrame(EndOfUpstream())
+                "EndOfUpstream": lambda _: MarkerFrame(EndOfUpstream()),
             }
 
             shared_queue.put(

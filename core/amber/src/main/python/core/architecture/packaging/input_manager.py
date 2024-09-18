@@ -5,7 +5,7 @@ from core.models.internal_marker import (
     InternalMarker,
     StartOfOutputPorts,
     EndOfOutputPorts,
-    SenderChange
+    SenderChange,
 )
 from core.models.marker import EndOfUpstream, State, StartOfUpstream, Marker
 from core.models.payload import DataFrame, DataPayload, MarkerFrame
@@ -71,7 +71,7 @@ class InputManager:
         return self._channels[channel_id].port_id
 
     def register_input(
-            self, channel_id: ChannelIdentity, port_id: PortIdentity
+        self, channel_id: ChannelIdentity, port_id: PortIdentity
     ) -> None:
         if port_id.id is None:
             port_id.id = 0
@@ -83,7 +83,7 @@ class InputManager:
         self._ports[port_id].add_channel(channel)
 
     def process_data_payload(
-            self, from_: ActorVirtualIdentity, payload: DataPayload
+        self, from_: ActorVirtualIdentity, payload: DataPayload
     ) -> Iterator[Union[Tuple, InternalMarker]]:
         # special case used to yield for source op
         if from_ == InputManager.SOURCE_STARTER:
@@ -92,13 +92,17 @@ class InputManager:
             return
 
         current_channel_id = next(
-            (channel_id for channel_id, channel in self._channels.items()
-             if channel_id.from_worker_id == from_), None
+            (
+                channel_id
+                for channel_id, channel in self._channels.items()
+                if channel_id.from_worker_id == from_
+            ),
+            None,
         )
 
         if (
-                self._current_channel_id is None
-                or self._current_channel_id != current_channel_id
+            self._current_channel_id is None
+            or self._current_channel_id != current_channel_id
         ):
             self._current_channel_id = current_channel_id
             yield SenderChange(current_channel_id)
@@ -116,8 +120,7 @@ class InputManager:
         ].get_schema()
         for field_accessor in ArrowTableTupleProvider(table):
             yield Tuple(
-                {name: field_accessor for name in table.column_names},
-                schema=schema
+                {name: field_accessor for name in table.column_names}, schema=schema
             )
 
     def _process_marker(self, marker: Marker) -> Iterator[InternalMarker]:
