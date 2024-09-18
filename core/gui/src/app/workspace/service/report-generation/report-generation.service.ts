@@ -1,7 +1,8 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import html2canvas from "html2canvas";
-import { Observable, Observer} from "rxjs";
+import { forkJoin,Observable, Observer} from "rxjs";
+import { map } from "rxjs/operators";
 import { WorkflowActionService } from "../workflow-graph/model/workflow-action.service";
 import { WorkflowResultService } from "../workflow-result/workflow-result.service";
 import { NotificationService } from "src/app/common/service/notification/notification.service";
@@ -88,21 +89,12 @@ export class ReportGenerationService {
    * This result array can be used to generate an HTML report or for other purposes.
    */
   public getAllOperatorResults(operatorIds: string[]): Observable<{ operatorId: string; html: string }[]> {
-    return new Observable(observer => {
+    const observables = operatorIds.map(operatorId => {
       const allResults: { operatorId: string; html: string }[] = [];
-      const promises = operatorIds.map(operatorId => {
-        return this.retrieveOperatorInfoReport(operatorId, allResults);
-      });
-
-      Promise.all(promises)
-        .then(() => {
-          observer.next(allResults);
-          observer.complete();
-        })
-        .catch(error => {
-          observer.error("Error in retrieving operator results: " + error.message);
-        });
+      return this.retrieveOperatorInfoReport(operatorId, allResults).pipe(map(() => allResults[0]));
     });
+
+    return forkJoin(observables);
   }
 
   /**
