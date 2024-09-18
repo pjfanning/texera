@@ -149,10 +149,6 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     )
     dp.processDataPayload(
       ChannelIdentity(senderWorkerId, testWorkerId, isControl = false),
-      MarkerFrame(StartOfUpstream())
-    )
-    dp.processDataPayload(
-      ChannelIdentity(senderWorkerId, testWorkerId, isControl = false),
       DataFrame(tuples)
     )
     while (dp.inputManager.hasUnfinishedInput || dp.outputManager.hasUnfinishedOutput) {
