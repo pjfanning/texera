@@ -12,7 +12,7 @@ from core.models.payload import DataFrame, DataPayload, MarkerFrame
 from proto.edu.uci.ics.amber.engine.common import (
     ActorVirtualIdentity,
     PortIdentity,
-    ChannelIdentity
+    ChannelIdentity,
 )
 
 
@@ -71,7 +71,7 @@ class InputManager:
         return self._channels[channel_id].port_id
 
     def register_input(
-        self, channel_id: ChannelIdentity, port_id: PortIdentity
+            self, channel_id: ChannelIdentity, port_id: PortIdentity
     ) -> None:
         if port_id.id is None:
             port_id.id = 0
@@ -83,42 +83,39 @@ class InputManager:
         self._ports[port_id].add_channel(channel)
 
     def process_data_payload(
-        self, from_: ActorVirtualIdentity, payload: DataPayload
+            self, from_: ActorVirtualIdentity, payload: DataPayload
     ) -> Iterator[Union[Tuple, InternalMarker]]:
         # special case used to yield for source op
         if from_ == InputManager.SOURCE_STARTER:
             yield EndOfUpstream()
             yield EndOfOutputPorts()
             return
-        current_channel_id = None
-        for channel_id, channel in self._channels.items():
-            if channel_id.from_worker_id == from_:
-                current_channel_id = channel_id
+
+        current_channel_id = next(
+            (channel_id for channel_id, channel in self._channels.items()
+             if channel_id.from_worker_id == from_), None
+        )
 
         if (
-            self._current_channel_id is None
-            or self._current_channel_id != current_channel_id
+                self._current_channel_id is None
+                or self._current_channel_id != current_channel_id
         ):
             self._current_channel_id = current_channel_id
             yield SenderChange(current_channel_id)
+
         if isinstance(payload, DataFrame):
-            for field_accessor in ArrowTableTupleProvider(payload.frame):
-                yield Tuple(
-                    {name: field_accessor for name in payload.frame.column_names},
-                    schema=self._ports[
-                        self._channels[self._current_channel_id].port_id
-                    ].get_schema(),
-                )
+
 
         elif isinstance(payload, MarkerFrame):
-            if isinstance(payload.frame, State):
-                yield payload.frame
-            if isinstance(payload.frame, StartOfUpstream):  # StartOfInputChannel()
+            frame = payload.frame
+            if isinstance(frame, State):
+                yield frame
+            if isinstance(frame, StartOfUpstream):  # StartOfInputChannel()
                 if not self.started:
                     yield StartOfOutputPorts()
                 self.started = True
                 yield StartOfUpstream()  # StartOfInputChannel()
-            if isinstance(payload.frame, EndOfUpstream):  # EndOfInputChannel()
+            if isinstance(frame, EndOfUpstream):  # EndOfInputChannel()
                 channel = self._channels[self._current_channel_id]
                 channel.complete()
                 port_id = channel.port_id
@@ -141,3 +138,13 @@ class InputManager:
 
         else:
             raise NotImplementedError()
+
+    def _process_data(self, frame: Table) -> Iterator[Tuple]:
+        schema = self._ports[
+            self._channels[self._current_channel_id].port_id
+        ].get_schema()
+        for field_accessor in ArrowTableTupleProvider(payload.frame):
+            yield Tuple(
+                {name: field_accessor for name in payload.frame.column_names},
+                schema=schema
+            )
