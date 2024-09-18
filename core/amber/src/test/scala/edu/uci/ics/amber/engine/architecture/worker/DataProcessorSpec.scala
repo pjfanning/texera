@@ -19,7 +19,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   PhysicalOpIdentity
 }
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
-import edu.uci.ics.texera.workflow.common.{EndOfUpstream, StartOfUpstream}
+import edu.uci.ics.texera.workflow.common.EndOfUpstream
 import edu.uci.ics.texera.workflow.common.WorkflowContext.DEFAULT_WORKFLOW_ID
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -133,6 +133,12 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     (
         (
           input: Int
+        ) => executor.produceStateOnFinish(input)
+    )
+      .expects(0)
+    (
+        (
+          input: Int
         ) => executor.onFinishMultiPort(input)
     )
       .expects(0)
@@ -159,7 +165,9 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
       dp.continueDataProcessing()
     }
     (adaptiveBatchingMonitor.stopAdaptiveBatching _).expects().once()
+
     (executor.close _).expects().once()
+
     dp.processDataPayload(
       ChannelIdentity(senderWorkerId, testWorkerId, isControl = false),
       MarkerFrame(EndOfUpstream())

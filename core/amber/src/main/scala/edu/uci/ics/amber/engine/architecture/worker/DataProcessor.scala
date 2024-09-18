@@ -131,7 +131,7 @@ class DataProcessor(
   private[this] def processEndOfUpstream(portId: Int): Unit = {
     try {
       val outputState = executor.produceStateOnFinish(portId)
-      if (outputState.isDefined) {
+      if (outputState != null && outputState.isDefined) {
         outputManager.emitMarker(outputState.get)
       }
       outputManager.outputIterator.setTupleOutput(
