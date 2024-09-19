@@ -50,11 +50,14 @@ export class WorkflowCompilingService {
       return;
     }
 
-    // invoke schema propagation API when: link is added/deleted,
-    // or any property of any operator is changed
+    // invoke the compilation service when there are any changes on workflow topology and properties. This includes:
+    // - operator add, delete, property changed, disabled
+    // - link add, delete
     merge(
       this.workflowActionService.getTexeraGraph().getLinkAddStream(),
       this.workflowActionService.getTexeraGraph().getLinkDeleteStream(),
+      this.workflowActionService.getTexeraGraph().getOperatorAddStream(),
+      this.workflowActionService.getTexeraGraph().getOperatorDeleteStream(),
       this.workflowActionService.getTexeraGraph().getOperatorPropertyChangeStream(),
       this.workflowActionService.getTexeraGraph().getDisabledOperatorsChangedStream()
     )
