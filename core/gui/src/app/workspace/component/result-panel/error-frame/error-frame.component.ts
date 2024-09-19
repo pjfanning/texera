@@ -41,9 +41,9 @@ export class ErrorFrameComponent implements OnInit {
     if (this.operatorId) {
       errorMessages = errorMessages.filter(err => err.operatorId === this.operatorId);
     }
-    console.log("errors: ", errorMessages);
-    console.log("opId: ", this.operatorId);
+
     this.categoryToErrorMapping = errorMessages.reduce((acc, obj) => {
+      console.log("the error object: ", obj)
       const key = obj.type.name;
       if (!acc.has(key)) {
         acc.set(key, []);

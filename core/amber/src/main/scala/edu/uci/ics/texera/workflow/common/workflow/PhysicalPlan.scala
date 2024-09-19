@@ -4,11 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  OperatorIdentity,
-  PhysicalOpIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, OperatorIdentity, PhysicalOpIdentity}
 import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import org.jgrapht.alg.connectivity.BiconnectivityInspector
@@ -17,14 +13,18 @@ import org.jgrapht.graph.DirectedAcyclicGraph
 import org.jgrapht.traverse.TopologicalOrderIterator
 import org.jgrapht.util.SupplierUtil
 
+import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, SetHasAsScala}
+import scala.util.{Failure, Success, Try}
 
 object PhysicalPlan {
-  def apply(context: WorkflowContext, logicalPlan: LogicalPlan): PhysicalPlan = {
+  def apply(context: WorkflowContext, logicalPlan: LogicalPlan, errorList: Option[ArrayBuffer[(OperatorIdentity, Throwable)]]): PhysicalPlan = {
 
     var physicalPlan = PhysicalPlan(operators = Set.empty, links = Set.empty)
 
-    logicalPlan.getTopologicalOpIds.asScala.foreach(logicalOpId => {
+    logicalPlan.getTopologicalOpIds.asScala.foreach(logicalOpId =>
+
+    Try {
       val logicalOp = logicalPlan.getOperator(logicalOpId)
       logicalOp.setContext(context)
 
@@ -56,6 +56,13 @@ object PhysicalPlan {
               .foldLeft(physicalPlan) { (plan, link) => plan.addLink(link) }
           }
         })
+    } match {
+      case Success(_) =>
+      case Failure(err) =>
+        errorList match {
+          case Some(list) => list.append((logicalOpId, err))
+          case None => throw err
+        }
     })
     physicalPlan
   }
