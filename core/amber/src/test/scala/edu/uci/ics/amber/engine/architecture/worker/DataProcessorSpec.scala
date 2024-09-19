@@ -171,9 +171,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
       dp.continueDataProcessing()
     }
     (adaptiveBatchingMonitor.stopAdaptiveBatching _).expects().once()
-
     (executor.close _).expects().once()
-
     dp.processDataPayload(
       ChannelIdentity(senderWorkerId, testWorkerId, isControl = false),
       MarkerFrame(EndOfUpstream())
