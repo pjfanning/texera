@@ -10,7 +10,6 @@ from .schema import AttributeType, Field, Schema
 from .marker import State
 from .operator import (
     Operator,
-    TupleOperator,
     TableOperator,
     TupleOperatorV2,
     BatchOperator,
@@ -37,7 +36,6 @@ __all__ = [
     "Batch",
     "BatchLike",
     "Operator",
-    "TupleOperator",
     "TupleOperatorV2",
     "TableOperator",
     "BatchOperator",

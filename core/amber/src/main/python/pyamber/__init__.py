@@ -1,7 +1,6 @@
 from core.models import (
     Tuple,
     TupleLike,
-    TupleOperator,
     Table,
     TableLike,
     Batch,
@@ -16,7 +15,6 @@ from core.models import (
 __all__ = [
     "Tuple",
     "TupleLike",
-    "TupleOperator",
     "Table",
     "TableLike",
     "Batch",
