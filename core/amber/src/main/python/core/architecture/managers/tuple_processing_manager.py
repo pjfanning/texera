@@ -22,12 +22,9 @@ class TupleProcessingManager:
         ret, self.current_output_tuple = self.current_output_tuple, None
         return ret
 
-    def get_input_port(self) -> int:
+    def get_input_port_id(self) -> int:
         port_id = self.current_input_port_id
-        port: int
+        # no upstream, special case for source executor.
         if port_id is None:
-            # no upstream, special case for source executor.
-            port = 0
-        else:
-            port = port_id.id
-        return port
+            return 0
+        return port_id.id

@@ -43,7 +43,7 @@ class DataProcessor(Runnable, Stoppable):
     def process_marker(self, marker: Marker) -> None:
         try:
             executor = self._context.executor_manager.executor
-            port = self._context.tuple_processing_manager.get_input_port()
+            port = self._context.tuple_processing_manager.get_input_port_id()
             with replace_print(
                 self._context.worker_id,
                 self._context.console_message_manager.print_buf,
@@ -70,7 +70,7 @@ class DataProcessor(Runnable, Stoppable):
         while not finished_current.is_set():
             try:
                 executor = self._context.executor_manager.executor
-                port = self._context.tuple_processing_manager.get_input_port()
+                port = self._context.tuple_processing_manager.get_input_port_id()
                 tuple_ = self._context.tuple_processing_manager.get_input_tuple()
                 with replace_print(
                     self._context.worker_id,
