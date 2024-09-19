@@ -161,14 +161,14 @@ class MainLoop(StoppableQueueBlockingRunnable):
                 self.context.tuple_processing_manager.current_input_port_id
             )
 
-        for output_data in self.process_tuple_with_udf():
+        for output_tuple in self.process_tuple_with_udf():
             self._check_and_process_control()
-            if output_data is not None:
+            if output_tuple is not None:
                 self.context.statistics_manager.increase_output_tuple_count(
                     PortIdentity(0)
                 )
                 for to, batch in self.context.output_manager.tuple_to_batch(
-                    output_data
+                    output_tuple
                 ):
                     self._output_queue.put(DataElement(tag=to, payload=batch))
 
@@ -186,7 +186,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
 
         This is a wrapper to invoke processing of the executor.
 
-        :return: Iterator[Tuple], iterator of result Tuple(s) or State.
+        :return: Iterator[Tuple], iterator of result Tuple(s).
         """
         finished_current = self.context.tuple_processing_manager.finished_current
         finished_current.clear()
