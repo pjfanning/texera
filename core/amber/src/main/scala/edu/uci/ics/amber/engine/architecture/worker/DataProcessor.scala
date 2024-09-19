@@ -101,7 +101,6 @@ class DataProcessor(
       }
     } catch safely {
       case e =>
-        // forward input tuple to the user and pause DP thread
         handleExecutorException(e)
     }
   }
@@ -119,7 +118,6 @@ class DataProcessor(
       }
     } catch safely {
       case e =>
-        // forward input tuple to the user and pause DP thread
         handleExecutorException(e)
     }
   }
