@@ -60,6 +60,7 @@ mongodb:
 
 # Part 2: Configuration of Texera and brain application
 # TODO: create template yamls under templates directory to make these values effective
+# TODO: add more config items if needed
 # Configuration for the pod brain. It should be able to connect to the mysql instance stated above
 texeraWorkflowPodBrain:
   numOfPods: 1
@@ -68,6 +69,10 @@ texeraWorkflowPodBrain:
     type: NodePort # for testing purpose, NodePort mode is fine
     port: # port of the pod
     nodePort: # exposed port
+
+# Configuration for the workflow pod
+texeraWorkflowPod:
+  imageName: # image name of the workflow pod
 
 # Configuration for texera. It should be able to connect to the mysql and mongodb instances stated above
 texera:
