@@ -43,18 +43,18 @@ class DataProcessor(Runnable, Stoppable):
     def process_marker(self, marker: Marker) -> None:
         try:
             executor = self._context.executor_manager.executor
-            port = self._context.tuple_processing_manager.get_input_port_id()
+            port_id = self._context.tuple_processing_manager.get_input_port_id()
             with replace_print(
                 self._context.worker_id,
                 self._context.console_message_manager.print_buf,
             ):
                 if isinstance(marker, StartOfUpstream):
-                    self._set_output_state(executor.produce_state_on_start(port))
+                    self._set_output_state(executor.produce_state_on_start(port_id))
                 elif isinstance(marker, State):
-                    self._set_output_state(executor.process_state(marker, port))
+                    self._set_output_state(executor.process_state(marker, port_id))
                 elif isinstance(marker, EndOfUpstream):
-                    self._set_output_state(executor.produce_state_on_finish(port))
-                    self._set_output_tuple(executor.on_finish(port))
+                    self._set_output_state(executor.produce_state_on_finish(port_id))
+                    self._set_output_tuple(executor.on_finish(port_id))
 
         except Exception as err:
             logger.exception(err)
@@ -70,13 +70,13 @@ class DataProcessor(Runnable, Stoppable):
         while not finished_current.is_set():
             try:
                 executor = self._context.executor_manager.executor
-                port = self._context.tuple_processing_manager.get_input_port_id()
+                port_id = self._context.tuple_processing_manager.get_input_port_id()
                 tuple_ = self._context.tuple_processing_manager.get_input_tuple()
                 with replace_print(
                     self._context.worker_id,
                     self._context.console_message_manager.print_buf,
                 ):
-                    self._set_output_tuple(executor.process_tuple(tuple_, port))
+                    self._set_output_tuple(executor.process_tuple(tuple_, port_id))
 
             except Exception as err:
                 logger.exception(err)
