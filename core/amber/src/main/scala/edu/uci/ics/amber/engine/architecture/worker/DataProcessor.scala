@@ -123,7 +123,7 @@ class DataProcessor(
   }
 
   /**
-    * process end of an input port with Executor.onFinish().
+    * process end of an input port with Executor.produceStateOnFinish().
     * this function is only called by the DP thread.
     */
   private[this] def processEndOfUpstream(portId: Int): Unit = {
