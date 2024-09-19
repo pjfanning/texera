@@ -64,20 +64,19 @@ class NetworkReceiver(Runnable, Stoppable):
             """
             data_header = PythonDataHeader().parse(command)
 
-            payload_map = {
-                "Data": lambda table: DataFrame(table),
-                "State": lambda table: MarkerFrame(State(table)),
-                "StartOfUpstream": lambda _: MarkerFrame(StartOfUpstream()),
-                "EndOfUpstream": lambda _: MarkerFrame(EndOfUpstream()),
-            }
+            match data_header.payload_type:
+                case "Data":
+                    payload = DataFrame(table)
+                case "State":
+                    payload = MarkerFrame(State(table))
+                case "StartOfUpstream":
+                    payload = MarkerFrame(StartOfUpstream())
+                case "EndOfUpstream":
+                    payload = MarkerFrame(EndOfUpstream())
+                case _:
+                    raise NotImplementedError()
 
-            shared_queue.put(
-                DataElement(
-                    tag=data_header.tag,
-                    payload=payload_map[data_header.payload_type](table),
-                )
-            )
-
+            shared_queue.put(DataElement(tag=data_header.tag, payload=payload))
             return shared_queue.in_mem_size()
 
         self._proxy_server.register_data_handler(data_handler)
