@@ -1,0 +1,9 @@
+dependencies:
+- name: mysql
+  repository: https://charts.bitnami.com/bitnami
+  version: 11.1.14
+- name: mongodb
+  repository: https://charts.bitnami.com/bitnami
+  version: 15.6.18
+digest: sha256:8399cc0b8cd1af773d3daa0bb2092c1e9126ae7ff98eb8ed8d766fdae154fbc0
+generated: "2024-09-18T15:50:07.131653-07:00"
