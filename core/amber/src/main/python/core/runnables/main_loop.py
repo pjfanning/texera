@@ -209,16 +209,16 @@ class MainLoop(StoppableQueueBlockingRunnable):
         self.process_input_tuple()
         self._check_and_process_control()
 
-    def _process_state(self, state_: State):
+    def _process_state(self, state_: State) -> None:
         self.context.marker_processing_manager.current_input_marker = state_
         self.process_input_state()
         self._check_and_process_control()
 
-    def _process_start_of_upstream(self, start_of_upstream: StartOfUpstream):
+    def _process_start_of_upstream(self, start_of_upstream: StartOfUpstream) -> None:
         self.context.marker_processing_manager.current_input_marker = start_of_upstream
         self.process_input_state()
 
-    def _process_end_of_upstream(self, end_of_upstream: EndOfUpstream):
+    def _process_end_of_upstream(self, end_of_upstream: EndOfUpstream) -> None:
         self.context.marker_processing_manager.current_input_marker = end_of_upstream
         self.process_input_state()
         self.process_input_tuple()
@@ -264,7 +264,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
 
         It will also invoke complete() of this DataProcessor.
 
-        :param _: EndOfAllMarker
+        :param _: EndOfOutputPorts
         """
         for to, batch in self.context.output_manager.emit_marker(EndOfUpstream()):
             self._output_queue.put(DataElement(tag=to, payload=batch))
