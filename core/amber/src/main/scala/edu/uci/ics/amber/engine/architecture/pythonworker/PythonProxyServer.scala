@@ -103,26 +103,24 @@ private class AmberProducer(
     // closing the stream will release the dictionaries
     flightStream.takeDictionaryOwnership
 
-    if (dataHeader.payloadType == StartOfUpstream().getClass.getSimpleName) {
-      assert(root.getRowCount == 0)
-      outputPort.sendTo(to, MarkerFrame(StartOfUpstream()))
-    } else if (dataHeader.payloadType == EndOfUpstream().getClass.getSimpleName) {
-      assert(root.getRowCount == 0)
-      outputPort.sendTo(to, MarkerFrame(EndOfUpstream()))
-    } else if (dataHeader.payloadType == State().getClass.getSimpleName) {
-      assert(root.getRowCount == 1)
-      outputPort.sendTo(to, MarkerFrame(State(Some(ArrowUtils.getTexeraTuple(0, root)))))
-    } else {
-      // normal data batches
-      val queue = mutable.Queue[Tuple]()
-      for (i <- 0 until root.getRowCount)
-        queue.enqueue(ArrowUtils.getTexeraTuple(i, root))
-      outputPort.sendTo(to, DataFrame(queue.toArray))
-
+    dataHeader.payloadType match {
+        case "StartOfUpstream" =>
+            assert(root.getRowCount == 0)
+            outputPort.sendTo(to, MarkerFrame(StartOfUpstream()))
+        case "EndOfUpstream" =>
+            assert(root.getRowCount == 0)
+            outputPort.sendTo(to, MarkerFrame(EndOfUpstream()))
+        case "State" =>
+            assert(root.getRowCount == 1)
+            outputPort.sendTo(to, MarkerFrame(State(Some(ArrowUtils.getTexeraTuple(0, root))))
+            )
+        case _ => // normal data batches
+            val queue = mutable.Queue[Tuple]()
+            for (i <- 0 until root.getRowCount)
+            queue.enqueue(ArrowUtils.getTexeraTuple(i, root))
+            outputPort.sendTo(to, DataFrame(queue.toArray))
     }
-
   }
-
 }
 
 class PythonProxyServer(
