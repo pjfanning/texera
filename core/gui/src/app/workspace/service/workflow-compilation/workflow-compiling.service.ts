@@ -1,4 +1,4 @@
-import {HttpClient} from "@angular/common/http";
+import {HttpClient, HttpHeaders} from "@angular/common/http";
 import {Injectable} from "@angular/core";
 import {isEqual} from "lodash-es";
 import {EMPTY, merge, Observable, Subject} from "rxjs";
@@ -13,6 +13,7 @@ import {DynamicSchemaService} from "../dynamic-schema/dynamic-schema.service";
 import {PhysicalPlan} from "../../../common/type/physical-plan";
 import {CompilationState, CompilationStateInfo} from "../../types/compile-workflow.interface";
 import {WorkflowFatalError} from "../../types/workflow-websocket.interface";
+import {AuthService} from "../../../common/service/user/auth.service";
 
 // endpoint for schema propagation
 export const WORKFLOW_COMPILATION_ENDPOINT = "compilation";
@@ -61,7 +62,7 @@ export class WorkflowCompilingService {
       this.workflowActionService.getTexeraGraph().getOperatorPropertyChangeStream(),
       this.workflowActionService.getTexeraGraph().getDisabledOperatorsChangedStream()
     )
-      .pipe(debounceTime(WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS))
+      .pipe(debounceTime( WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS))
       .pipe(
         mergeMap(() => this.invokeWorkflowCompilationAPI()),
       )
@@ -185,7 +186,10 @@ export class WorkflowCompilingService {
           this.workflowActionService.getWorkflow().wid ?? DEFAULT_WORKFLOW.wid
         }`,
         JSON.stringify(body2),
-        { headers: { "Content-Type": "application/json" } }
+        { headers: new HttpHeaders({
+            'Authorization': `Bearer ${AuthService.getAccessToken()}`,
+            'Content-Type': 'application/json',
+          }) }
       )
       .pipe(
         catchError((err: unknown) => {

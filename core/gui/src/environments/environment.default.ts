@@ -15,7 +15,7 @@ export const defaultEnvironment = {
   /**
    * root API URL of the texera
    */
-  texeraApiUrl: "api/texera",
+  texeraApiUrl: "http://localhost:8082/api/texera",
 
   /**
    * whether fetching available source tables is enabled
