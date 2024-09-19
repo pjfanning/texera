@@ -1,7 +1,5 @@
 from dataclasses import dataclass
-
 from pyarrow.lib import Table
-
 from core.models.marker import Marker
 
 
