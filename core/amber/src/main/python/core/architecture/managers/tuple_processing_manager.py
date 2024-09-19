@@ -1,7 +1,6 @@
 from threading import Event, Condition
 from typing import Optional, Tuple, Iterator
 
-from core.models.marker import State
 from proto.edu.uci.ics.amber.engine.common import PortIdentity
 
 
