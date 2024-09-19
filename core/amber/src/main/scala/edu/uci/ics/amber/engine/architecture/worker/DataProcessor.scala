@@ -106,7 +106,7 @@ class DataProcessor(
   }
 
   /**
-    * process start of an input port with Executor.onStart().
+    * process start of an input port with Executor.produceStateOnStart().
     * this function is only called by the DP thread.
     */
   private[this] def processStartOfUpstream(portId: Int): Unit = {
