@@ -63,7 +63,7 @@ class WorkflowCompiler(
 
     var logicalPlan: LogicalPlan = LogicalPlan(logicalPlanPojo)
 
-    // step1: come up with the physical plan and do the schema propagation
+    // step1: come up with the physical plan and get the input schema for each operator
     // from logical plan to physical plan
     val physicalPlan = PhysicalPlan(context, logicalPlan, Some(errorList))
     if (errorList.nonEmpty) {
