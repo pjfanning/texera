@@ -43,8 +43,6 @@ final case class State(tuple: Option[Tuple] = None, passToAllDownstream: Boolean
       .addSequentially(list.values.map(_._2).toArray)
       .build()
 
-  def size: Int = list.size
-
   override def toString: String =
     list.map { case (key, (_, value)) => s"$key: $value" }.mkString(", ")
 }
