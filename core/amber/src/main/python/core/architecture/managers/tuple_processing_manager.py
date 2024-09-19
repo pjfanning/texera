@@ -14,7 +14,7 @@ class TupleProcessingManager:
         self.context_switch_condition: Condition = Condition()
         self.finished_current: Event = Event()
 
-    def get_input_tuple(self) -> Optional[State]:
+    def get_input_tuple(self) -> Optional[Tuple]:
         ret, self.current_input_tuple = self.current_input_tuple, None
         return ret
 
