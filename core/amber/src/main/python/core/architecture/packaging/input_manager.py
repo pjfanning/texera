@@ -5,7 +5,7 @@ from core.models.internal_marker import (
     InternalMarker,
     StartOfOutputPorts,
     EndOfOutputPorts,
-    SenderChange, EndOfInputPort,
+    SenderChange,
 )
 from core.models.marker import EndOfUpstream, State, StartOfUpstream, Marker
 from core.models.payload import DataFrame, DataPayload, MarkerFrame
@@ -143,7 +143,7 @@ class InputManager:
             )
 
             if port_completed:
-                yield EndOfInputPort()
+                yield EndOfUpstream()  # EndOfInputPort()
 
             all_ports_completed = all(
                 map(lambda port: port.is_completed(), self._ports.values())
