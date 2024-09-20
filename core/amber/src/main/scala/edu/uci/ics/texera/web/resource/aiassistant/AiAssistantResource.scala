@@ -33,7 +33,7 @@ class AiAssistantResource {
          |{
          |  "model": "gpt-4o",
          |  "messages": [{"role": "user", "content": "$finalPrompt"}],
-         |  "max_tokens": 500
+         |  "max_tokens": 10
          |}
        """.stripMargin
 
@@ -69,27 +69,32 @@ class AiAssistantResource {
   }
 
   /**
-    * Endpoint to get the summary comment from OpenAI.
-    * @param prompt The input prompt for the OpenAI model.
-    * @param user The authenticated session user.
-    * @return A response containing the generated summary comment from OpenAI or an error message.
-    */
+   * Endpoint to get the summary comment from OpenAI.
+   * @param request The request body containing model, max_tokens, and prompt.
+   * @param user The authenticated session user.
+   * @return A response containing the generated summary comment from OpenAI or an error message.
+   */
   @POST
-  @Path("/generateSummaryComment")
+  @Path("/openai")
   @Consumes(Array(MediaType.APPLICATION_JSON))
-  def getAiSummaryComment(prompt: String, @Auth user: SessionUser): Response = {
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getAiSummaryComment(request: AiSummaryRequest, @Auth user: SessionUser): Response = {
+
+    println(s"Received request: $request")
     // Prepare the final prompt by escaping necessary characters
-    val finalPrompt = prompt.replace("\\", "\\\\").replace("\"", "\\\"")
+    val finalPrompt = request.prompt.replace("\\", "\\\\").replace("\"", "\\\"")
 
     // Create the JSON request body
     val requestBody =
       s"""
          |{
-         |  "model": "gpt-4o",
+         |  "model": "${request.model}",
          |  "messages": [{"role": "user", "content": "$finalPrompt"}],
-         |  "max_tokens": 1000
+         |  "max_tokens": ${request.maxTokens}
          |}
-       """.stripMargin
+     """.stripMargin
+
+    println(s"requestBody $requestBody")
 
     try {
       // Set up the connection to the OpenAI API
@@ -105,7 +110,11 @@ class AiAssistantResource {
 
       // Get the response code and content from the API
       val responseCode = connection.getResponseCode
-      val responseStream = connection.getInputStream
+      val responseStream = if (responseCode >= 200 && responseCode < 300) {
+        connection.getInputStream
+      } else {
+        connection.getErrorStream
+      }
       val responseString = scala.io.Source.fromInputStream(responseStream).mkString
 
       // Close the stream and disconnect
@@ -118,7 +127,9 @@ class AiAssistantResource {
       // Handle exceptions and return an error response
       case e: Exception =>
         e.printStackTrace()
-        Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error occurred").build()
+        Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(s"Error occurred: ${e.getMessage}").build()
     }
   }
 }
+// Move AiSummaryRequest to an external case class
+case class AiSummaryRequest(model: String, maxTokens: Int, prompt: String)

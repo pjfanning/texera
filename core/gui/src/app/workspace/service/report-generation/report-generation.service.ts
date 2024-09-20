@@ -280,7 +280,7 @@ export class ReportGenerationService {
     const workflowContent = this.workflowActionService.getWorkflowContent();
 
     // Call generateSummaryComment and subscribe to its result
-    this.reportAiAssistantService.generateSummaryComment(workflowContent).subscribe(comment => {
+    this.reportAiAssistantService.generateSummaryComment("gpt-4o",100,workflowContent).subscribe(comment => {
       const finalComment = comment; // Get the generated comment
 
       const htmlContent = `

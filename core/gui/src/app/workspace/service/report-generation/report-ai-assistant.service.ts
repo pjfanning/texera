@@ -122,22 +122,23 @@ export class ReportAiAssistantService {
    * @returns {Promise<string>} A promise that resolves to a string containing the generated summary comment or an error message
    *                            if the generation fails or the AI Assistant is not enabled.
    */
-  public generateSummaryComment(operatorInfo: any): Observable<string> {
+  public generateSummaryComment(model: string, maxTokens: number, operatorInfo: any): Observable<string> {
     const prompt = `
-      You are a statistical analysis expert.
-      You will be provided with operator information in JSON format and an HTML result.
-      You should provide a concise (which means at least 150 words) and insightful summary comment for an audience who is highly educated but does not understand statistics (non-experts).
-      Operator Info: ${JSON.stringify(operatorInfo, null, 2)}
-      The output cannot be in markdown format, and must be plain text.
+    You are a statistical analysis expert.
+    You will be provided with operator information in JSON format and an HTML result.
+    You should provide a concise (which means at least 150 words) and insightful summary comment for an audience who is highly educated but does not understand statistics (non-experts).
+    Operator Info: ${JSON.stringify(operatorInfo, null, 2)}
+    The output cannot be in markdown format, and must be plain text.
 
-      Follow these steps to generate your response:
-      The summary should:
-      1. Highlight the key findings and overall performance of the workflow, with particular attention to the UDFs as they are often the most critical components.
-      2. Mention any notable patterns, trends, or anomalies observed in the operator results, especially those related to UDFs.
-      3. Suggest potential areas of improvement or further investigation, particularly regarding the efficiency and accuracy of the UDFs.
-      4. Ensure the summary helps the reader gain a comprehensive understanding of the workflow and its global implications.
+    Follow these steps to generate your response:
+    The summary should:
+    1. Highlight the key findings and overall performance of the workflow, with particular attention to the UDFs as they are often the most critical components.
+    2. Mention any notable patterns, trends, or anomalies observed in the operator results, especially those related to UDFs.
+    3. Suggest potential areas of improvement or further investigation, particularly regarding the efficiency and accuracy of the UDFs.
+    4. Ensure the summary helps the reader gain a comprehensive understanding of the workflow and its global implications.
 
-      Again, the output comment should follow the format specified above and should be insightful for non-experts.`;
+    Again, the output comment should follow the format specified above and should be insightful for non-experts.`;
+
     const maxRetries = 2; // Maximum number of retries
     let attempts = 0;
 
@@ -153,7 +154,11 @@ export class ReportAiAssistantService {
             // Retry logic for up to maxRetries attempts
             const tryRequest = () => {
               this.http
-                .post<any>(`${AI_ASSISTANT_API_BASE_URL}/aiassistant/generateSummaryComment`, { prompt })
+                .post<any>(`${AI_ASSISTANT_API_BASE_URL}/aiassistant/openai`, {
+                  model: model,
+                  maxTokens: maxTokens,
+                  prompt: prompt
+                })
                 .pipe(
                   map(response => {
                     const content = response.choices[0]?.message?.content.trim() || "";
