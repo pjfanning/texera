@@ -12,9 +12,8 @@ final case class EndOfInputChannel() extends Marker
 final case class State(tuple: Option[Tuple] = None, passToAllDownstream: Boolean = false)
     extends Marker {
   val list: mutable.Map[String, (AttributeType, Any)] = mutable.HashMap()
-  if (tuple.isEmpty) {
-    add("passToAllDownstream", passToAllDownstream, AttributeType.BOOLEAN)
-  } else {
+  add("passToAllDownstream", passToAllDownstream, AttributeType.BOOLEAN)
+  if (tuple.isDefined) {
     tuple.get.getSchema.getAttributes.foreach { attribute =>
       add(attribute.getName, tuple.get.getField(attribute.getName), attribute.getType)
     }
