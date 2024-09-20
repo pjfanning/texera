@@ -27,44 +27,42 @@ class State(Marker):
     def __init__(
         self, table: Optional[Table] = None, pass_to_all_downstream: bool = False
     ):
-        if table is None:
-            self.data = {}
-            self.schema = Schema()
-            self.add("passToAllDownstream", pass_to_all_downstream)
-        else:
-            self.data = table.to_pandas().iloc[0].to_dict()
+        self.schema = Schema()
+        self.passToAllDownstream = pass_to_all_downstream
+        if table is not None:
+            self.__dict__.update(table.to_pandas().iloc[0].to_dict())
             self.schema = Schema(table.schema)
 
     def add(
         self, key: str, value: any, value_type: Optional[AttributeType] = None
     ) -> None:
-        self.data[key] = value
+        self.__dict__[key] = value
         if value_type is not None:
             self.schema.add(key, value_type)
-        else:
+        elif key != "schema":
             self.schema.add(key, FROM_PYOBJECT_MAPPING[type(value)])
 
     def get(self, key: str) -> any:
-        return self.data[key]
-
-    def is_pass_to_all_downstream(self) -> bool:
-        return self.data["passToAllDownstream"]
+        return self.__dict__[key]
 
     def to_table(self) -> Table:
         return Table.from_pandas(
-            df=DataFrame([self.data]),
+            df=DataFrame([self.__dict__]),
             schema=self.schema.as_arrow_schema(),
         )
 
-    def __setitem__(self, key: str, value: any, value_type: AttributeType) -> None:
-        self.add(key, value, value_type)
+    def __setattr__(self, key: str, value: any) -> None:
+        self.add(key, value)
+
+    def __setitem__(self, key: str, value: any) -> None:
+        self.add(key, value)
 
     def __getitem__(self, key: str) -> any:
         return self.get(key)
 
     def __str__(self) -> str:
         content = ", ".join(
-            [repr(key) + ": " + repr(value) for key, value in self.data.items()]
+            [repr(key) + ": " + repr(value) for key, value in self.__dict__.items() if key != "schema"]
         )
         return f"State[{content}]"
 

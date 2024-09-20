@@ -56,7 +56,7 @@ class Operator(ABC):
         :param port: int, input port index of the current exhausted port.
         :return: State, producing one State object
         """
-        if state.is_pass_to_all_downstream():
+        if state.passToAllDownstream:
             return state
 
     def produce_state_on_start(self, port: int) -> State:
