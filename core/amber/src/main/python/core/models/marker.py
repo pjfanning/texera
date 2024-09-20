@@ -25,7 +25,7 @@ class EndOfInputChannel(Marker):
 @dataclass
 class State(Marker):
     def __init__(
-            self, table: Optional[Table] = None, pass_to_all_downstream: bool = False
+        self, table: Optional[Table] = None, pass_to_all_downstream: bool = False
     ):
         if table is None:
             self.data = {}
@@ -36,7 +36,7 @@ class State(Marker):
             self.schema = Schema(table.schema)
 
     def add(
-            self, key: str, value: any, value_type: Optional[AttributeType] = None
+        self, key: str, value: any, value_type: Optional[AttributeType] = None
     ) -> None:
         self.data[key] = value
         if value_type is not None:

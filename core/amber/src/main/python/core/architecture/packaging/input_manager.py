@@ -6,7 +6,8 @@ from core.models.internal_marker import (
     StartOfOutputPorts,
     EndOfOutputPorts,
     SenderChange,
-    EndOfInputPort, StartOfInputPort,
+    EndOfInputPort,
+    StartOfInputPort,
 )
 from core.models.marker import EndOfInputChannel, State, StartOfInputChannel, Marker
 from core.models.payload import DataFrame, DataPayload, MarkerFrame

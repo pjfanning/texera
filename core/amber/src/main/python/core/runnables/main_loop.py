@@ -17,7 +17,11 @@ from core.models import (
     SenderChange,
     Tuple,
 )
-from core.models.internal_marker import StartOfOutputPorts, EndOfInputPort, StartOfInputPort
+from core.models.internal_marker import (
+    StartOfOutputPorts,
+    EndOfInputPort,
+    StartOfInputPort,
+)
 from core.models.internal_queue import DataElement, ControlElement
 from core.models.marker import State, EndOfInputChannel, StartOfInputChannel
 from core.runnables.data_processor import DataProcessor
@@ -214,8 +218,12 @@ class MainLoop(StoppableQueueBlockingRunnable):
         self.process_input_state()
         self._check_and_process_control()
 
-    def _process_start_of_input_port(self, start_of_input_port: StartOfInputPort) -> None:
-        self.context.marker_processing_manager.current_input_marker = start_of_input_port
+    def _process_start_of_input_port(
+        self, start_of_input_port: StartOfInputPort
+    ) -> None:
+        self.context.marker_processing_manager.current_input_marker = (
+            start_of_input_port
+        )
         self.process_input_state()
 
     def _process_end_of_input_port(self, end_of_input_port: EndOfInputPort) -> None:

@@ -135,7 +135,9 @@ class TestMainLoop:
 
     @pytest.fixture
     def mock_end_of_upstream(self, mock_tuple, mock_sender_actor):
-        return DataElement(tag=mock_sender_actor, payload=MarkerFrame(EndOfInputChannel()))
+        return DataElement(
+            tag=mock_sender_actor, payload=MarkerFrame(EndOfInputChannel())
+        )
 
     @pytest.fixture
     def input_queue(self):

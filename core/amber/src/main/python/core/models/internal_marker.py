@@ -22,6 +22,7 @@ class SenderChange(InternalMarker):
 class StartOfInputPort(InternalMarker):
     pass
 
+
 @dataclass
 class EndOfInputPort(InternalMarker):
     pass
