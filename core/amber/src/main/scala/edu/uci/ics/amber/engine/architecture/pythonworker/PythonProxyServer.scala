@@ -20,7 +20,7 @@ import java.net.ServerSocket
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable
 import com.twitter.util.Promise
-import edu.uci.ics.texera.workflow.common.{EndOfUpstream, StartOfInputChannel, State}
+import edu.uci.ics.texera.workflow.common.{EndOfInputChannel, StartOfInputChannel, State}
 
 import java.nio.charset.Charset
 
@@ -107,9 +107,9 @@ private class AmberProducer(
       case "StartOfInputChannel" =>
         assert(root.getRowCount == 0)
         outputPort.sendTo(to, MarkerFrame(StartOfInputChannel()))
-      case "EndOfUpstream" =>
+      case "EndOfInputChannel" =>
         assert(root.getRowCount == 0)
-        outputPort.sendTo(to, MarkerFrame(EndOfUpstream()))
+        outputPort.sendTo(to, MarkerFrame(EndOfInputChannel()))
       case "State" =>
         assert(root.getRowCount == 1)
         outputPort.sendTo(to, MarkerFrame(State(Some(ArrowUtils.getTexeraTuple(0, root)))))

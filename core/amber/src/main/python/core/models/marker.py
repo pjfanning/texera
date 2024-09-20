@@ -18,7 +18,7 @@ class StartOfInputChannel(Marker):
 
 
 @dataclass
-class EndOfUpstream(Marker):
+class EndOfInputChannel(Marker):
     pass
 
 

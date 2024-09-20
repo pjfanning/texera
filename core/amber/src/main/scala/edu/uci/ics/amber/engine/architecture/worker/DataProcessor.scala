@@ -33,7 +33,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
-import edu.uci.ics.texera.workflow.common.{EndOfUpstream, StartOfInputChannel, State}
+import edu.uci.ics.texera.workflow.common.{EndOfInputChannel, StartOfInputChannel, State}
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
@@ -126,7 +126,7 @@ class DataProcessor(
     * process end of an input port with Executor.produceStateOnFinish().
     * this function is only called by the DP thread.
     */
-  private[this] def processEndOfUpstream(portId: Int): Unit = {
+  private[this] def processEndOfInputChannel(portId: Int): Unit = {
     try {
       val outputState = executor.produceStateOnFinish(portId)
       if (outputState != null && outputState.isDefined) {
@@ -167,7 +167,7 @@ class DataProcessor(
 
     outputTuple match {
       case FinalizeExecutor() =>
-        outputManager.emitMarker(EndOfUpstream())
+        outputManager.emitMarker(EndOfInputChannel())
         // Send Completed signal to worker actor.
         executor.close()
         adaptiveBatchingMonitor.stopAdaptiveBatching()
@@ -228,11 +228,11 @@ class DataProcessor(
             processInputState(state, portId.id)
           case StartOfInputChannel() =>
             processStartOfInputChannel(portId.id)
-          case EndOfUpstream() =>
+          case EndOfInputChannel() =>
             this.inputManager.getPort(portId).channels(channelId) = true
             if (inputManager.isPortCompleted(portId)) {
               inputManager.initBatch(channelId, Array.empty)
-              processEndOfUpstream(portId.id)
+              processEndOfInputChannel(portId.id)
               outputManager.outputIterator.appendSpecialTupleToEnd(
                 FinalizePort(portId, input = true)
               )

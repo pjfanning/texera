@@ -17,7 +17,7 @@ from core.models import (
     MarkerFrame,
 )
 from core.models.internal_queue import DataElement, ControlElement, InternalQueue
-from core.models.marker import EndOfUpstream, State, StartOfInputChannel
+from core.models.marker import EndOfInputChannel, State, StartOfInputChannel
 from core.proxy import ProxyServer
 from core.util import Stoppable, get_one_of
 from core.util.runnable.runnable import Runnable
@@ -71,8 +71,8 @@ class NetworkReceiver(Runnable, Stoppable):
                     payload = MarkerFrame(State(table))
                 case "StartOfInputChannel":
                     payload = MarkerFrame(StartOfInputChannel())
-                case "EndOfUpstream":
-                    payload = MarkerFrame(EndOfUpstream())
+                case "EndOfInputChannel":
+                    payload = MarkerFrame(EndOfInputChannel())
                 case _:
                     raise NotImplementedError()
 

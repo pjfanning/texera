@@ -50,7 +50,7 @@ class NetworkSender(StoppableQueueBlockingRunnable):
 
         :param to: The target actor's ActorVirtualIdentity
         :param data_payload: The data payload to be sent, can be either DataFrame or
-            EndOfUpstream
+            EndOfInputChannel
         """
 
         if isinstance(data_payload, DataFrame):

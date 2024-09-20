@@ -7,7 +7,7 @@ import scala.collection.mutable
 sealed trait Marker
 
 final case class StartOfInputChannel() extends Marker
-final case class EndOfUpstream() extends Marker
+final case class EndOfInputChannel() extends Marker
 
 final case class State(tuple: Option[Tuple] = None, passToAllDownstream: Boolean = false)
     extends Marker {
