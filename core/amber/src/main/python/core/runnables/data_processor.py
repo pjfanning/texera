@@ -26,6 +26,10 @@ class DataProcessor(Runnable, Stoppable):
         self._context = context
 
     def run(self) -> None:
+        """
+        Start the data processing loop. Wait for context switch conditions to be met,
+        then continuously process markers or tuples until stopped.
+        """
         with self._context.tuple_processing_manager.context_switch_condition:
             self._context.tuple_processing_manager.context_switch_condition.wait()
         self._running.set()
@@ -42,6 +46,9 @@ class DataProcessor(Runnable, Stoppable):
             self._switch_context()
 
     def process_marker(self, marker: Marker) -> None:
+        """
+        Process an input marker by invoking appropriate state or tuple generation based on the marker type.
+        """
         try:
             executor = self._context.executor_manager.executor
             port_id = self._context.tuple_processing_manager.get_input_port_id()
@@ -67,6 +74,9 @@ class DataProcessor(Runnable, Stoppable):
             self._switch_context()
 
     def process_tuple(self) -> None:
+        """
+        Process an input tuple by invoking the executor's tuple processing method.
+        """
         finished_current = self._context.tuple_processing_manager.finished_current
         while not finished_current.is_set():
             try:
@@ -89,6 +99,9 @@ class DataProcessor(Runnable, Stoppable):
                 self._switch_context()
 
     def _set_output_tuple(self, output_iterator: Iterator[Optional[TupleLike]]) -> None:
+        """
+        Set the output tuple after processing by the executor.
+        """
         for output in output_iterator:
             # output could be a None, a TupleLike, or a TableLike.
             for output_tuple in all_output_to_tuple(output):
@@ -103,6 +116,9 @@ class DataProcessor(Runnable, Stoppable):
         self._context.tuple_processing_manager.finished_current.set()
 
     def _set_output_state(self, output_state: State) -> None:
+        """
+        Set the output state after processing by the executor.
+        """
         self._context.marker_processing_manager.current_output_state = output_state
 
     def _switch_context(self) -> None:
