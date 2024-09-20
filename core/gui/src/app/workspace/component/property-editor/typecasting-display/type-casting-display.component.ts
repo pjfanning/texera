@@ -1,12 +1,12 @@
 import { Component, Input, OnChanges, OnInit } from "@angular/core";
 import { WorkflowActionService } from "src/app/workspace/service/workflow-graph/model/workflow-action.service";
+import { filter, map } from "rxjs/operators";
+import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import {
   AttributeType,
   SchemaAttribute,
-} from "src/app/workspace/service/dynamic-schema/schema-propagation/schema-propagation.service";
-import { filter, map } from "rxjs/operators";
-import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
-import { WorkflowCompilingService } from "../../../service/workflow-compilation/workflow-compiling.service";
+  WorkflowCompilingService,
+} from "../../../service/workflow-compilation/workflow-compiling.service";
 
 // correspond to operator type specified in backend OperatorDescriptor
 export const TYPE_CASTING_OPERATOR_TYPE = "TypeCasting";
