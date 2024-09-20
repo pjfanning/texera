@@ -128,12 +128,12 @@ class InputManager:
     def _process_marker(self, marker: Marker) -> Iterator[InternalMarker]:
         if isinstance(marker, State):
             yield marker
-        if isinstance(marker, StartOfInputChannel):  # StartOfInputChannel()
+        if isinstance(marker, StartOfInputChannel):
             if not self.started:
                 yield StartOfOutputPorts()
             self.started = True
             yield StartOfInputPort()
-        if isinstance(marker, EndOfInputChannel):  # EndOfInputChannel()
+        if isinstance(marker, EndOfInputChannel):
             channel = self._channels[self._current_channel_id]
             channel.complete()
             port_id = channel.port_id
