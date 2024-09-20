@@ -58,24 +58,19 @@ export function consoleMessageTypeToJSON(object: ConsoleMessageType): string {
   }
 }
 
-export interface NoOpV2 {
-}
+export interface NoOpV2 {}
 
-export interface StartWorkerV2 {
-}
+export interface StartWorkerV2 {}
 
-export interface PauseWorkerV2 {
-}
+export interface PauseWorkerV2 {}
 
-export interface ResumeWorkerV2 {
-}
+export interface ResumeWorkerV2 {}
 
 export interface SchedulerTimeSlotEventV2 {
   timeSlotExpired: boolean;
 }
 
-export interface OpenExecutorV2 {
-}
+export interface OpenExecutorV2 {}
 
 export interface AssignPortV2 {
   portId: PortIdentity | undefined;
@@ -98,14 +93,11 @@ export interface AddPartitioningV2 {
   partitioning: Partitioning | undefined;
 }
 
-export interface WorkerExecutionCompletedV2 {
-}
+export interface WorkerExecutionCompletedV2 {}
 
-export interface QueryStatisticsV2 {
-}
+export interface QueryStatisticsV2 {}
 
-export interface QueryCurrentInputTupleV2 {
-}
+export interface QueryCurrentInputTupleV2 {}
 
 export interface LinkOrdinal {
   link: PhysicalLink | undefined;
@@ -123,8 +115,7 @@ export interface UpdateExecutorV2 {
   isSource: boolean;
 }
 
-export interface ReplayCurrentTupleV2 {
-}
+export interface ReplayCurrentTupleV2 {}
 
 export interface ConsoleMessage {
   workerId: string;
@@ -510,9 +501,9 @@ export const AssignPortV2: MessageFns<AssignPortV2> = {
       input: isSet(object.input) ? globalThis.Boolean(object.input) : false,
       schema: isObject(object.schema)
         ? Object.entries(object.schema).reduce<{ [key: string]: string }>((acc, [key, value]) => {
-          acc[key] = String(value);
-          return acc;
-        }, {})
+            acc[key] = String(value);
+            return acc;
+          }, {})
         : {},
     };
   },
@@ -542,9 +533,8 @@ export const AssignPortV2: MessageFns<AssignPortV2> = {
   },
   fromPartial<I extends Exact<DeepPartial<AssignPortV2>, I>>(object: I): AssignPortV2 {
     const message = createBaseAssignPortV2();
-    message.portId = (object.portId !== undefined && object.portId !== null)
-      ? PortIdentity.fromPartial(object.portId)
-      : undefined;
+    message.portId =
+      object.portId !== undefined && object.portId !== null ? PortIdentity.fromPartial(object.portId) : undefined;
     message.input = object.input ?? false;
     message.schema = Object.entries(object.schema ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
       if (value !== undefined) {
@@ -698,12 +688,12 @@ export const AddInputChannelV2: MessageFns<AddInputChannelV2> = {
   },
   fromPartial<I extends Exact<DeepPartial<AddInputChannelV2>, I>>(object: I): AddInputChannelV2 {
     const message = createBaseAddInputChannelV2();
-    message.channelId = (object.channelId !== undefined && object.channelId !== null)
-      ? ChannelIdentity.fromPartial(object.channelId)
-      : undefined;
-    message.portId = (object.portId !== undefined && object.portId !== null)
-      ? PortIdentity.fromPartial(object.portId)
-      : undefined;
+    message.channelId =
+      object.channelId !== undefined && object.channelId !== null
+        ? ChannelIdentity.fromPartial(object.channelId)
+        : undefined;
+    message.portId =
+      object.portId !== undefined && object.portId !== null ? PortIdentity.fromPartial(object.portId) : undefined;
     return message;
   },
 };
@@ -776,10 +766,11 @@ export const AddPartitioningV2: MessageFns<AddPartitioningV2> = {
   },
   fromPartial<I extends Exact<DeepPartial<AddPartitioningV2>, I>>(object: I): AddPartitioningV2 {
     const message = createBaseAddPartitioningV2();
-    message.tag = (object.tag !== undefined && object.tag !== null) ? PhysicalLink.fromPartial(object.tag) : undefined;
-    message.partitioning = (object.partitioning !== undefined && object.partitioning !== null)
-      ? Partitioning.fromPartial(object.partitioning)
-      : undefined;
+    message.tag = object.tag !== undefined && object.tag !== null ? PhysicalLink.fromPartial(object.tag) : undefined;
+    message.partitioning =
+      object.partitioning !== undefined && object.partitioning !== null
+        ? Partitioning.fromPartial(object.partitioning)
+        : undefined;
     return message;
   },
 };
@@ -981,9 +972,8 @@ export const LinkOrdinal: MessageFns<LinkOrdinal> = {
   },
   fromPartial<I extends Exact<DeepPartial<LinkOrdinal>, I>>(object: I): LinkOrdinal {
     const message = createBaseLinkOrdinal();
-    message.link = (object.link !== undefined && object.link !== null)
-      ? PhysicalLink.fromPartial(object.link)
-      : undefined;
+    message.link =
+      object.link !== undefined && object.link !== null ? PhysicalLink.fromPartial(object.link) : undefined;
     message.portOrdinal = object.portOrdinal ?? 0;
     return message;
   },
@@ -1381,9 +1371,8 @@ export const PythonConsoleMessageV2: MessageFns<PythonConsoleMessageV2> = {
   },
   fromPartial<I extends Exact<DeepPartial<PythonConsoleMessageV2>, I>>(object: I): PythonConsoleMessageV2 {
     const message = createBasePythonConsoleMessageV2();
-    message.message = (object.message !== undefined && object.message !== null)
-      ? ConsoleMessage.fromPartial(object.message)
-      : undefined;
+    message.message =
+      object.message !== undefined && object.message !== null ? ConsoleMessage.fromPartial(object.message) : undefined;
     return message;
   },
 };
@@ -1570,9 +1559,8 @@ export const PortCompletedV2: MessageFns<PortCompletedV2> = {
   },
   fromPartial<I extends Exact<DeepPartial<PortCompletedV2>, I>>(object: I): PortCompletedV2 {
     const message = createBasePortCompletedV2();
-    message.portId = (object.portId !== undefined && object.portId !== null)
-      ? PortIdentity.fromPartial(object.portId)
-      : undefined;
+    message.portId =
+      object.portId !== undefined && object.portId !== null ? PortIdentity.fromPartial(object.portId) : undefined;
     message.input = object.input ?? false;
     return message;
   },
@@ -1920,78 +1908,98 @@ export const ControlCommandV2: MessageFns<ControlCommandV2> = {
   },
   fromPartial<I extends Exact<DeepPartial<ControlCommandV2>, I>>(object: I): ControlCommandV2 {
     const message = createBaseControlCommandV2();
-    message.startWorker = (object.startWorker !== undefined && object.startWorker !== null)
-      ? StartWorkerV2.fromPartial(object.startWorker)
-      : undefined;
-    message.pauseWorker = (object.pauseWorker !== undefined && object.pauseWorker !== null)
-      ? PauseWorkerV2.fromPartial(object.pauseWorker)
-      : undefined;
-    message.resumeWorker = (object.resumeWorker !== undefined && object.resumeWorker !== null)
-      ? ResumeWorkerV2.fromPartial(object.resumeWorker)
-      : undefined;
-    message.assignPort = (object.assignPort !== undefined && object.assignPort !== null)
-      ? AssignPortV2.fromPartial(object.assignPort)
-      : undefined;
-    message.addPartitioning = (object.addPartitioning !== undefined && object.addPartitioning !== null)
-      ? AddPartitioningV2.fromPartial(object.addPartitioning)
-      : undefined;
-    message.addInputChannel = (object.addInputChannel !== undefined && object.addInputChannel !== null)
-      ? AddInputChannelV2.fromPartial(object.addInputChannel)
-      : undefined;
-    message.queryStatistics = (object.queryStatistics !== undefined && object.queryStatistics !== null)
-      ? QueryStatisticsV2.fromPartial(object.queryStatistics)
-      : undefined;
+    message.startWorker =
+      object.startWorker !== undefined && object.startWorker !== null
+        ? StartWorkerV2.fromPartial(object.startWorker)
+        : undefined;
+    message.pauseWorker =
+      object.pauseWorker !== undefined && object.pauseWorker !== null
+        ? PauseWorkerV2.fromPartial(object.pauseWorker)
+        : undefined;
+    message.resumeWorker =
+      object.resumeWorker !== undefined && object.resumeWorker !== null
+        ? ResumeWorkerV2.fromPartial(object.resumeWorker)
+        : undefined;
+    message.assignPort =
+      object.assignPort !== undefined && object.assignPort !== null
+        ? AssignPortV2.fromPartial(object.assignPort)
+        : undefined;
+    message.addPartitioning =
+      object.addPartitioning !== undefined && object.addPartitioning !== null
+        ? AddPartitioningV2.fromPartial(object.addPartitioning)
+        : undefined;
+    message.addInputChannel =
+      object.addInputChannel !== undefined && object.addInputChannel !== null
+        ? AddInputChannelV2.fromPartial(object.addInputChannel)
+        : undefined;
+    message.queryStatistics =
+      object.queryStatistics !== undefined && object.queryStatistics !== null
+        ? QueryStatisticsV2.fromPartial(object.queryStatistics)
+        : undefined;
     message.queryCurrentInputTuple =
-      (object.queryCurrentInputTuple !== undefined && object.queryCurrentInputTuple !== null)
+      object.queryCurrentInputTuple !== undefined && object.queryCurrentInputTuple !== null
         ? QueryCurrentInputTupleV2.fromPartial(object.queryCurrentInputTuple)
         : undefined;
-    message.openExecutor = (object.openExecutor !== undefined && object.openExecutor !== null)
-      ? OpenExecutorV2.fromPartial(object.openExecutor)
-      : undefined;
-    message.portCompleted = (object.portCompleted !== undefined && object.portCompleted !== null)
-      ? PortCompletedV2.fromPartial(object.portCompleted)
-      : undefined;
+    message.openExecutor =
+      object.openExecutor !== undefined && object.openExecutor !== null
+        ? OpenExecutorV2.fromPartial(object.openExecutor)
+        : undefined;
+    message.portCompleted =
+      object.portCompleted !== undefined && object.portCompleted !== null
+        ? PortCompletedV2.fromPartial(object.portCompleted)
+        : undefined;
     message.schedulerTimeSlotEvent =
-      (object.schedulerTimeSlotEvent !== undefined && object.schedulerTimeSlotEvent !== null)
+      object.schedulerTimeSlotEvent !== undefined && object.schedulerTimeSlotEvent !== null
         ? SchedulerTimeSlotEventV2.fromPartial(object.schedulerTimeSlotEvent)
         : undefined;
-    message.initializeExecutor = (object.initializeExecutor !== undefined && object.initializeExecutor !== null)
-      ? InitializeExecutorV2.fromPartial(object.initializeExecutor)
-      : undefined;
-    message.updateExecutor = (object.updateExecutor !== undefined && object.updateExecutor !== null)
-      ? UpdateExecutorV2.fromPartial(object.updateExecutor)
-      : undefined;
-    message.pythonConsoleMessage = (object.pythonConsoleMessage !== undefined && object.pythonConsoleMessage !== null)
-      ? PythonConsoleMessageV2.fromPartial(object.pythonConsoleMessage)
-      : undefined;
-    message.replayCurrentTuple = (object.replayCurrentTuple !== undefined && object.replayCurrentTuple !== null)
-      ? ReplayCurrentTupleV2.fromPartial(object.replayCurrentTuple)
-      : undefined;
-    message.evaluateExpression = (object.evaluateExpression !== undefined && object.evaluateExpression !== null)
-      ? EvaluateExpressionV2.fromPartial(object.evaluateExpression)
-      : undefined;
-    message.workerDebugCommand = (object.workerDebugCommand !== undefined && object.workerDebugCommand !== null)
-      ? WorkerDebugCommandV2.fromPartial(object.workerDebugCommand)
-      : undefined;
+    message.initializeExecutor =
+      object.initializeExecutor !== undefined && object.initializeExecutor !== null
+        ? InitializeExecutorV2.fromPartial(object.initializeExecutor)
+        : undefined;
+    message.updateExecutor =
+      object.updateExecutor !== undefined && object.updateExecutor !== null
+        ? UpdateExecutorV2.fromPartial(object.updateExecutor)
+        : undefined;
+    message.pythonConsoleMessage =
+      object.pythonConsoleMessage !== undefined && object.pythonConsoleMessage !== null
+        ? PythonConsoleMessageV2.fromPartial(object.pythonConsoleMessage)
+        : undefined;
+    message.replayCurrentTuple =
+      object.replayCurrentTuple !== undefined && object.replayCurrentTuple !== null
+        ? ReplayCurrentTupleV2.fromPartial(object.replayCurrentTuple)
+        : undefined;
+    message.evaluateExpression =
+      object.evaluateExpression !== undefined && object.evaluateExpression !== null
+        ? EvaluateExpressionV2.fromPartial(object.evaluateExpression)
+        : undefined;
+    message.workerDebugCommand =
+      object.workerDebugCommand !== undefined && object.workerDebugCommand !== null
+        ? WorkerDebugCommandV2.fromPartial(object.workerDebugCommand)
+        : undefined;
     message.workerExecutionCompleted =
-      (object.workerExecutionCompleted !== undefined && object.workerExecutionCompleted !== null)
+      object.workerExecutionCompleted !== undefined && object.workerExecutionCompleted !== null
         ? WorkerExecutionCompletedV2.fromPartial(object.workerExecutionCompleted)
         : undefined;
-    message.noOp = (object.noOp !== undefined && object.noOp !== null) ? NoOpV2.fromPartial(object.noOp) : undefined;
+    message.noOp = object.noOp !== undefined && object.noOp !== null ? NoOpV2.fromPartial(object.noOp) : undefined;
     return message;
   },
 };
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function toTimestamp(date: Date): Timestamp {

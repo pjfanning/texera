@@ -7,7 +7,7 @@ import { StubOperatorMetadataService } from "../../../service/operator-metadata/
 import { JointUIService } from "../../../service/joint-ui/joint-ui.service";
 import { UndoRedoService } from "../../../service/undo-redo/undo-redo.service";
 import { WorkflowUtilService } from "../../../service/workflow-graph/util/workflow-util.service";
-import {WorkflowCompilingService} from "../../../service/workflow-compilation/workflow-compiling.service";
+import { WorkflowCompilingService } from "../../../service/workflow-compilation/workflow-compiling.service";
 
 describe("TypecastingDisplayComponent", () => {
   let component: TypeCastingDisplayComponent;

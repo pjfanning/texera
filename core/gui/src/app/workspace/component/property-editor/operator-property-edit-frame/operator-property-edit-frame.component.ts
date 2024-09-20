@@ -50,7 +50,7 @@ import Quill from "quill";
 import QuillCursors from "quill-cursors";
 import * as Y from "yjs";
 import { OperatorSchema } from "src/app/workspace/types/operator-schema.interface";
-import {WorkflowCompilingService} from "../../../service/workflow-compilation/workflow-compiling.service";
+import { WorkflowCompilingService } from "../../../service/workflow-compilation/workflow-compiling.service";
 
 Quill.register("modules/cursors", QuillCursors);
 

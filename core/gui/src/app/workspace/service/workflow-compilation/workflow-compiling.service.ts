@@ -1,19 +1,19 @@
-import {HttpClient, HttpHeaders} from "@angular/common/http";
-import {Injectable} from "@angular/core";
-import {isEqual} from "lodash-es";
-import {EMPTY, merge, Observable, Subject} from "rxjs";
-import {CustomJSONSchema7} from "src/app/workspace/types/custom-json-schema.interface";
-import {environment} from "../../../../environments/environment";
-import {AppSettings} from "../../../common/app-setting";
-import {OperatorSchema} from "../../types/operator-schema.interface";
-import {ExecuteWorkflowService} from "../execute-workflow/execute-workflow.service";
-import {DEFAULT_WORKFLOW, WorkflowActionService} from "../workflow-graph/model/workflow-action.service";
-import {catchError, debounceTime, mergeMap} from "rxjs/operators";
-import {DynamicSchemaService} from "../dynamic-schema/dynamic-schema.service";
-import {PhysicalPlan} from "../../../common/type/physical-plan";
-import {CompilationState, CompilationStateInfo} from "../../types/compile-workflow.interface";
-import {WorkflowFatalError} from "../../types/workflow-websocket.interface";
-import {AuthService} from "../../../common/service/user/auth.service";
+import { HttpClient, HttpHeaders } from "@angular/common/http";
+import { Injectable } from "@angular/core";
+import { isEqual } from "lodash-es";
+import { EMPTY, merge, Observable, Subject } from "rxjs";
+import { CustomJSONSchema7 } from "src/app/workspace/types/custom-json-schema.interface";
+import { environment } from "../../../../environments/environment";
+import { AppSettings } from "../../../common/app-setting";
+import { OperatorSchema } from "../../types/operator-schema.interface";
+import { ExecuteWorkflowService } from "../execute-workflow/execute-workflow.service";
+import { DEFAULT_WORKFLOW, WorkflowActionService } from "../workflow-graph/model/workflow-action.service";
+import { catchError, debounceTime, mergeMap } from "rxjs/operators";
+import { DynamicSchemaService } from "../dynamic-schema/dynamic-schema.service";
+import { PhysicalPlan } from "../../../common/type/physical-plan";
+import { CompilationState, CompilationStateInfo } from "../../types/compile-workflow.interface";
+import { WorkflowFatalError } from "../../types/workflow-websocket.interface";
+import { AuthService } from "../../../common/service/user/auth.service";
 
 // endpoint for schema propagation
 export const WORKFLOW_COMPILATION_ENDPOINT = "compilation";
@@ -37,9 +37,9 @@ export const WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS = 500;
 })
 export class WorkflowCompilingService {
   private currentCompilationStateInfo: CompilationStateInfo = {
-    state: CompilationState.Uninitialized
-  }
-  private compilationStateInfoChangedStream = new Subject<void>()
+    state: CompilationState.Uninitialized,
+  };
+  private compilationStateInfoChangedStream = new Subject<void>();
 
   constructor(
     private httpClient: HttpClient,
@@ -62,27 +62,25 @@ export class WorkflowCompilingService {
       this.workflowActionService.getTexeraGraph().getOperatorPropertyChangeStream(),
       this.workflowActionService.getTexeraGraph().getDisabledOperatorsChangedStream()
     )
-      .pipe(debounceTime( WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS))
-      .pipe(
-        mergeMap(() => this.invokeWorkflowCompilationAPI()),
-      )
+      .pipe(debounceTime(WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS))
+      .pipe(mergeMap(() => this.invokeWorkflowCompilationAPI()))
       .subscribe(response => {
         if (response.physicalPlan) {
           this.currentCompilationStateInfo = {
             state: CompilationState.Succeeded,
             physicalPlan: response.physicalPlan,
             operatorInputSchemaMap: response.operatorInputSchemas,
-          }
+          };
         } else {
           this.currentCompilationStateInfo = {
             state: CompilationState.Failed,
             operatorInputSchemaMap: response.operatorInputSchemas,
             operatorErrors: response.operatorErrors,
-          }
+          };
         }
         console.log(this.currentCompilationStateInfo);
         this.compilationStateInfoChangedStream.next();
-        this._applySchemaPropagationResult(this.currentCompilationStateInfo.operatorInputSchemaMap)
+        this._applySchemaPropagationResult(this.currentCompilationStateInfo.operatorInputSchemaMap);
       });
   }
 
@@ -91,8 +89,10 @@ export class WorkflowCompilingService {
   }
 
   public getWorkflowCompilationErrors(): Readonly<Array<WorkflowFatalError>> {
-    if (this.currentCompilationStateInfo.state === CompilationState.Succeeded
-      || this.currentCompilationStateInfo.state === CompilationState.Uninitialized) {
+    if (
+      this.currentCompilationStateInfo.state === CompilationState.Succeeded ||
+      this.currentCompilationStateInfo.state === CompilationState.Uninitialized
+    ) {
       return [];
     }
     return this.currentCompilationStateInfo.operatorErrors;
@@ -100,14 +100,14 @@ export class WorkflowCompilingService {
 
   public getOperatorInputSchemaMap(): Readonly<Record<string, OperatorInputSchema>> {
     if (this.currentCompilationStateInfo.state == CompilationState.Uninitialized) {
-      return {}
+      return {};
     }
     return this.currentCompilationStateInfo.operatorInputSchemaMap;
   }
 
   public getOperatorInputSchema(operatorID: string): OperatorInputSchema | undefined {
     if (this.currentCompilationStateInfo.state == CompilationState.Uninitialized) {
-      return undefined
+      return undefined;
     }
     return this.currentCompilationStateInfo.operatorInputSchemaMap[operatorID];
   }
@@ -186,10 +186,12 @@ export class WorkflowCompilingService {
           this.workflowActionService.getWorkflow().wid ?? DEFAULT_WORKFLOW.wid
         }`,
         JSON.stringify(body2),
-        { headers: new HttpHeaders({
-            'Authorization': `Bearer ${AuthService.getAccessToken()}`,
-            'Content-Type': 'application/json',
-          }) }
+        {
+          headers: new HttpHeaders({
+            Authorization: `Bearer ${AuthService.getAccessToken()}`,
+            "Content-Type": "application/json",
+          }),
+        }
       )
       .pipe(
         catchError((err: unknown) => {
@@ -392,7 +394,7 @@ export interface WorkflowCompilationResponse
     operatorInputSchemas: {
       [key: string]: OperatorInputSchema;
     };
-    operatorErrors: Array<WorkflowFatalError>
+    operatorErrors: Array<WorkflowFatalError>;
   }> {}
 
 /**

@@ -6,7 +6,7 @@ import { WorkflowWebsocketService } from "../../../service/workflow-websocket/wo
 import { WorkflowFatalError } from "../../../types/workflow-websocket.interface";
 import { render } from "sass";
 import { WorkflowActionService } from "../../../service/workflow-graph/model/workflow-action.service";
-import {WorkflowCompilingService} from "../../../service/workflow-compilation/workflow-compiling.service";
+import { WorkflowCompilingService } from "../../../service/workflow-compilation/workflow-compiling.service";
 
 @UntilDestroy()
 @Component({
@@ -37,13 +37,13 @@ export class ErrorFrameComponent implements OnInit {
     // first fetch the error messages from the execution state store
     let errorMessages = this.executeWorkflowService.getErrorMessages();
     // then fetch error from the compilation state store
-    errorMessages = errorMessages.concat(this.workflowCompilingService.getWorkflowCompilationErrors())
+    errorMessages = errorMessages.concat(this.workflowCompilingService.getWorkflowCompilationErrors());
     if (this.operatorId) {
       errorMessages = errorMessages.filter(err => err.operatorId === this.operatorId);
     }
 
     this.categoryToErrorMapping = errorMessages.reduce((acc, obj) => {
-      console.log("the error object: ", obj)
+      console.log("the error object: ", obj);
       const key = obj.type.name;
       if (!acc.has(key)) {
         acc.set(key, []);

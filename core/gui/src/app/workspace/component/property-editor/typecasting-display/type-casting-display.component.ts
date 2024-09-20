@@ -6,7 +6,7 @@ import {
 } from "src/app/workspace/service/dynamic-schema/schema-propagation/schema-propagation.service";
 import { filter, map } from "rxjs/operators";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
-import {WorkflowCompilingService} from "../../../service/workflow-compilation/workflow-compiling.service";
+import { WorkflowCompilingService } from "../../../service/workflow-compilation/workflow-compiling.service";
 
 // correspond to operator type specified in backend OperatorDescriptor
 export const TYPE_CASTING_OPERATOR_TYPE = "TypeCasting";

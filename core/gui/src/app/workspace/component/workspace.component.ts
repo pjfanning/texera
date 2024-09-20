@@ -19,7 +19,7 @@ import { NotificationService } from "src/app/common/service/notification/notific
 import { Version } from "../../../environments/version";
 import { WorkflowConsoleService } from "../service/workflow-console/workflow-console.service";
 import { CodeEditorService } from "../service/code-editor/code-editor.service";
-import {WorkflowCompilingService} from "../service/workflow-compilation/workflow-compiling.service";
+import { WorkflowCompilingService } from "../service/workflow-compilation/workflow-compiling.service";
 import { WorkflowMetadata } from "src/app/dashboard/type/workflow-metadata.interface";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;

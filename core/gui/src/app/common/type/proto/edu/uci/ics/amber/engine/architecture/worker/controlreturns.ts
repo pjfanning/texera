@@ -10,8 +10,7 @@ import { WorkerMetrics, WorkerState, workerStateFromJSON, workerStateToJSON } fr
 
 export const protobufPackage = "edu.uci.ics.amber.engine.architecture.worker";
 
-export interface CurrentInputTupleInfo {
-}
+export interface CurrentInputTupleInfo {}
 
 export interface ControlException {
   msg: string;
@@ -317,7 +316,7 @@ export const EvaluatedValue: MessageFns<EvaluatedValue> = {
       obj.value = TypedValue.toJSON(message.value);
     }
     if (message.attributes?.length) {
-      obj.attributes = message.attributes.map((e) => TypedValue.toJSON(e));
+      obj.attributes = message.attributes.map(e => TypedValue.toJSON(e));
     }
     return obj;
   },
@@ -327,10 +326,9 @@ export const EvaluatedValue: MessageFns<EvaluatedValue> = {
   },
   fromPartial<I extends Exact<DeepPartial<EvaluatedValue>, I>>(object: I): EvaluatedValue {
     const message = createBaseEvaluatedValue();
-    message.value = (object.value !== undefined && object.value !== null)
-      ? TypedValue.fromPartial(object.value)
-      : undefined;
-    message.attributes = object.attributes?.map((e) => TypedValue.fromPartial(e)) || [];
+    message.value =
+      object.value !== undefined && object.value !== null ? TypedValue.fromPartial(object.value) : undefined;
+    message.attributes = object.attributes?.map(e => TypedValue.fromPartial(e)) || [];
     return message;
   },
 };
@@ -453,34 +451,42 @@ export const ControlReturnV2: MessageFns<ControlReturnV2> = {
   },
   fromPartial<I extends Exact<DeepPartial<ControlReturnV2>, I>>(object: I): ControlReturnV2 {
     const message = createBaseControlReturnV2();
-    message.controlException = (object.controlException !== undefined && object.controlException !== null)
-      ? ControlException.fromPartial(object.controlException)
-      : undefined;
+    message.controlException =
+      object.controlException !== undefined && object.controlException !== null
+        ? ControlException.fromPartial(object.controlException)
+        : undefined;
     message.workerState = object.workerState ?? undefined;
-    message.workerMetrics = (object.workerMetrics !== undefined && object.workerMetrics !== null)
-      ? WorkerMetrics.fromPartial(object.workerMetrics)
-      : undefined;
+    message.workerMetrics =
+      object.workerMetrics !== undefined && object.workerMetrics !== null
+        ? WorkerMetrics.fromPartial(object.workerMetrics)
+        : undefined;
     message.currentInputTupleInfo =
-      (object.currentInputTupleInfo !== undefined && object.currentInputTupleInfo !== null)
+      object.currentInputTupleInfo !== undefined && object.currentInputTupleInfo !== null
         ? CurrentInputTupleInfo.fromPartial(object.currentInputTupleInfo)
         : undefined;
-    message.evaluatedValue = (object.evaluatedValue !== undefined && object.evaluatedValue !== null)
-      ? EvaluatedValue.fromPartial(object.evaluatedValue)
-      : undefined;
+    message.evaluatedValue =
+      object.evaluatedValue !== undefined && object.evaluatedValue !== null
+        ? EvaluatedValue.fromPartial(object.evaluatedValue)
+        : undefined;
     return message;
   },
 };
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
 
 function isSet(value: any): boolean {

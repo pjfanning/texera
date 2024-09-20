@@ -1,5 +1,9 @@
-import {ExecutionIdentity, PhysicalOpIdentity, WorkflowIdentity} from "./proto/edu/uci/ics/amber/engine/common/virtualidentity";
-import {PhysicalLink} from "./proto/edu/uci/ics/amber/engine/common/workflow";
+import {
+  ExecutionIdentity,
+  PhysicalOpIdentity,
+  WorkflowIdentity,
+} from "./proto/edu/uci/ics/amber/engine/common/virtualidentity";
+import { PhysicalLink } from "./proto/edu/uci/ics/amber/engine/common/workflow";
 
 export interface PhysicalOp {
   id: PhysicalOpIdentity;
