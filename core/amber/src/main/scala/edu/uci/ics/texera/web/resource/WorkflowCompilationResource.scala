@@ -57,14 +57,19 @@ class WorkflowCompilationResource extends LazyLogging {
       operatorErrors = workflowCompilationResult.operatorErrors
     )
 
-    println(s"OperatorInputSchemas: ${Utils.objectMapper.writeValueAsString(response.operatorInputSchemas)}")
+    println(
+      s"OperatorInputSchemas: ${Utils.objectMapper.writeValueAsString(response.operatorInputSchemas)}"
+    )
     println(s"OperatorErrors: ${Utils.objectMapper.writeValueAsString(response.operatorErrors)}")
     try {
       val physicalPlanStr = Utils.objectMapper.writeValueAsString(response.physicalPlan)
       println(s"PhysicalPlan: $physicalPlanStr")
     } catch {
       case e: Exception =>
-        logger.error("Error serializing PhysicalPlan", e) // This will log the error message and the stack trace
+        logger.error(
+          "Error serializing PhysicalPlan",
+          e
+        ) // This will log the error message and the stack trace
     }
 
     response

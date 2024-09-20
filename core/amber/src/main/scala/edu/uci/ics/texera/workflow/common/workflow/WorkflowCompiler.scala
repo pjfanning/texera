@@ -24,9 +24,9 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 case class WorkflowCompilationResult(
-                                      physicalPlan: Option[PhysicalPlan], // if physical plan is none, the compilation is failed
-                                      operatorIdToInputSchemas: Map[OperatorIdentity, List[Option[Schema]]],
-                                      operatorErrors: List[WorkflowFatalError]
+    physicalPlan: Option[PhysicalPlan], // if physical plan is none, the compilation is failed
+    operatorIdToInputSchemas: Map[OperatorIdentity, List[Option[Schema]]],
+    operatorErrors: List[WorkflowFatalError]
 )
 
 class WorkflowCompiler(
@@ -34,7 +34,9 @@ class WorkflowCompiler(
 ) extends LazyLogging {
 
   // utility function to convert error and report error
-  private def convertErrorListToWorkflowFatalErrorList(errorList: List[(OperatorIdentity, Throwable)]): List[WorkflowFatalError] = {
+  private def convertErrorListToWorkflowFatalErrorList(
+      errorList: List[(OperatorIdentity, Throwable)]
+  ): List[WorkflowFatalError] = {
     errorList.map {
       case (opId, err) =>
         // map each error to WorkflowFatalError, and report them in the log
