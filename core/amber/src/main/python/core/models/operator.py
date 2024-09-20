@@ -50,6 +50,8 @@ class Operator(ABC):
     def process_state(self, state: State, port: int) -> Optional[State]:
         """
         Process an input State from the given link.
+        The default implementation is to pass the State to all downstream operators
+        if the State has pass_to_all_downstream set to True.
         :param state: State, a State from an input port to be processed.
         :param port: int, input port index of the current exhausted port.
         :return: State, producing one State object
