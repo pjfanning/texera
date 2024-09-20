@@ -47,7 +47,8 @@ class DataProcessor(Runnable, Stoppable):
 
     def process_marker(self, marker: Marker) -> None:
         """
-        Process an input marker by invoking appropriate state or tuple generation based on the marker type.
+        Process an input marker by invoking appropriate state
+        or tuple generation based on the marker type.
         """
         try:
             executor = self._context.executor_manager.executor
