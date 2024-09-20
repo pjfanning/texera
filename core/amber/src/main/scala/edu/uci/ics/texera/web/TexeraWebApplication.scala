@@ -214,6 +214,7 @@ class TexeraWebApplication
 
     environment.jersey.register(classOf[SystemMetadataResource])
     // environment.jersey().register(classOf[MockKillWorkerResource])
+    environment.jersey.register(classOf[SchemaPropagationResource])
 
     if (AmberConfig.isUserSystemEnabled) {
       // register JWT Auth layer

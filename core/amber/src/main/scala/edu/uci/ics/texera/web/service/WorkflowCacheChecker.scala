@@ -1,9 +1,27 @@
 package edu.uci.ics.texera.web.service
 
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
+import edu.uci.ics.texera.web.model.websocket.request.EditingTimeCompilationRequest
 import edu.uci.ics.texera.workflow.common.workflow.LogicalPlan
 
 import scala.collection.mutable
+
+object WorkflowCacheChecker {
+
+  def handleCacheStatusUpdate(
+                               oldPlan: Option[LogicalPlan],
+                               newPlan: LogicalPlan,
+                               request: EditingTimeCompilationRequest
+                             ): Map[String, String] = {
+    val validCacheOps = new WorkflowCacheChecker(oldPlan, newPlan).getValidCacheReuse
+    val cacheUpdateResult = request.opsToReuseResult
+      .map(idString => OperatorIdentity(idString))
+      .map(opId => (opId.id, if (validCacheOps.contains(opId)) "cache valid" else "cache invalid"))
+      .toMap
+    cacheUpdateResult
+  }
+
+}
 
 class WorkflowCacheChecker(oldWorkflowOpt: Option[LogicalPlan], newWorkflow: LogicalPlan) {
 
