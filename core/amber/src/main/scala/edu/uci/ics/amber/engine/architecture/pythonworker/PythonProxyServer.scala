@@ -20,7 +20,7 @@ import java.net.ServerSocket
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable
 import com.twitter.util.Promise
-import edu.uci.ics.texera.workflow.common.{EndOfUpstream, StartOfUpstream, State}
+import edu.uci.ics.texera.workflow.common.{EndOfUpstream, StartOfInputChannel, State}
 
 import java.nio.charset.Charset
 
@@ -104,9 +104,9 @@ private class AmberProducer(
     flightStream.takeDictionaryOwnership
 
     dataHeader.payloadType match {
-      case "StartOfUpstream" =>
+      case "StartOfInputChannel" =>
         assert(root.getRowCount == 0)
-        outputPort.sendTo(to, MarkerFrame(StartOfUpstream()))
+        outputPort.sendTo(to, MarkerFrame(StartOfInputChannel()))
       case "EndOfUpstream" =>
         assert(root.getRowCount == 0)
         outputPort.sendTo(to, MarkerFrame(EndOfUpstream()))

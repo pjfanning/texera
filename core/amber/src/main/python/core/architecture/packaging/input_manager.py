@@ -8,7 +8,7 @@ from core.models.internal_marker import (
     SenderChange,
     EndOfInputPort, StartOfInputPort,
 )
-from core.models.marker import EndOfUpstream, State, StartOfUpstream, Marker
+from core.models.marker import EndOfUpstream, State, StartOfInputChannel, Marker
 from core.models.payload import DataFrame, DataPayload, MarkerFrame
 from proto.edu.uci.ics.amber.engine.common import (
     ActorVirtualIdentity,
@@ -127,7 +127,7 @@ class InputManager:
     def _process_marker(self, marker: Marker) -> Iterator[InternalMarker]:
         if isinstance(marker, State):
             yield marker
-        if isinstance(marker, StartOfUpstream):  # StartOfInputChannel()
+        if isinstance(marker, StartOfInputChannel):  # StartOfInputChannel()
             if not self.started:
                 yield StartOfOutputPorts()
             self.started = True

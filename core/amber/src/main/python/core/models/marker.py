@@ -13,7 +13,7 @@ class Marker:
 
 
 @dataclass
-class StartOfUpstream(Marker):
+class StartOfInputChannel(Marker):
     pass
 
 

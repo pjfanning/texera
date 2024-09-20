@@ -33,7 +33,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
-import edu.uci.ics.texera.workflow.common.{EndOfUpstream, StartOfUpstream, State}
+import edu.uci.ics.texera.workflow.common.{EndOfUpstream, StartOfInputChannel, State}
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
@@ -109,9 +109,9 @@ class DataProcessor(
     * process start of an input port with Executor.produceStateOnStart().
     * this function is only called by the DP thread.
     */
-  private[this] def processStartOfUpstream(portId: Int): Unit = {
+  private[this] def processStartOfInputChannel(portId: Int): Unit = {
     try {
-      outputManager.emitMarker(StartOfUpstream())
+      outputManager.emitMarker(StartOfInputChannel())
       val outputState = executor.produceStateOnStart(portId)
       if (outputState.isDefined) {
         outputManager.emitMarker(outputState.get)
@@ -226,8 +226,8 @@ class DataProcessor(
         marker match {
           case state: State =>
             processInputState(state, portId.id)
-          case StartOfUpstream() =>
-            processStartOfUpstream(portId.id)
+          case StartOfInputChannel() =>
+            processStartOfInputChannel(portId.id)
           case EndOfUpstream() =>
             this.inputManager.getPort(portId).channels(channelId) = true
             if (inputManager.isPortCompleted(portId)) {
