@@ -8,20 +8,15 @@ import edu.uci.ics.amber.error.ErrorUtils.getStackTraceWithAllCauses
 import edu.uci.ics.texera.Utils.objectMapper
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
 import edu.uci.ics.texera.web.model.websocket.event.{
-  CacheStatusUpdateEvent,
   WorkflowErrorEvent,
   WorkflowStateEvent
 }
 import edu.uci.ics.texera.web.model.websocket.request._
 import edu.uci.ics.texera.web.model.websocket.response._
-import edu.uci.ics.texera.web.service.{WorkflowCacheChecker, WorkflowService}
-import edu.uci.ics.texera.web.storage.ExecutionStateStore
+import edu.uci.ics.texera.web.service.WorkflowService
 import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.COMPILATION_ERROR
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{PAUSED, RUNNING}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
 import edu.uci.ics.texera.web.{ServletAwareConfigurator, SessionState}
-import edu.uci.ics.texera.workflow.common.WorkflowContext
-import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler
 
 import java.time.Instant
 import javax.websocket._
