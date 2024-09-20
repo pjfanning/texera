@@ -2,6 +2,7 @@ from loguru import logger
 from overrides import overrides
 from pyarrow.lib import Table
 from typing import Optional
+from pampy import match
 
 from core.architecture.handlers.actorcommand.actor_handler_base import (
     ActorCommandHandler,
@@ -63,18 +64,13 @@ class NetworkReceiver(Runnable, Stoppable):
             :return: sender credits
             """
             data_header = PythonDataHeader().parse(command)
-
-            match data_header.payload_type:
-                case "Data":
-                    payload = DataFrame(table)
-                case "State":
-                    payload = MarkerFrame(State(table))
-                case "StartOfInputChannel":
-                    payload = MarkerFrame(StartOfInputChannel())
-                case "EndOfInputChannel":
-                    payload = MarkerFrame(EndOfInputChannel())
-                case _:
-                    raise NotImplementedError()
+            payload = match(
+                data_header.payload_type,
+                "Data", lambda _: DataFrame(table),
+                "State", lambda _: MarkerFrame(State(table)),
+                "StartOfInputChannel", MarkerFrame(StartOfInputChannel()),
+                "EndOfInputChannel", MarkerFrame(EndOfInputChannel())
+            )
 
             shared_queue.put(DataElement(tag=data_header.tag, payload=payload))
             return shared_queue.in_mem_size()
