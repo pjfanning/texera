@@ -6,6 +6,7 @@ from core.models.internal_marker import (
     StartOfOutputPorts,
     EndOfOutputPorts,
     SenderChange,
+    EndOfInputPort, StartOfInputPort,
 )
 from core.models.marker import EndOfUpstream, State, StartOfUpstream, Marker
 from core.models.payload import DataFrame, DataPayload, MarkerFrame
@@ -130,7 +131,7 @@ class InputManager:
             if not self.started:
                 yield StartOfOutputPorts()
             self.started = True
-            yield StartOfUpstream()  # StartOfInputChannel()
+            yield StartOfInputPort()
         if isinstance(marker, EndOfUpstream):  # EndOfInputChannel()
             channel = self._channels[self._current_channel_id]
             channel.complete()
@@ -143,7 +144,7 @@ class InputManager:
             )
 
             if port_completed:
-                yield EndOfUpstream()  # EndOfInputPort()
+                yield EndOfInputPort()
 
             all_ports_completed = all(
                 map(lambda port: port.is_completed(), self._ports.values())

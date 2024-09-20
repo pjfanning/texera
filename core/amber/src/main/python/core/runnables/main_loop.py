@@ -17,7 +17,7 @@ from core.models import (
     SenderChange,
     Tuple,
 )
-from core.models.internal_marker import StartOfOutputPorts
+from core.models.internal_marker import StartOfOutputPorts, EndOfInputPort, StartOfInputPort
 from core.models.internal_queue import DataElement, ControlElement
 from core.models.marker import State, EndOfUpstream, StartOfUpstream
 from core.runnables.data_processor import DataProcessor
@@ -214,12 +214,12 @@ class MainLoop(StoppableQueueBlockingRunnable):
         self.process_input_state()
         self._check_and_process_control()
 
-    def _process_start_of_upstream(self, start_of_upstream: StartOfUpstream) -> None:
-        self.context.marker_processing_manager.current_input_marker = start_of_upstream
+    def _process_start_of_input_port(self, start_of_input_port: StartOfInputPort) -> None:
+        self.context.marker_processing_manager.current_input_marker = start_of_input_port
         self.process_input_state()
 
-    def _process_end_of_upstream(self, end_of_upstream: EndOfUpstream) -> None:
-        self.context.marker_processing_manager.current_input_marker = end_of_upstream
+    def _process_end_of_input_port(self, end_of_input_port: EndOfInputPort) -> None:
+        self.context.marker_processing_manager.current_input_marker = end_of_input_port
         self.process_input_state()
         self.process_input_tuple()
         if self.context.tuple_processing_manager.current_input_port_id is not None:
@@ -311,10 +311,10 @@ class MainLoop(StoppableQueueBlockingRunnable):
                     element,
                     Tuple,
                     self._process_tuple,
-                    StartOfUpstream,
-                    self._process_start_of_upstream,
-                    EndOfUpstream,
-                    self._process_end_of_upstream,
+                    StartOfInputPort,
+                    self._process_start_of_input_port,
+                    EndOfInputPort,
+                    self._process_end_of_input_port,
                     SenderChange,
                     self._process_sender_change_marker,
                     StartOfOutputPorts,

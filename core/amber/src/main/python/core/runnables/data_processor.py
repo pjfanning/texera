@@ -7,7 +7,8 @@ from loguru import logger
 from typing import Iterator, Optional
 from core.architecture.managers import Context
 from core.models import ExceptionInfo, State, TupleLike
-from core.models.marker import Marker, StartOfUpstream, EndOfUpstream
+from core.models.internal_marker import StartOfInputPort, EndOfInputPort
+from core.models.marker import Marker
 from core.models.table import all_output_to_tuple
 from core.util import Stoppable
 from core.util.console_message.replace_print import replace_print
@@ -48,11 +49,11 @@ class DataProcessor(Runnable, Stoppable):
                 self._context.worker_id,
                 self._context.console_message_manager.print_buf,
             ):
-                if isinstance(marker, StartOfUpstream):
+                if isinstance(marker, StartOfInputPort):
                     self._set_output_state(executor.produce_state_on_start(port_id))
                 elif isinstance(marker, State):
                     self._set_output_state(executor.process_state(marker, port_id))
-                elif isinstance(marker, EndOfUpstream):
+                elif isinstance(marker, EndOfInputPort):
                     self._set_output_state(executor.produce_state_on_finish(port_id))
                     self._set_output_tuple(executor.on_finish(port_id))
 

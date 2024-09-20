@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from pyarrow import Table
 from pandas import DataFrame
+from pyarrow import Table
 from typing import Optional
+
 from .schema import Schema, AttributeType
 from .schema.attribute_type import FROM_PYOBJECT_MAPPING
 
@@ -24,7 +25,7 @@ class EndOfUpstream(Marker):
 @dataclass
 class State(Marker):
     def __init__(
-        self, table: Optional[Table] = None, pass_to_all_downstream: bool = False
+            self, table: Optional[Table] = None, pass_to_all_downstream: bool = False
     ):
         if table is None:
             self.data = {}
@@ -35,7 +36,7 @@ class State(Marker):
             self.schema = Schema(table.schema)
 
     def add(
-        self, key: str, value: any, value_type: Optional[AttributeType] = None
+            self, key: str, value: any, value_type: Optional[AttributeType] = None
     ) -> None:
         self.data[key] = value
         if value_type is not None:

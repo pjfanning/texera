@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-
-
+from core.models.marker import Marker
 from proto.edu.uci.ics.amber.engine.common import ChannelIdentity
 
 
 @dataclass
-class InternalMarker:
+class InternalMarker(Marker):
     """
     A special Data Message, only being generated in un-packaging a batch into Tuples.
     Markers retain the order information and served as a indicator of data state.
@@ -17,6 +16,15 @@ class InternalMarker:
 @dataclass
 class SenderChange(InternalMarker):
     channel_id: ChannelIdentity
+
+
+@dataclass
+class StartOfInputPort(InternalMarker):
+    pass
+
+@dataclass
+class EndOfInputPort(InternalMarker):
+    pass
 
 
 @dataclass
