@@ -66,10 +66,14 @@ class NetworkReceiver(Runnable, Stoppable):
             data_header = PythonDataHeader().parse(command)
             payload = match(
                 data_header.payload_type,
-                "Data", lambda _: DataFrame(table),
-                "State", lambda _: MarkerFrame(State(table)),
-                "StartOfInputChannel", MarkerFrame(StartOfInputChannel()),
-                "EndOfInputChannel", MarkerFrame(EndOfInputChannel())
+                "Data",
+                lambda _: DataFrame(table),
+                "State",
+                lambda _: MarkerFrame(State(table)),
+                "StartOfInputChannel",
+                MarkerFrame(StartOfInputChannel()),
+                "EndOfInputChannel",
+                MarkerFrame(EndOfInputChannel()),
             )
 
             shared_queue.put(DataElement(tag=data_header.tag, payload=payload))
