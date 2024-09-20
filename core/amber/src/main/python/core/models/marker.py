@@ -62,7 +62,11 @@ class State(Marker):
 
     def __str__(self) -> str:
         content = ", ".join(
-            [repr(key) + ": " + repr(value) for key, value in self.__dict__.items() if key != "schema"]
+            [
+                repr(key) + ": " + repr(value)
+                for key, value in self.__dict__.items()
+                if key != "schema"
+            ]
         )
         return f"State[{content}]"
 
