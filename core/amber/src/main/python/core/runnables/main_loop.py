@@ -17,7 +17,7 @@ from core.models import (
     SenderChange,
     Tuple,
 )
-from core.models.internal_marker import StartOfOutputPorts
+from core.models.internal_marker import StartOfOutputPorts, EndOfInputPort
 from core.models.internal_queue import DataElement, ControlElement
 from core.models.marker import State, EndOfUpstream, StartOfUpstream
 from core.runnables.data_processor import DataProcessor
@@ -218,7 +218,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
         self.context.marker_processing_manager.current_input_marker = start_of_upstream
         self.process_input_state()
 
-    def _process_end_of_upstream(self, end_of_upstream: EndOfUpstream) -> None:
+    def _process_end_of_input_port(self, end_of_upstream: EndOfUpstream) -> None:
         self.context.marker_processing_manager.current_input_marker = end_of_upstream
         self.process_input_state()
         self.process_input_tuple()
@@ -313,8 +313,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
                     self._process_tuple,
                     StartOfUpstream,
                     self._process_start_of_upstream,
-                    EndOfUpstream,
-                    self._process_end_of_upstream,
+                    EndOfInputPort,
+                    self._process_end_of_input_port,
                     SenderChange,
                     self._process_sender_change_marker,
                     StartOfOutputPorts,
