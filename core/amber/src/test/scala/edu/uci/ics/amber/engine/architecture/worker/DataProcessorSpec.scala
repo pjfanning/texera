@@ -83,7 +83,8 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
           input: Int
         ) => executor.produceStateOnFinish(input)
     )
-      .expects(0).returning(None)
+      .expects(0)
+      .returning(None)
     (
         (
           input: Int
@@ -141,7 +142,8 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
           input: Int
         ) => executor.produceStateOnFinish(input)
     )
-      .expects(0).returning(None)
+      .expects(0)
+      .returning(None)
     (
         (
           input: Int
