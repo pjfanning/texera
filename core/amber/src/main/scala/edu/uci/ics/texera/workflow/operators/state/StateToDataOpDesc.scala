@@ -58,7 +58,7 @@ class StateToDataOpDesc extends LogicalOp {
 
   override def getOutputSchemas(schemas: Array[Schema]): Array[Schema] =
     Array(
-      Schema.builder().add(outputColumns).add("passToAllDownstream", AttributeType.BOOLEAN).build(),
+      Schema.builder().add("passToAllDownstream", AttributeType.BOOLEAN).add(outputColumns).build(),
       schemas(0)
     )
 

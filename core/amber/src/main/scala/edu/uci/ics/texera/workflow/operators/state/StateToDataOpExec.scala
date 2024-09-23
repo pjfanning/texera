@@ -10,10 +10,15 @@ import scala.collection.mutable
 
 class StateToDataOpExec extends OperatorExecutor {
   private val outputTuples = new mutable.ArrayBuffer[(Tuple, Option[PortIdentity])]()
+  private var stateTuple: Option[Tuple] = None
 
   override def processState(state: State, port: Int): Option[State] = {
-    outputTuples += ((state.toTuple, Some(PortIdentity(port))))
-    None
+    if (stateTuple.isEmpty) {
+      stateTuple = Some(state.toTuple)
+      None
+    } else {
+      Some(state)
+    }
   }
 
   override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] = {
@@ -21,6 +26,8 @@ class StateToDataOpExec extends OperatorExecutor {
     Iterator.empty
   }
 
-  override def onFinishMultiPort(port: Int): Iterator[(TupleLike, Option[PortIdentity])] =
+  override def onFinishMultiPort(port: Int): Iterator[(TupleLike, Option[PortIdentity])] = {
+    outputTuples += ((stateTuple.get, Some(PortIdentity())))
     outputTuples.iterator
+  }
 }
