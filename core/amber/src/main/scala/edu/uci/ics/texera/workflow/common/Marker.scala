@@ -11,7 +11,7 @@ final case class EndOfInputChannel() extends Marker
 
 final case class State(tuple: Option[Tuple] = None, passToAllDownstream: Boolean = false)
     extends Marker {
-  val list: mutable.Map[String, (AttributeType, Any)] = mutable.HashMap()
+  val data: mutable.Map[String, (AttributeType, Any)] = mutable.LinkedHashMap()
   add("passToAllDownstream", passToAllDownstream, AttributeType.BOOLEAN)
   if (tuple.isDefined) {
     tuple.get.getSchema.getAttributes.foreach { attribute =>
@@ -20,9 +20,9 @@ final case class State(tuple: Option[Tuple] = None, passToAllDownstream: Boolean
   }
 
   def add(key: String, value: Any, valueType: AttributeType): Unit =
-    list.put(key, (valueType, value))
+    data.put(key, (valueType, value))
 
-  def get(key: String): Any = list(key)._2
+  def get(key: String): Any = data(key)._2
 
   def isPassToAllDownstream: Boolean = get("passToAllDownstream").asInstanceOf[Boolean]
 
@@ -33,15 +33,15 @@ final case class State(tuple: Option[Tuple] = None, passToAllDownstream: Boolean
       .builder(
         Schema
           .builder()
-          .add(list.map {
+          .add(data.map {
             case (name, (attrType, _)) =>
               new Attribute(name, attrType)
           })
           .build()
       )
-      .addSequentially(list.values.map(_._2).toArray)
+      .addSequentially(data.values.map(_._2).toArray)
       .build()
 
   override def toString: String =
-    list.map { case (key, (_, value)) => s"$key: $value" }.mkString(", ")
+    data.map { case (key, (_, value)) => s"$key: $value" }.mkString(", ")
 }
