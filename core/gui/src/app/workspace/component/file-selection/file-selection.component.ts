@@ -27,12 +27,19 @@ export class FileSelectionComponent implements OnInit {
     private modalRef: NzModalRef,
     private datasetService: DatasetService
   ) {}
+  
+  extractVersionPath(currentDisplayedFileName: string): string {
+    const pathParts = currentDisplayedFileName.split("/");
+
+    return `/${pathParts[1]}/${pathParts[2]}/${pathParts[3]}`;
+  }
 
   ngOnInit() {
     // if users already select some file, then show that selected dataset & related version
     if (this.selectedFilePath && this.selectedFilePath !== "") {
+      const versionPath = this.extractVersionPath(this.selectedFilePath)
       this.datasetService
-        .retrieveAccessibleDatasets(false, false, this.selectedFilePath)
+        .retrieveAccessibleDatasets(false, false, versionPath)
         .pipe(untilDestroyed(this))
         .subscribe(response => {
           const prevDataset = response.datasets[0];

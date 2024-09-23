@@ -27,31 +27,31 @@ export class DirectorySelectionComponent{
     private datasetService: DatasetService
   ) {}
 
-  // ngOnInit() {
-  //   // Load initial dataset and directory
-  //   if (this.selectedDirectoryPath && this.selectedDirectoryPath !== "") {
-  //     this.datasetService
-  //       .retrieveAccessibleDatasets(false, false, this.selectedDirectoryPath)
-  //       .pipe(untilDestroyed(this))
-  //       .subscribe(response => {
-  //         const prevDataset = response.datasets[0];
-  //         this.selectedDataset = this.datasets.find(d => d.dataset.did === prevDataset.dataset.did);
-  //         this.isDatasetSelected = !!this.selectedDataset;
+  ngOnInit() {
+    // Load initial dataset and directory
+    if (this.selectedDirectoryPath && this.selectedDirectoryPath !== "") {
+      this.datasetService
+        .retrieveAccessibleDatasets(false, false, this.selectedDirectoryPath)
+        .pipe(untilDestroyed(this))
+        .subscribe(response => {
+          const prevDataset = response.datasets[0];
+          this.selectedDataset = this.datasets.find(d => d.dataset.did === prevDataset.dataset.did);
+          this.isDatasetSelected = !!this.selectedDataset;
 
-  //         if (this.selectedDataset && this.selectedDataset.dataset.did !== undefined) {
-  //           this.datasetService
-  //             .retrieveDatasetVersionList(this.selectedDataset.dataset.did)
-  //             .pipe(untilDestroyed(this))
-  //             .subscribe(versions => {
-  //               this.datasetVersions = versions;
-  //               const versionDvid = prevDataset.versions[0].datasetVersion.dvid;
-  //               this.selectedVersion = this.datasetVersions.find(v => v.dvid === versionDvid);
-  //               this.onVersionChange();
-  //             });
-  //         }
-  //       });
-  //   }
-  // }
+          if (this.selectedDataset && this.selectedDataset.dataset.did !== undefined) {
+            this.datasetService
+              .retrieveDatasetVersionList(this.selectedDataset.dataset.did)
+              .pipe(untilDestroyed(this))
+              .subscribe(versions => {
+                this.datasetVersions = versions;
+                const versionDvid = prevDataset.versions[0].datasetVersion.dvid;
+                this.selectedVersion = this.datasetVersions.find(v => v.dvid === versionDvid);
+                this.onVersionChange();
+              });
+          }
+        });
+    }
+  }
 
   onDatasetChange() {
     this.selectedVersion = undefined;
