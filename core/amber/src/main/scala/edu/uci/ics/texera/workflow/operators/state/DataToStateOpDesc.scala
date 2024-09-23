@@ -1,5 +1,8 @@
 package edu.uci.ics.texera.workflow.operators.state
 
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalOp, SchemaPropagationFunc}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
@@ -9,6 +12,11 @@ import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 
 class DataToStateOpDesc extends LogicalOp {
+  @JsonProperty(defaultValue = "false")
+  @JsonSchemaTitle("Pass To All Downstream")
+  @JsonDeserialize(contentAs = classOf[java.lang.Boolean])
+  var passToAllDownstream: Option[Boolean] = Option(false)
+
   override def getPhysicalOp(
       workflowId: WorkflowIdentity,
       executionId: ExecutionIdentity
@@ -19,7 +27,7 @@ class DataToStateOpDesc extends LogicalOp {
         executionId,
         operatorIdentifier,
         OpExecInitInfo((_, _) => {
-          new DataToStateOpExec()
+          new DataToStateOpExec(passToAllDownstream.get)
         })
       )
       .withInputPorts(operatorInfo.inputPorts)

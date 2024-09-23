@@ -19,7 +19,9 @@ class StateToDataOpExec extends OperatorExecutor {
       port: Int
   ): Iterator[(TupleLike, Option[PortIdentity])] = {
     if (stateTuple.isDefined) {
-      Array((stateTuple.get, Some(PortIdentity())), (tuple, Some(PortIdentity(1)))).iterator
+      val outputTuple = stateTuple.get
+      stateTuple = None
+      Array((outputTuple, Some(PortIdentity())), (tuple, Some(PortIdentity(1)))).iterator
     } else {
       Iterator((tuple, Some(PortIdentity(1))))
     }
