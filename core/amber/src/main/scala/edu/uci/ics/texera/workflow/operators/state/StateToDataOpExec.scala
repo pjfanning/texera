@@ -7,22 +7,19 @@ import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
 class StateToDataOpExec extends OperatorExecutor {
-  private var stateTuple: Tuple = _
+  private var stateTuple: Option[Tuple] = None
 
   override def processState(state: State, port: Int): Option[State] = {
-    if (state.size > 0)
-      stateTuple = state.toTuple
-    Some(State())
+    stateTuple = Some(state.toTuple)
+    None
   }
 
   override def processTupleMultiPort(
       tuple: Tuple,
       port: Int
   ): Iterator[(TupleLike, Option[PortIdentity])] = {
-    if (stateTuple != null) {
-      val outputTuple = stateTuple
-      stateTuple = null
-      Array((outputTuple, Some(PortIdentity())), (tuple, Some(PortIdentity(1)))).iterator
+    if (stateTuple.isDefined) {
+      Array((stateTuple.get, Some(PortIdentity())), (tuple, Some(PortIdentity(1)))).iterator
     } else {
       Iterator((tuple, Some(PortIdentity(1))))
     }
