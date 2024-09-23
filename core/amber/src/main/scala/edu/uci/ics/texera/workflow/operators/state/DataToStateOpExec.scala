@@ -8,7 +8,7 @@ import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import scala.collection.mutable
 
 class DataToStateOpExec(passToAllDownstream: Boolean) extends OperatorExecutor {
-  private val buffer = new mutable.ArrayBuffer[Tuple]()
+  private val dataTuples = new mutable.ArrayBuffer[Tuple]()
   private var stateTuple: Option[Tuple] = None
 
   override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] = {
@@ -17,7 +17,7 @@ class DataToStateOpExec(passToAllDownstream: Boolean) extends OperatorExecutor {
         if (stateTuple.isEmpty)
           stateTuple = Some(tuple)
       case 1 =>
-        buffer += tuple
+        dataTuples += tuple
     }
     Iterator.empty
   }
@@ -25,5 +25,5 @@ class DataToStateOpExec(passToAllDownstream: Boolean) extends OperatorExecutor {
   override def produceStateOnFinish(port: Int): Option[State] =
     Some(State(stateTuple, passToAllDownstream))
 
-  override def onFinish(port: Int): Iterator[TupleLike] = buffer.iterator
+  override def onFinish(port: Int): Iterator[TupleLike] = dataTuples.iterator
 }

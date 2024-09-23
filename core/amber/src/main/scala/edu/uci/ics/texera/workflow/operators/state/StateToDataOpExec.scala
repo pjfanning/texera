@@ -6,27 +6,21 @@ import edu.uci.ics.texera.workflow.common.State
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
+import scala.collection.mutable
+
 class StateToDataOpExec extends OperatorExecutor {
-  private var stateTuple: Option[Tuple] = None
+  private val outputTuples = new mutable.ArrayBuffer[(Tuple, Option[PortIdentity])]()
 
   override def processState(state: State, port: Int): Option[State] = {
-    stateTuple = Some(state.toTuple)
+    outputTuples += ((state.toTuple, Some(PortIdentity(port))))
     None
   }
 
-  override def processTupleMultiPort(
-      tuple: Tuple,
-      port: Int
-  ): Iterator[(TupleLike, Option[PortIdentity])] = {
-    if (stateTuple.isDefined) {
-      val outputTuple = stateTuple.get
-      stateTuple = None
-      Array((outputTuple, Some(PortIdentity())), (tuple, Some(PortIdentity(1)))).iterator
-    } else {
-      Iterator((tuple, Some(PortIdentity(1))))
-    }
+  override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] = {
+    outputTuples += ((tuple, Some(PortIdentity(1))))
+    Iterator.empty
   }
 
-  override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] =
-    throw new NotImplementedError()
+  override def onFinishMultiPort(port: Int): Iterator[(TupleLike, Option[PortIdentity])] =
+    outputTuples.iterator
 }
