@@ -433,7 +433,7 @@ export class MenuComponent implements OnInit {
    *
    */
   public onClickExportExecutionResult(exportType: string): void {
-    const modal = this.modalService.create({
+    this.modalService.create({
       nzTitle: "Export Result and Save to a Dataset",
       nzContent: ResultExportationComponent,
       nzData: {
