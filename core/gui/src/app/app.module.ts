@@ -81,6 +81,7 @@ import { AdminGuardService } from "./dashboard/service/admin/guard/admin-guard.s
 import { ContextMenuComponent } from "./workspace/component/workflow-editor/context-menu/context-menu/context-menu.component";
 import { CoeditorUserIconComponent } from "./workspace/component/menu/coeditor-user-icon/coeditor-user-icon.component";
 import { InputAutoCompleteComponent } from "./workspace/component/input-autocomplete/input-autocomplete.component";
+import { DirectoryPathInputComponent } from "./workspace/component/directory-path-input/directory-path-input.component";
 import { CollabWrapperComponent } from "./common/formly/collab-wrapper/collab-wrapper/collab-wrapper.component";
 import { NzSwitchModule } from "ng-zorro-antd/switch";
 import { HomeComponent } from "./home/component/home.component";
@@ -197,6 +198,7 @@ registerLocaleData(en);
     ContextMenuComponent,
     CoeditorUserIconComponent,
     InputAutoCompleteComponent,
+    DirectoryPathInputComponent,
     FileSelectionComponent,
     DirectorySelectionComponent,
     CollabWrapperComponent,
