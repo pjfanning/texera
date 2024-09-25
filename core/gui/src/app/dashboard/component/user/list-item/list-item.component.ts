@@ -33,9 +33,9 @@ export class ListItemComponent implements OnInit, OnChanges {
   editingName = false;
   editingDescription = false;
 
-  ROUTER_WORKFLOW_BASE_URL = "/dashboard/workspace";
-  ROUTER_USER_PROJECT_BASE_URL = "/dashboard/user-project";
-  ROUTER_DATASET_BASE_URL = "/dashboard/dataset";
+  ROUTER_WORKFLOW_BASE_URL = "/dashboard/user/workspace";
+  ROUTER_USER_PROJECT_BASE_URL = "/dashboard/user/project";
+  ROUTER_DATASET_BASE_URL = "/dashboard/user/dataset";
   public entryLink: string = "";
   public iconType: string = "";
   @Input() isPrivateSearch = false;
@@ -101,10 +101,12 @@ export class ListItemComponent implements OnInit, OnChanges {
           type: this.entry.type,
           id: this.entry.id,
           allOwners: await firstValueFrom(this.workflowPersistService.retrieveOwners()),
+          inWorkspace: false,
         },
         nzFooter: null,
         nzTitle: "Share this workflow with others",
         nzCentered: true,
+        nzWidth: "700px",
       });
     } else if (this.entry.type === "dataset") {
       this.modalService.create({
@@ -117,6 +119,7 @@ export class ListItemComponent implements OnInit, OnChanges {
         nzFooter: null,
         nzTitle: "Share this dataset with others",
         nzCentered: true,
+        nzWidth: "700px",
       });
     }
   }
