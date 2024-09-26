@@ -42,7 +42,7 @@ class DataToStateOpDesc extends LogicalOp {
     OperatorInfo(
       "Data To State",
       "Convert Data to State",
-      OperatorGroupConstants.UTILITY_GROUP,
+      OperatorGroupConstants.STATE_GROUP,
       inputPorts = List(
         InputPort(PortIdentity(), "State"),
         InputPort(PortIdentity(1), "Data", dependencies = List(PortIdentity()))
