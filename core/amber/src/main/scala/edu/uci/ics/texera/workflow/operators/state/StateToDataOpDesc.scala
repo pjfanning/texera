@@ -14,7 +14,7 @@ class StateToDataOpDesc extends LogicalOp {
   @JsonProperty
   @JsonSchemaTitle("State output column(s)")
   @JsonPropertyDescription(
-    "Name of the newly added output columns that the UDF will produce, if any"
+    "Name of the output columns that the first port will produce, if any"
   )
   var outputColumns: List[Attribute] = List()
 
