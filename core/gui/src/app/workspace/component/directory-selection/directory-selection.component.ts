@@ -89,8 +89,8 @@ export class DirectorySelectionComponent{
   }
 
   onSelectVersion() {
-    if (this.selectedVersion) {
-      this.modalRef.close(this.selectedVersion);  // 直接将 selectedVersion 对象传递给父组件
+    if (this.selectedVersion && this.selectedDataset) {
+      this.modalRef.close(`${this.selectedDataset.ownerEmail}/${this.selectedDataset.dataset.name}/${this.selectedVersion.name}`);  
     }
   }
 }
