@@ -27,7 +27,9 @@ class StateToDataOpExec extends OperatorExecutor {
   }
 
   override def onFinishMultiPort(port: Int): Iterator[(TupleLike, Option[PortIdentity])] = {
-    outputTuples += ((stateTuple.get, Some(PortIdentity())))
+    if (stateTuple.isDefined) {
+      outputTuples += ((stateTuple.get, Some(PortIdentity())))
+    }
     outputTuples.iterator
   }
 }
