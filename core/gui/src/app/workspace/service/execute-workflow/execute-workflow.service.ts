@@ -73,7 +73,6 @@ export class ExecuteWorkflowService {
     private workflowWebsocketService: WorkflowWebsocketService,
     private workflowStatusService: WorkflowStatusService,
     private notificationService: NotificationService,
-    private notificationService: NotificationService,
     private gmailService: GmailService,
     @Inject(DOCUMENT) private document: Document
   ) {

@@ -14,7 +14,6 @@ import {YType} from "../../types/shared-editing.interface";
 import {isUndefined} from "lodash";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import {editor} from "monaco-editor/esm/vs/editor/editor.api.js";
-import {FormControl} from "@angular/forms";
 import {MonacoBreakpoint} from "monaco-breakpoints";
 import {WorkflowWebsocketService} from "../../service/workflow-websocket/workflow-websocket.service";
 import {ExecuteWorkflowService} from "../../service/execute-workflow/execute-workflow.service";
@@ -33,15 +32,15 @@ export enum BreakpointEnum {
   Hover,
 }
 export const CONDITIONAL_BREAKPOINT_OPTIONS: ModelDecorationOptions = {
-  glyphMarginClassName: 'monaco-conditional-breakpoint',
+  glyphMarginClassName: "monaco-conditional-breakpoint",
 };
 
 export const BREAKPOINT_OPTIONS: ModelDecorationOptions = {
-  glyphMarginClassName: 'monaco-breakpoint',
+  glyphMarginClassName: "monaco-breakpoint",
 };
 
 export const BREAKPOINT_HOVER_OPTIONS: ModelDecorationOptions = {
-  glyphMarginClassName: 'monaco-hover-breakpoint',
+  glyphMarginClassName: "monaco-hover-breakpoint",
 };
 
 export type Range = monaco.IRange;
@@ -113,7 +112,6 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     private workflowVersionService: WorkflowVersionService,
     public coeditorPresenceService: CoeditorPresenceService,
     private aiAssistantService: AIAssistantService,
-    public coeditorPresenceService: CoeditorPresenceService,
     public executeWorkflowService: ExecuteWorkflowService,
     public workflowWebsocketService: WorkflowWebsocketService,
     public udfDebugService: UdfDebugService,
@@ -250,19 +248,19 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
 
   showTooltip(mouseX: number, mouseY: number, lineNum:number, breakpointManager:BreakpointManager): void {
     // Create tooltip element
-    const tooltip = this.renderer.createElement('div');
-    this.renderer.addClass(tooltip, 'custom-tooltip');
+    const tooltip = this.renderer.createElement("div");
+    this.renderer.addClass(tooltip, "custom-tooltip");
 
     // Create header element
-    const header = this.renderer.createElement('div');
-    this.renderer.addClass(header, 'tooltip-header');
-    this.renderer.setProperty(header, 'innerText', `Condition on line ${lineNum}:`);
+    const header = this.renderer.createElement("div");
+    this.renderer.addClass(header, "tooltip-header");
+    this.renderer.setProperty(header, "innerText", `Condition on line ${lineNum}:`);
 
     // Create textarea element
-    const textarea = this.renderer.createElement('textarea');
-    this.renderer.addClass(textarea, 'custom-textarea');
+    const textarea = this.renderer.createElement("textarea");
+    this.renderer.addClass(textarea, "custom-textarea");
     let oldCondition = breakpointManager.getCondition(lineNum)
-    this.renderer.setProperty(textarea, 'value', oldCondition ?? "");
+    this.renderer.setProperty(textarea, "value", oldCondition ?? "");
 
     // Append header and textarea to tooltip
     this.renderer.appendChild(tooltip, header);
@@ -284,24 +282,24 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
         removeFocusoutListener();
       }
       // Add fade-out class
-      this.renderer.addClass(tooltip, 'fade-out');
+      this.renderer.addClass(tooltip, "fade-out");
       // Remove tooltip after the transition ends
-      const transitionEndListener = this.renderer.listen(tooltip, 'transitionend', () => {
+      const transitionEndListener = this.renderer.listen(tooltip, "transitionend", () => {
         tooltip.remove();
         transitionEndListener();
       });
     };
 
     // Listen for Enter key press to exit edit mode
-    const removeTooltipListener = this.renderer.listen(textarea, 'keydown', (event: KeyboardEvent) => {
-      if (event.key === 'Enter' && !event.shiftKey) {
+    const removeTooltipListener = this.renderer.listen(textarea, "keydown", (event: KeyboardEvent) => {
+      if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
         removeTooltip(); // Trigger fade-out and remove the tooltip
       }
     });
 
     // Listen for focusout event to remove the tooltip after 1 second
-    const removeFocusoutListener = this.renderer.listen(textarea, 'focusout', () => {
+    const removeFocusoutListener = this.renderer.listen(textarea, "focusout", () => {
       setTimeout(removeTooltip, 300);
     });
 
@@ -313,8 +311,8 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     const adjustedY = mouseY - tooltipRect.height / 2;
 
     // Update tooltip position
-    this.renderer.setStyle(tooltip, 'top', `${adjustedY}px`);
-    this.renderer.setStyle(tooltip, 'left', `${adjustedX}px`);
+    this.renderer.setStyle(tooltip, "top", `${adjustedY}px`);
+    this.renderer.setStyle(tooltip, "left", `${adjustedX}px`);
   }
 
 
@@ -612,31 +610,31 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     editor.executeEdits("add annotation", [op]);
   }
 
-  private connectLanguageServer() {
-    if (this.languageServerSocket === undefined) {
-      this.languageServerSocket = new WebSocket(getWebsocketUrl("/python-language-server", "3000"));
-      this.languageServerSocket.onopen = () => {
-        if (this.languageServerSocket !== undefined) {
-          const socket = toSocket(this.languageServerSocket);
-          const reader = new WebSocketMessageReader(socket);
-          const writer = new WebSocketMessageWriter(socket);
-          const languageClient = new MonacoLanguageClient({
-            name: "Python UDF Language Client",
-            clientOptions: {
-              documentSelector: ["python"],
-              errorHandler: {
-                error: () => ({ action: ErrorAction.Continue }),
-                closed: () => ({ action: CloseAction.Restart }),
-              },
-            },
-            connectionProvider: { get: () => Promise.resolve({ reader, writer }) },
-          });
-          languageClient.start();
-          reader.onClose(() => languageClient.stop());
-        }
-      };
-    }
-  }
+  // private connectLanguageServer() {
+  //   if (this.languageServerSocket === undefined) {
+  //     this.languageServerSocket = new WebSocket(getWebsocketUrl("/python-language-server", "3000"));
+  //     this.languageServerSocket.onopen = () => {
+  //       if (this.languageServerSocket !== undefined) {
+  //         const socket = toSocket(this.languageServerSocket);
+  //         const reader = new WebSocketMessageReader(socket);
+  //         const writer = new WebSocketMessageWriter(socket);
+  //         const languageClient = new MonacoLanguageClient({
+  //           name: "Python UDF Language Client",
+  //           clientOptions: {
+  //             documentSelector: ["python"],
+  //             errorHandler: {
+  //               error: () => ({ action: ErrorAction.Continue }),
+  //               closed: () => ({ action: CloseAction.Restart }),
+  //             },
+  //           },
+  //           connectionProvider: { get: () => Promise.resolve({ reader, writer }) },
+  //         });
+  //         languageClient.start();
+  //         reader.onClose(() => languageClient.stop());
+  //       }
+  //     };
+  //   }
+  // }
 
   private initDiffEditor() {
     if (this.code) {

@@ -28,7 +28,6 @@
               "node_modules/jointjs/css/themes/material.css",
               "node_modules/jointjs/css/themes/default.css",
               "node_modules/ng-zorro-antd/ng-zorro-antd.min.css",
-              "node_modules/ng-zorro-antd/resizable/style/index.min.css",
               "src/styles.scss"
             ],
             "scripts": [

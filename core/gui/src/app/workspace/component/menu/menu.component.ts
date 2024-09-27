@@ -104,7 +104,6 @@ export class MenuComponent implements OnInit {
     public coeditorPresenceService: CoeditorPresenceService,
     private modalService: NzModalService,
     private udfDebugService: UdfDebugService,
-    private modalService: NzModalService,
     private reportGenerationService: ReportGenerationService
   ) {
 
@@ -334,50 +333,6 @@ export class MenuComponent implements OnInit {
   public onClickToggleGrids(): void {
     this.workflowActionService.getJointGraphWrapper().toggleGrids();
   }
-
-
-  /**
-   * This method will decrease the zoom ratio and send the new zoom ratio value
-   *  to the joint graph wrapper to change overall zoom ratio that is used in
-   *  zoom buttons and mouse wheel zoom.
-   *
-   * If the zoom ratio already reaches minimum, this method will not do anything.
-   */
-  public onClickZoomOut(): void {
-    // if zoom is already at minimum, don't zoom out again.
-    if (this.isZoomRatioMin()) {
-      return;
-    }
-
-    // make the ratio small.
-    this.workflowActionService
-      .getJointGraphWrapper()
-      .setZoomProperty(
-        this.workflowActionService.getJointGraphWrapper().getZoomRatio() - JointGraphWrapper.ZOOM_CLICK_DIFF
-      );
-  }
-
-  /**
-   * This method will increase the zoom ratio and send the new zoom ratio value
-   *  to the joint graph wrapper to change overall zoom ratio that is used in
-   *  zoom buttons and mouse wheel zoom.
-   *
-   * If the zoom ratio already reaches maximum, this method will not do anything.
-   */
-  public onClickZoomIn(): void {
-    // if zoom is already reach maximum, don't zoom in again.
-    if (this.isZoomRatioMax()) {
-      return;
-    }
-
-    // make the ratio big.
-    this.workflowActionService
-      .getJointGraphWrapper()
-      .setZoomProperty(
-        this.workflowActionService.getJointGraphWrapper().getZoomRatio() + JointGraphWrapper.ZOOM_CLICK_DIFF
-      );
-  }
-
   /**
    * This method will run the autoLayout function
    *
