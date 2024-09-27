@@ -147,7 +147,7 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
     }
     this.handlePointerEvents();
     this.handleURLFragment();
-    // this.invokeResize();
+    this.invokeResize();
   }
 
   ngOnDestroy(): void {
