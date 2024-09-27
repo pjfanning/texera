@@ -15,15 +15,10 @@ export function isBase64(str: string): boolean {
   return validator.isBase64(str);
 }
 
-export function isBinary(str: string): boolean {
-  const binaryRegex = /^[01]+$/;
-  return binaryRegex.test(str);
-}
-
 export function trimDisplayJsonData(rowData: IndexableObject, maxLen: number): Record<string, unknown> {
   return deepMap<Record<string, unknown>>(rowData, value => {
     if (typeof value === "string") {
-      if (isBase64(value) || isBinary(value)) {
+      if (isBase64(value)) {
         const length = value.length;
         // If length is less than 13, show the entire string.
         if (length < 13) {
