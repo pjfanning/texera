@@ -6,19 +6,12 @@ import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.enums.WorkflowUserAccessPrivilege
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
-  EnvironmentOfWorkflowDao,
   WorkflowDao,
   WorkflowOfProjectDao,
   WorkflowOfUserDao,
   WorkflowUserAccessDao
 }
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{
-  createEnvironment,
-  doesWorkflowHaveEnvironment,
-  copyEnvironment
-}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
 import io.dropwizard.auth.Auth
@@ -51,9 +44,6 @@ object WorkflowResource {
     context.configuration()
   )
   final private lazy val workflowOfProjectDao = new WorkflowOfProjectDao(context.configuration)
-  final private lazy val environmentOfWorkflowDao = new EnvironmentOfWorkflowDao(
-    context.configuration
-  )
 
   private def insertWorkflow(workflow: Workflow, user: User): Unit = {
     workflowDao.insert(workflow)
@@ -83,28 +73,13 @@ object WorkflowResource {
     )
   }
 
-  def getEnvironmentEidOfWorkflow(wid: UInteger): UInteger = {
-    val environmentOfWorkflow = environmentOfWorkflowDao.fetchByWid(wid)
-    environmentOfWorkflow.get(0).getEid
-  }
-
-  def createEnvironmentForWorkflow(uid: UInteger, wid: UInteger, workflowName: String) = {
-    // create an environment, and associate this environment to this workflow
-    val createdEnvironment = createEnvironment(
-      context,
-      uid,
-      "Environment of Workflow #%d %s".format(wid.intValue(), workflowName),
-      "Runtime Environment of Workflow #%d %s".format(wid.intValue(), workflowName)
-    )
-
-    environmentOfWorkflowDao.insert(new EnvironmentOfWorkflow(createdEnvironment.getEid, wid))
-  }
   case class DashboardWorkflow(
       isOwner: Boolean,
       accessLevel: String,
       ownerName: String,
       workflow: Workflow,
-      projectIDs: List[UInteger]
+      projectIDs: List[UInteger],
+      ownerId: UInteger
   )
 
   case class WorkflowWithPrivilege(
@@ -114,6 +89,7 @@ object WorkflowResource {
       content: String,
       creationTime: Timestamp,
       lastModifiedTime: Timestamp,
+      isPublished: Byte,
       readonly: Boolean
   )
 
@@ -259,7 +235,8 @@ class WorkflowResource extends LazyLogging {
           workflowRecord.into(WORKFLOW).into(classOf[Workflow]),
           if (workflowRecord.component9() == null) List[UInteger]()
           else
-            workflowRecord.component9().split(',').map(number => UInteger.valueOf(number)).toList
+            workflowRecord.component9().split(',').map(number => UInteger.valueOf(number)).toList,
+          workflowRecord.into(WORKFLOW_OF_USER).getUid
         )
       )
       .asScala
@@ -289,6 +266,7 @@ class WorkflowResource extends LazyLogging {
         workflow.getContent,
         workflow.getCreationTime,
         workflow.getLastModifiedTime,
+        workflow.getIsPublished,
         !WorkflowAccessResource.hasWriteAccess(wid, user.getUid)
       )
     } else {
@@ -310,15 +288,16 @@ class WorkflowResource extends LazyLogging {
   @Path("/persist")
   def persistWorkflow(workflow: Workflow, @Auth sessionUser: SessionUser): Workflow = {
     val user = sessionUser.getUser
-    val uid = user.getUid
+    if (user == edu.uci.ics.texera.web.auth.GuestAuthFilter.GUEST) {
+      throw new ForbiddenException("Guest user does not have access to db.")
+    }
 
     if (workflowOfUserExists(workflow.getWid, user.getUid)) {
       WorkflowVersionResource.insertVersion(workflow, insertingNewWorkflow = false)
-      // current user reading
       workflowDao.update(workflow)
     } else {
       if (!WorkflowAccessResource.hasReadAccess(workflow.getWid, user.getUid)) {
-        // not owner and not access record --> new record
+        // not owner and no access record --> new record
         insertWorkflow(workflow, user)
         WorkflowVersionResource.insertVersion(workflow, insertingNewWorkflow = true)
       } else if (WorkflowAccessResource.hasWriteAccess(workflow.getWid, user.getUid)) {
@@ -332,11 +311,6 @@ class WorkflowResource extends LazyLogging {
     }
 
     val wid = workflow.getWid
-    // check if the runtime environment of this workflow exists, if not, create one
-    if (!doesWorkflowHaveEnvironment(context, wid)) {
-      // create an environment, and associate this environment to this workflow
-      createEnvironmentForWorkflow(uid, wid, workflow.getName)
-    }
     workflowDao.fetchOneByWid(wid)
   }
 
@@ -378,7 +352,8 @@ class WorkflowResource extends LazyLogging {
               null,
               workflow.getContent,
               null,
-              null
+              null,
+              0.toByte
             ),
             sessionUser
           )
@@ -395,10 +370,6 @@ class WorkflowResource extends LazyLogging {
               throw new BadRequestException("Workflow already exists in the project")
             }
           }
-          // also duplicate the environment
-          val eid = getEnvironmentEidOfWorkflow(wid)
-          val newEid = getEnvironmentEidOfWorkflow(newWorkflow.workflow.getWid)
-          copyEnvironment(txConfig, eid, newEid)
           resultWorkflows += newWorkflow
         }
       }
@@ -408,6 +379,28 @@ class WorkflowResource extends LazyLogging {
         throw new WebApplicationException(exception)
     }
     resultWorkflows.toList
+  }
+
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Path("/clone/{wid}")
+  def cloneWorkflow(@PathParam("wid") wid: UInteger, @Auth sessionUser: SessionUser): UInteger = {
+    val workflow: Workflow = workflowDao.fetchOneByWid(wid)
+    val newWorkflow: DashboardWorkflow = createWorkflow(
+      new Workflow(
+        workflow.getName + "_clone",
+        workflow.getDescription,
+        null,
+        workflow.getContent,
+        null,
+        null,
+        0.toByte
+      ),
+      sessionUser
+    )
+    //TODO: copy the environment as well
+    newWorkflow.workflow.getWid
   }
 
   /**
@@ -427,14 +420,13 @@ class WorkflowResource extends LazyLogging {
     } else {
       insertWorkflow(workflow, user)
       WorkflowVersionResource.insertVersion(workflow, insertingNewWorkflow = true)
-      // create an environment, and associate this environment to this workflow
-      createEnvironmentForWorkflow(user.getUid, workflow.getWid, workflow.getName)
       DashboardWorkflow(
         isOwner = true,
         WorkflowUserAccessPrivilege.WRITE.toString,
         user.getName,
         workflowDao.fetchOneByWid(workflow.getWid),
-        List[UInteger]()
+        List[UInteger](),
+        user.getUid
       )
     }
 
@@ -493,20 +485,56 @@ class WorkflowResource extends LazyLogging {
     }
   }
 
-  @GET
-  @Path("/{wid}/environment")
-  def retrieveWorkflowEnvironment(
-      @PathParam("wid") wid: UInteger,
-      @Auth user: SessionUser
-  ): Environment = {
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Path("/update/description")
+  def updateWorkflowDescription(
+      workflow: Workflow,
+      @Auth sessionUser: SessionUser
+  ): Unit = {
+    val wid = workflow.getWid
+    val description = workflow.getDescription
+    val user = sessionUser.getUser
 
-    val uid = user.getUid
-    if (!hasReadAccess(wid, uid)) {
-      throw new ForbiddenException(
-        "current user has no read access to this workflow and its environment"
-      )
+    if (!WorkflowAccessResource.hasWriteAccess(wid, user.getUid)) {
+      throw new ForbiddenException("No sufficient access privilege.")
+    } else if (!workflowOfUserExists(wid, user.getUid)) {
+      throw new BadRequestException("The workflow does not exist.")
+    } else {
+      val userWorkflow = workflowDao.fetchOneByWid(wid)
+      userWorkflow.setDescription(description)
+      workflowDao.update(userWorkflow)
     }
+  }
 
-    EnvironmentResource.getEnvironmentByWid(context, uid, wid)
+  @PUT
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
+  @Path("/public/{wid}")
+  def makePublic(@PathParam("wid") wid: UInteger, @Auth user: SessionUser): Unit = {
+    println(wid + " is public now")
+    val workflow: Workflow = workflowDao.fetchOneByWid(wid)
+    workflow.setIsPublished(1.toByte)
+    workflowDao.update(workflow)
+  }
+
+  @PUT
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
+  @Path("/private/{wid}")
+  def makePrivate(@PathParam("wid") wid: UInteger): Unit = {
+    println(wid + " is private now")
+    val workflow: Workflow = workflowDao.fetchOneByWid(wid)
+    workflow.setIsPublished(0.toByte)
+    workflowDao.update(workflow)
+  }
+
+  @GET
+  @Path("/type/{wid}")
+  def getWorkflowType(@PathParam("wid") wid: UInteger): String = {
+    val workflow: Workflow = workflowDao.fetchOneByWid(wid)
+    if (workflow.getIsPublished() == 1.toByte)
+      "Public"
+    else
+      "Private"
   }
 }

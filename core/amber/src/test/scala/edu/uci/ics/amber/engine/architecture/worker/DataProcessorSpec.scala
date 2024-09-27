@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MainThreadDel
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.OpenExecutorHandler.OpenExecutor
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.READY
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
-import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, EndOfUpstream, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, MarkerFrame, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -19,6 +19,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   PhysicalOpIdentity
 }
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
+import edu.uci.ics.texera.workflow.common.EndOfInputChannel
 import edu.uci.ics.texera.workflow.common.WorkflowContext.DEFAULT_WORKFLOW_ID
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -80,6 +81,13 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     (
         (
           input: Int
+        ) => executor.produceStateOnFinish(input)
+    )
+      .expects(0)
+      .returning(None)
+    (
+        (
+          input: Int
         ) => executor.onFinishMultiPort(input)
     )
       .expects(
@@ -107,7 +115,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     }
     dp.processDataPayload(
       ChannelIdentity(senderWorkerId, testWorkerId, isControl = false),
-      EndOfUpstream()
+      MarkerFrame(EndOfInputChannel())
     )
     while (dp.inputManager.hasUnfinishedInput || dp.outputManager.hasUnfinishedOutput) {
       dp.continueDataProcessing()
@@ -129,6 +137,13 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
       )
         .expects(x, 0)
     }
+    (
+        (
+          input: Int
+        ) => executor.produceStateOnFinish(input)
+    )
+      .expects(0)
+      .returning(None)
     (
         (
           input: Int
@@ -161,7 +176,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     (executor.close _).expects().once()
     dp.processDataPayload(
       ChannelIdentity(senderWorkerId, testWorkerId, isControl = false),
-      EndOfUpstream()
+      MarkerFrame(EndOfInputChannel())
     )
     while (dp.inputManager.hasUnfinishedInput || dp.outputManager.hasUnfinishedOutput) {
       dp.continueDataProcessing()

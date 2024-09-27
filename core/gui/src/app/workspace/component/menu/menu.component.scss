@@ -10,7 +10,7 @@
 
 #menu-content {
   display: inline-block;
-  width: calc(100% - 140px);
+  width: 100%;
 }
 
 .workflow-name {
@@ -54,6 +54,14 @@
 
 #execution-buttons {
   float: right;
+}
+
+#share-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  font-weight: 400;
 }
 
 i {

@@ -31,6 +31,17 @@ class HistogramChartOpDesc extends VisualizationOperator with PythonOperatorDesc
   @AutofillAttributeName
   var separateBy: String = ""
 
+  @JsonProperty(required = false, defaultValue = "")
+  @JsonSchemaTitle("Distribution Type")
+  @JsonPropertyDescription("Distribution type (rug, box, violin).")
+  var marginal: String = ""
+
+  @JsonProperty(required = false)
+  @JsonSchemaTitle("Pattern")
+  @JsonPropertyDescription("Add texture to the chart based on an attribute")
+  @AutofillAttributeName
+  var pattern: String = ""
+
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
       "Histogram Chart",
@@ -44,11 +55,15 @@ class HistogramChartOpDesc extends VisualizationOperator with PythonOperatorDesc
     assert(value.nonEmpty)
     var colorParam = ""
     var categoryParam = ""
+    var marginalParam = ""
+    var patternParam = ""
     if (color.nonEmpty) colorParam = s", color = '$color'"
     if (separateBy.nonEmpty) categoryParam = s", facet_col = '$separateBy'"
+    if (marginal.nonEmpty) marginalParam = s", marginal='$marginal'"
+    if (pattern != "") patternParam = s", pattern_shape='$pattern'"
 
     s"""
-       |        fig = px.histogram(table, x = '$value', text_auto = True $colorParam $categoryParam)
+       |        fig = px.histogram(table, x = '$value', text_auto = True $colorParam $categoryParam $marginalParam $patternParam)
        |        fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
        |""".stripMargin
   }

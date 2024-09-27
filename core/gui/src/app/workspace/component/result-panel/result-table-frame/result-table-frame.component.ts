@@ -9,6 +9,10 @@ import { isWebPaginationUpdate } from "../../../types/execute-workflow.interface
 import { IndexableObject, TableColumn } from "../../../types/result-table.interface";
 import { RowModalComponent } from "../result-panel-modal.component";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import { DomSanitizer, SafeHtml } from "@angular/platform-browser";
+import { style } from "@angular/animations";
+import { isBase64, isBinary, trimAndFormatData } from "src/app/common/util/json";
+import { ResultExportationComponent } from "../../result-exportation/result-exportation.component";
 
 export const TABLE_COLUMN_TEXT_LIMIT = 100;
 export const PRETTY_JSON_TEXT_LIMIT = 50000;
@@ -29,7 +33,6 @@ export const PRETTY_JSON_TEXT_LIMIT = 50000;
 })
 export class ResultTableFrameComponent implements OnInit, OnChanges {
   @Input() operatorId?: string;
-
   // display result table
   currentColumns?: TableColumn[];
   currentResult: IndexableObject[] = [];
@@ -47,14 +50,19 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
   currentPageIndex: number = 1;
   totalNumTuples: number = 0;
   pageSize = 5;
+  panelHeight = 0;
+  tableStats: Record<string, Record<string, number>> = {};
+  prevTableStats: Record<string, Record<string, number>> = {};
   widthPercent: string = "";
+  sinkStorageMode: string = "";
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
     private modalService: NzModalService,
     private workflowActionService: WorkflowActionService,
     private workflowResultService: WorkflowResultService,
-    private resizeService: PanelResizeService
+    private resizeService: PanelResizeService,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -66,6 +74,9 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
         this.totalNumTuples = paginatedResultService.getCurrentTotalNumTuples();
         this.currentPageIndex = paginatedResultService.getCurrentPageIndex();
         this.changePaginatedResultData();
+
+        this.tableStats = paginatedResultService.getStats();
+        this.prevTableStats = this.tableStats;
       }
     }
   }
@@ -90,7 +101,35 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
           this.changePaginatedResultData();
         }
       });
+
+    this.workflowResultService
+      .getResultTableStats()
+      .pipe(untilDestroyed(this))
+      .subscribe(([prevStats, currentStats]) => {
+        if (!this.operatorId) {
+          return;
+        }
+
+        if (currentStats[this.operatorId]) {
+          this.tableStats = currentStats[this.operatorId];
+          if (prevStats[this.operatorId] && this.checkKeys(this.tableStats, prevStats[this.operatorId])) {
+            this.prevTableStats = prevStats[this.operatorId];
+          } else {
+            this.prevTableStats = this.tableStats;
+          }
+        }
+      });
+
+    this.workflowResultService
+      .getSinkStorageMode()
+      .pipe(untilDestroyed(this))
+      .subscribe(sinkStorageMode => {
+        this.sinkStorageMode = sinkStorageMode;
+        this.adjustPageSizeBasedOnPanelSize(this.panelHeight);
+      });
+
     this.resizeService.currentSize.pipe(untilDestroyed(this)).subscribe(size => {
+      this.panelHeight = size.height;
       this.adjustPageSizeBasedOnPanelSize(size.height);
       let currentPageNum: number = Math.ceil(this.totalNumTuples / this.pageSize);
       while (this.currentPageIndex > currentPageNum && this.currentPageIndex > 1) {
@@ -99,9 +138,68 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
     });
   }
 
+  checkKeys(
+    currentStats: Record<string, Record<string, number>>,
+    prevStats: Record<string, Record<string, number>>
+  ): boolean {
+    let firstSet = Object.keys(currentStats);
+    let secondSet = Object.keys(prevStats);
+
+    if (firstSet.length != secondSet.length) {
+      return false;
+    }
+
+    for (let i = 0; i < firstSet.length; i++) {
+      if (firstSet[i] != secondSet[i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  compare(field: string, stats: string): SafeHtml {
+    let current = this.tableStats[field][stats];
+    let previous = this.prevTableStats[field][stats];
+    let currentStr = "";
+    let previousStr = "";
+
+    if (typeof current === "number" && typeof previous === "number") {
+      currentStr = current.toFixed(2);
+      previousStr = previous !== undefined ? previous.toFixed(2) : currentStr;
+    } else {
+      currentStr = current.toLocaleString();
+      previousStr = previous !== undefined ? previous.toLocaleString() : currentStr;
+    }
+    let styledValue = "";
+
+    for (let i = 0; i < currentStr.length; i++) {
+      const char = currentStr[i];
+      const prevChar = previousStr[i];
+
+      if (char !== prevChar) {
+        styledValue += `<span style="color: red">${char}</span>`;
+      } else {
+        styledValue += `<span style="color: black">${char}</span>`;
+      }
+    }
+
+    return this.sanitizer.bypassSecurityTrustHtml(styledValue);
+  }
+
   private adjustPageSizeBasedOnPanelSize(panelHeight: number) {
     const rowHeight = 36;
-    let extra: number = Math.floor((panelHeight - 170) / rowHeight);
+    let extra: number;
+
+    if (this.sinkStorageMode == "mongodb") {
+      extra = Math.floor((panelHeight - 88 - 170) / rowHeight);
+    } else {
+      extra = Math.floor((panelHeight - 170) / rowHeight);
+    }
+
+    if (extra < 0) {
+      extra = 0;
+    }
     this.pageSize = 1 + extra;
     this.resizeService.pageSize = this.pageSize;
   }
@@ -245,20 +343,35 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
       columnDef: col.columnKey,
       header: col.columnText,
       getCell: (row: IndexableObject) => {
-        if (row[col.columnKey] !== null && row[col.columnKey] !== undefined) {
-          return this.trimTableCell(row[col.columnKey].toString());
+        if (row[col.columnKey] === null) {
+          return "NULL"; // Explicitly show NULL for null values
+        } else if (row[col.columnKey] !== undefined) {
+          return this.trimTableCell(row[col.columnKey]);
         } else {
-          // allowing null value from backend
-          return "";
+          return ""; // Keep empty string for undefined values
         }
       },
     }));
   }
 
-  trimTableCell(cellContent: string): string {
-    if (cellContent.length > TABLE_COLUMN_TEXT_LIMIT) {
-      return cellContent.substring(0, TABLE_COLUMN_TEXT_LIMIT) + "...";
-    }
-    return cellContent;
+  trimTableCell(cellContent: any): string {
+    return trimAndFormatData(cellContent, TABLE_COLUMN_TEXT_LIMIT);
+  }
+
+  downloadData(data: any, rowIndex: number, columnIndex: number, columnName: string): void {
+    const realRowNumber = (this.currentPageIndex - 1) * this.pageSize + rowIndex;
+    const defaultFileName = `${columnName}_${realRowNumber}`;
+    const modal = this.modalService.create({
+      nzTitle: "Export Data and Save to a Dataset",
+      nzContent: ResultExportationComponent,
+      nzData: {
+        exportType: "data",
+        workflowName: this.workflowActionService.getWorkflowMetadata.name,
+        defaultFileName: defaultFileName,
+        rowIndex: realRowNumber,
+        columnIndex: columnIndex,
+      },
+      nzFooter: null,
+    });
   }
 }

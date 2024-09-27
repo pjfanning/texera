@@ -20,6 +20,7 @@ import java.net.ServerSocket
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable
 import com.twitter.util.Promise
+import edu.uci.ics.texera.workflow.common.{EndOfInputChannel, StartOfInputChannel, State}
 
 import java.nio.charset.Charset
 
@@ -83,8 +84,6 @@ private class AmberProducer(
     val dataHeader: PythonDataHeader = PythonDataHeader
       .parseFrom(flightStream.getDescriptor.getCommand)
     val to: ActorVirtualIdentity = dataHeader.tag
-    val isEnd: Boolean = dataHeader.isEnd
-
     val root = flightStream.getRoot
 
     // send back ack with credits on ackStream
@@ -104,21 +103,23 @@ private class AmberProducer(
     // closing the stream will release the dictionaries
     flightStream.takeDictionaryOwnership
 
-    if (isEnd) {
-      // EndOfUpstream
-      assert(root.getRowCount == 0)
-      outputPort.sendTo(to, EndOfUpstream())
-    } else {
-      // normal data batches
-      val queue = mutable.Queue[Tuple]()
-      for (i <- 0 until root.getRowCount)
-        queue.enqueue(ArrowUtils.getTexeraTuple(i, root))
-      outputPort.sendTo(to, DataFrame(queue.toArray))
-
+    dataHeader.payloadType match {
+      case "StartOfInputChannel" =>
+        assert(root.getRowCount == 0)
+        outputPort.sendTo(to, MarkerFrame(StartOfInputChannel()))
+      case "EndOfInputChannel" =>
+        assert(root.getRowCount == 0)
+        outputPort.sendTo(to, MarkerFrame(EndOfInputChannel()))
+      case "State" =>
+        assert(root.getRowCount == 1)
+        outputPort.sendTo(to, MarkerFrame(State(Some(ArrowUtils.getTexeraTuple(0, root)))))
+      case _ => // normal data batches
+        val queue = mutable.Queue[Tuple]()
+        for (i <- 0 until root.getRowCount)
+          queue.enqueue(ArrowUtils.getTexeraTuple(i, root))
+        outputPort.sendTo(to, DataFrame(queue.toArray))
     }
-
   }
-
 }
 
 class PythonProxyServer(
@@ -132,7 +133,7 @@ class PythonProxyServer(
   def getPortNumber: AtomicInteger = portNumber
 
   val allocator: BufferAllocator =
-    new RootAllocator().newChildAllocator("flight-server", 0, Long.MaxValue);
+    new RootAllocator().newChildAllocator("flight-server", 0, Long.MaxValue)
 
   val producer: FlightProducer = new AmberProducer(actorId, outputPort, promise)
 

@@ -2,8 +2,8 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { Component, inject, Input, OnInit } from "@angular/core";
 import { environment } from "../../../../environments/environment";
 import { WorkflowResultExportService } from "../../service/workflow-result-export/workflow-result-export.service";
-import { DashboardDataset } from "../../../dashboard/user/type/dashboard-dataset.interface";
-import { DatasetService } from "../../../dashboard/user/service/user-dataset/dataset.service";
+import { DashboardDataset } from "../../../dashboard/type/dashboard-dataset.interface";
+import { DatasetService } from "../../../dashboard/service/user/dataset/dataset.service";
 import { NZ_MODAL_DATA, NzModalRef } from "ng-zorro-antd/modal";
 
 @UntilDestroy()
@@ -14,8 +14,10 @@ import { NZ_MODAL_DATA, NzModalRef } from "ng-zorro-antd/modal";
 })
 export class ResultExportationComponent implements OnInit {
   exportType: string = inject(NZ_MODAL_DATA).exportType;
-
   workflowName: string = inject(NZ_MODAL_DATA).workflowName;
+  inputFileName: string = inject(NZ_MODAL_DATA).defaultFileName ?? "default_filename";
+  rowIndex: number = inject(NZ_MODAL_DATA).rowIndex ?? -1;
+  columnIndex: number = inject(NZ_MODAL_DATA).columnIndex ?? -1;
 
   inputDatasetName = "";
 
@@ -32,7 +34,8 @@ export class ResultExportationComponent implements OnInit {
     this.datasetService
       .retrieveAccessibleDatasets()
       .pipe(untilDestroyed(this))
-      .subscribe(datasets => {
+      .subscribe(response => {
+        const datasets = response.datasets;
         this.userAccessibleDatasets = datasets.filter(dataset => dataset.accessPrivilege === "WRITE");
         this.filteredUserAccessibleDatasets = [...this.userAccessibleDatasets];
       });
@@ -50,9 +53,14 @@ export class ResultExportationComponent implements OnInit {
 
   onClickSaveResultFileToDatasets(dataset: DashboardDataset) {
     if (dataset.dataset.did) {
-      this.workflowResultExportService.exportWorkflowExecutionResult(this.exportType, this.workflowName, [
-        dataset.dataset.did,
-      ]);
+      this.workflowResultExportService.exportWorkflowExecutionResult(
+        this.exportType,
+        this.workflowName,
+        [dataset.dataset.did],
+        this.rowIndex,
+        this.columnIndex,
+        this.inputFileName
+      );
       this.modalRef.close();
     }
   }
