@@ -31,6 +31,8 @@ import { NzModalService } from "ng-zorro-antd/modal";
 import { ResultExportationComponent } from "../result-exportation/result-exportation.component";
 import { ReportGenerationService } from "../../service/report-generation/report-generation.service";
 import { ShareAccessComponent } from "src/app/dashboard/component/user/share-access/share-access.component";
+import { Router } from "@angular/router";
+
 /**
  * MenuComponent is the top level menu bar that shows
  *  the Texera title and workflow execution button
@@ -101,7 +103,8 @@ export class MenuComponent implements OnInit {
     public operatorMenu: OperatorMenuService,
     public coeditorPresenceService: CoeditorPresenceService,
     private modalService: NzModalService,
-    private reportGenerationService: ReportGenerationService
+    private reportGenerationService: ReportGenerationService,
+    private router: Router
   ) {
     workflowWebsocketService
       .subscribeToEvent("ExecutionDurationUpdateEvent")
@@ -536,4 +539,8 @@ export class MenuComponent implements OnInit {
   }
 
   protected readonly environment = environment;
+
+  onShowOverlay() {
+    this.router.navigate([`/dashboard/user/workspace/${this.workflowId}/detail`]);
+  }
 }

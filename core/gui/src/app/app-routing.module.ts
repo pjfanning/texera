@@ -73,6 +73,10 @@ if (environment.userSystemEnabled) {
             component: WorkspaceComponent,
           },
           {
+            path: "workspace/:id/detail",
+            component: HubWorkflowDetailComponent,
+          },
+          {
             path: "workflow",
             component: UserWorkflowComponent,
           },

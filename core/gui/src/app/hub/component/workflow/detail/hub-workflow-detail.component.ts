@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnInit, HostListener, OnDestroy, ViewChild, ViewContainerRef } from "@angular/core";
+import { AfterViewInit, Component, HostListener, OnDestroy, ViewChild, ViewContainerRef } from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { ActivatedRoute, Router } from "@angular/router";
 import { environment } from "../../../../../environments/environment";
@@ -17,10 +17,12 @@ import { of } from "rxjs";
 import { isDefined } from "../../../../common/util/predicate";
 import { HubWorkflowService } from "../../../service/workflow/hub-workflow.service";
 import { User } from "src/app/common/type/user";
+import { Location } from "@angular/common";
+
 
 @UntilDestroy()
 @Component({
-  selector: "texera-hub-workflow-result",
+  selector: "texera-hub-workflow-detail",
   templateUrl: "hub-workflow-detail.component.html",
   styleUrls: ["hub-workflow-detail.component.scss"],
 })
@@ -69,7 +71,8 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
     private router: Router,
     private notificationService: NotificationService,
     private codeEditorService: CodeEditorService,
-    private hubWorkflowService: HubWorkflowService
+    private hubWorkflowService: HubWorkflowService,
+    private location: Location,
   ) {
     this.wid = this.route.snapshot.params.id;
   }
@@ -194,5 +197,9 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
       .subscribe(wid => {
         this.workflowWebsocketService.reopenWebsocket(wid);
       });
+  }
+
+  goBack(): void {
+    this.location.back();
   }
 }
