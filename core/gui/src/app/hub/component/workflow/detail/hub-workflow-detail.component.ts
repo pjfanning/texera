@@ -20,7 +20,7 @@ import { User } from "src/app/common/type/user";
 
 @UntilDestroy()
 @Component({
-  selector: "texera-hub-workflow-result",
+  selector: "texera-hub-workflow-detail",
   templateUrl: "hub-workflow-detail.component.html",
   styleUrls: ["hub-workflow-detail.component.scss"],
 })
