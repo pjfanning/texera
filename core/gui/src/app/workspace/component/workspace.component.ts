@@ -61,7 +61,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     private router: Router,
     private notificationService: NotificationService,
     private codeEditorService: CodeEditorService,
-    private modalService: NzModalService,
+    private modalService: NzModalService
   ) {}
 
   ngOnInit() {
@@ -299,5 +299,4 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   handleCancel(): void {
     this.isModalVisible = false;
   }
-
 }

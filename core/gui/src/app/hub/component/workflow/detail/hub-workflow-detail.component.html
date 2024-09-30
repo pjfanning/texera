@@ -17,7 +17,11 @@
 
   <h2>Preview</h2>
   <div class="preview-containers">
-    <img class="screenshot-image" *ngIf="screenshot" [src]="screenshot" alt="Workflow Screenshot" />
+    <img
+      class="screenshot-image"
+      *ngIf="screenshot"
+      [src]="screenshot"
+      alt="Workflow Screenshot" />
 
     <!-- 如果没有截图，则显示编辑器 -->
     <ng-container *ngIf="!screenshot">
@@ -30,7 +34,9 @@
 
   <div class="workflow-steps">
     <h2>Steps</h2>
-    <div *ngFor="let step of workflow.steps" class="workflow-step">
+    <div
+      *ngFor="let step of workflow.steps"
+      class="workflow-step">
       <h3>{{ step.name }}</h3>
       <p>{{ step.description }}</p>
       <p><strong>Status:</strong> {{ step.status }}</p>
