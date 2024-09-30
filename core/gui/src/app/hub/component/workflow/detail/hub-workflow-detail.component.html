@@ -12,12 +12,19 @@
 </button>
 
 <div class="container prevent-select">
-  <h1>Workflow Detail Page</h1>
-  <div class="workflow-info">
-    <div>
-      <h2>ID</h2>
-      <p>{{ wid }}</p>
+  <div class="header-info">
+    <div class="detail-title">
+      <h1>Workflow Detail Page</h1>
+      <div class="id-container">
+        <h2>#{{ wid }}</h2>
+      </div>
     </div>
+    <div class="workflow-panel">
+      <button *ngIf="!this.isWorkspace" (click)="cloneWorkflow()" class="clone-button">Copy & Edit</button>
+    </div>
+  </div>
+
+  <div class="workflow-info">
     <div>
       <h2>Workflow Name</h2>
       <p>{{ workflowName }}</p>

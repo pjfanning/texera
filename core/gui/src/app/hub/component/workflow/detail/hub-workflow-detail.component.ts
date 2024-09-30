@@ -35,7 +35,9 @@ import { Location } from "@angular/common";
   styleUrls: ["hub-workflow-detail.component.scss"],
 })
 export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnInit {
+  isWorkspace: boolean = false;
   wid: number;
+  clonedWorklowId: number | undefined;
   workflowName: string = "";
   ownerName: string = "";
   workflowDescription: string = ""
@@ -90,6 +92,8 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
   }
 
   ngOnInit() {
+    this.isWorkspace = this.route.snapshot.url.some(segment => segment.path === "workspace");
+
     this.hubWorkflowService
       .getOwnerUser(this.wid)
       .pipe(untilDestroyed(this))
@@ -113,10 +117,8 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
   }
 
   ngAfterViewInit(): void {
-    const isWorkspace = this.route.snapshot.url.some(segment => segment.path === "workspace");
-
     // clear the current workspace, reset as `WorkflowActionService.DEFAULT_WORKFLOW`
-    if (!this.screenshot && !isWorkspace) {
+    if (!this.screenshot && !this.isWorkspace) {
       // clear the current workspace, reset as `WorkflowActionService.DEFAULT_WORKFLOW`
       this.workflowActionService.resetAsNewWorkflow();
 
@@ -132,9 +134,7 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
 
   @HostListener("window:beforeunload")
   ngOnDestroy() {
-    const isWorkspace = this.route.snapshot.url.some(segment => segment.path === "workspace");
-
-    if (!this.screenshot && !isWorkspace) {
+    if (!this.screenshot && !this.isWorkspace) {
       if (this.workflowPersistService.isWorkflowPersistEnabled()) {
         const workflow = this.workflowActionService.getWorkflow();
         this.workflowPersistService.persistWorkflow(workflow).pipe(untilDestroyed(this)).subscribe();
@@ -232,5 +232,14 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
 
   goBack(): void {
     this.location.back();
+  }
+
+  cloneWorkflow(): void {
+    this.hubWorkflowService.cloneWorkflow(Number(this.wid))
+      .pipe(untilDestroyed(this))
+      .subscribe(newWid => {
+        this.clonedWorklowId = newWid;
+        this.router.navigate([`/workflow/${this.clonedWorklowId}`]);
+      });
   }
 }

@@ -399,7 +399,6 @@ class WorkflowResource extends LazyLogging {
       ),
       sessionUser
     )
-    //TODO: copy the environment as well
     newWorkflow.workflow.getWid
   }
 

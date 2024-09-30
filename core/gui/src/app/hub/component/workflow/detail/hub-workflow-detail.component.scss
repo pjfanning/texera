@@ -76,12 +76,44 @@ texera-mini-map {
   //z-index: 3;
 }
 
-.prevent-select {
-  user-select: none;
-}
+//.prevent-select {
+//  user-select: none;
+//}
 
 .go-back-button {
   position: absolute;
   left: 20px;
   top: 20px;
+}
+
+.header-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+
+.detail-title {
+  display: flex;
+  align-items: center;
+}
+
+.id-container h2 {
+  margin-left: 10px;
+  padding-top: 5px;
+  color: gray;
+}
+
+.workflow-panel {
+  display: flex;
+  align-items: center;           // 按钮垂直居中对齐
+}
+
+.clone-button {
+  background-color: black;
+  color: white;
+  border-radius: 15px;
+  padding: 5px 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); // 按钮阴影
+  cursor: pointer;              // 鼠标悬停时显示为手形
 }
