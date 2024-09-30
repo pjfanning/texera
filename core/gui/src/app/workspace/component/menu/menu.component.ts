@@ -31,6 +31,7 @@ import { NzModalService } from "ng-zorro-antd/modal";
 import { ResultExportationComponent } from "../result-exportation/result-exportation.component";
 import { ReportGenerationService } from "../../service/report-generation/report-generation.service";
 import { ShareAccessComponent } from "src/app/dashboard/component/user/share-access/share-access.component";
+
 /**
  * MenuComponent is the top level menu bar that shows
  *  the Texera title and workflow execution button
@@ -101,7 +102,8 @@ export class MenuComponent implements OnInit {
     public operatorMenu: OperatorMenuService,
     public coeditorPresenceService: CoeditorPresenceService,
     private modalService: NzModalService,
-    private reportGenerationService: ReportGenerationService
+    private reportGenerationService: ReportGenerationService,
+    private modal: NzModalService
   ) {
     workflowWebsocketService
       .subscribeToEvent("ExecutionDurationUpdateEvent")
@@ -544,19 +546,34 @@ export class MenuComponent implements OnInit {
   @Output() showOverlay = new EventEmitter<{ screenshot: string | null }>();
 
   onShowOverlay() {
-    // eslint-disable-next-line rxjs-angular/prefer-takeuntil
-    this.reportGenerationService.generateWorkflowSnapshot("Workflow Name").subscribe({
-      next: (screenshot: string) => {
-        // Emit the screenshot to the parent component (workspace)
-        this.showOverlay.emit({ screenshot });
+    // Show a confirmation modal suggesting the user collapse the side bar
+    this.modal.confirm({
+      nzTitle: "Suggestion to Collapse Side Bar",
+      nzContent:
+        "It is recommended to collapse the side bar for a better experience while viewing the detail. Do you want to proceed?",
+      nzOkText: "Confirm",
+      nzCancelText: "Cancel",
+      nzOnOk: () => {
+        // If the user confirms, proceed with the screenshot logic
+        // eslint-disable-next-line rxjs-angular/prefer-takeuntil
+        this.reportGenerationService.generateWorkflowSnapshot("Workflow Name").subscribe({
+          next: (screenshot: string) => {
+            // Emit the screenshot to the parent component (workspace)
+            this.showOverlay.emit({ screenshot });
+          },
+          error: (error: unknown) => {
+            console.error("Error generating workflow snapshot:", error);
+            // Emit null if there's an error in screenshot generation
+            this.showOverlay.emit({ screenshot: null });
+          },
+          complete: () => {
+            console.log("Snapshot generation completed");
+          },
+        });
       },
-      error: (error: unknown) => {
-        console.error("Error generating workflow snapshot:", error);
-        // Emit null if there's an error in screenshot generation
-        this.showOverlay.emit({ screenshot: null });
-      },
-      complete: () => {
-        console.log("Snapshot generation completed");
+      nzOnCancel: () => {
+        // If the user cancels, log the action and do nothing
+        console.log("User canceled the operation");
       },
     });
   }

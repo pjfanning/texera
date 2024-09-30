@@ -25,7 +25,6 @@ import { Workflow } from "../../../../common/type/workflow";
 import { of } from "rxjs";
 import { isDefined } from "../../../../common/util/predicate";
 import { HubWorkflowService } from "../../../service/workflow/hub-workflow.service";
-import { User } from "src/app/common/type/user";
 
 @UntilDestroy()
 @Component({
@@ -33,10 +32,10 @@ import { User } from "src/app/common/type/user";
   templateUrl: "hub-workflow-detail.component.html",
   styleUrls: ["hub-workflow-detail.component.scss"],
 })
-export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
+export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnInit {
   wid: number;
   workflowName: string = "";
-  ownerUser!: User;
+  ownerName: string = "";
   workflow = {
     steps: [
       {
@@ -65,6 +64,7 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
   public pid?: number = undefined;
   userSystemEnabled = environment.userSystemEnabled;
   @ViewChild("codeEditor", { read: ViewContainerRef }) codeEditorViewRef!: ViewContainerRef;
+
   constructor(
     private userService: UserService,
     // list additional services in constructor so they are initialized even if no one use them directly
@@ -84,25 +84,23 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.hubWorkflowService
+      .getOwnerUser(this.wid)
+      .pipe(untilDestroyed(this))
+      .subscribe(owner => {
+        this.ownerName = owner.name;
+      });
 
-    const isWorkspace = this.route.snapshot.url.some(segment => segment.path === 'workspace');
-
-    if (!this.screenshot && !isWorkspace) {
-      this.hubWorkflowService.getOwnerUser(this.wid)
-        .pipe(untilDestroyed(this))
-        .subscribe(owner => {
-          this.ownerUser = owner;
-        });
-      this.hubWorkflowService.getWorkflowName(this.wid)
-        .pipe(untilDestroyed(this))
-        .subscribe(workflowName => {
-          this.workflowName = workflowName;
-        });
-    }
+    this.hubWorkflowService
+      .getWorkflowName(this.wid)
+      .pipe(untilDestroyed(this))
+      .subscribe(workflowName => {
+        this.workflowName = workflowName;
+      });
   }
 
   ngAfterViewInit(): void {
-    const isWorkspace = this.route.snapshot.url.some(segment => segment.path === 'workspace');
+    const isWorkspace = this.route.snapshot.url.some(segment => segment.path === "workspace");
 
     // clear the current workspace, reset as `WorkflowActionService.DEFAULT_WORKFLOW`
     if (!this.screenshot && !isWorkspace) {
@@ -121,14 +119,18 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
 
   @HostListener("window:beforeunload")
   ngOnDestroy() {
-    if (this.workflowPersistService.isWorkflowPersistEnabled()) {
-      const workflow = this.workflowActionService.getWorkflow();
-      this.workflowPersistService.persistWorkflow(workflow).pipe(untilDestroyed(this)).subscribe();
-    }
+    const isWorkspace = this.route.snapshot.url.some(segment => segment.path === "workspace");
 
-    this.codeEditorViewRef.clear();
-    this.workflowWebsocketService.closeWebsocket();
-    this.workflowActionService.clearWorkflow();
+    if (!this.screenshot && !isWorkspace) {
+      if (this.workflowPersistService.isWorkflowPersistEnabled()) {
+        const workflow = this.workflowActionService.getWorkflow();
+        this.workflowPersistService.persistWorkflow(workflow).pipe(untilDestroyed(this)).subscribe();
+      }
+
+      this.codeEditorViewRef.clear();
+      this.workflowWebsocketService.closeWebsocket();
+      this.workflowActionService.clearWorkflow();
+    }
   }
 
   loadWorkflowWithId(wid: number): void {
@@ -214,5 +216,4 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
   }
 
   @Input() screenshot: string | null = null;
-
 }

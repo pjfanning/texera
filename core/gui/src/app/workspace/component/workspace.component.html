@@ -13,7 +13,13 @@
 <ng-template #codeEditor></ng-template>
 
 <!-- Modal structure with texera-hub-workflow-detail -->
-<nz-modal [(nzVisible)]="isModalVisible" nzTitle="Workflow Detail" (nzOnCancel)="handleCancel()" (nzOnOk)="handleOk()">
+<nz-modal
+  [(nzVisible)]="isModalVisible"
+  nzTitle="Workflow Detail"
+  (nzOnCancel)="handleCancel()"
+  [nzFooter]="null"
+  [nzStyle]="{ width: '50%' }"
+  [nzBodyStyle]="{ maxHeight: '70vh', overflow: 'auto' }">
   <ng-container *nzModalContent>
     <texera-hub-workflow-detail [screenshot]="screenshot"></texera-hub-workflow-detail>
   </ng-container>

@@ -11,15 +11,13 @@
     </div>
     <div>
       <h2>Created By</h2>
-      <p>{{ ownerUser?.name }}</p>
+      <p>{{ ownerName }}</p>
     </div>
   </div>
 
   <h2>Preview</h2>
   <div class="preview-containers">
-    <!-- 如果有截图，则显示截图，设置高度和宽度 -->
-    <img *ngIf="screenshot" [src]="screenshot" alt="Workflow Screenshot"
-         style="max-width: 100%; max-height: 400px; display: block; margin: 0 auto;" />
+    <img class="screenshot-image" *ngIf="screenshot" [src]="screenshot" alt="Workflow Screenshot" />
 
     <!-- 如果没有截图，则显示编辑器 -->
     <ng-container *ngIf="!screenshot">
