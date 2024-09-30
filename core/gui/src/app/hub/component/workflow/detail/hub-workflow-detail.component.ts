@@ -26,6 +26,7 @@ import { of } from "rxjs";
 import { isDefined } from "../../../../common/util/predicate";
 import { HubWorkflowService } from "../../../service/workflow/hub-workflow.service";
 import { User } from "src/app/common/type/user";
+import { Location } from "@angular/common";
 
 @UntilDestroy()
 @Component({
@@ -37,6 +38,7 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
   wid: number;
   workflowName: string = "";
   ownerName: string = "";
+  workflowDescription: string = ""
   workflow = {
     steps: [
       {
@@ -80,7 +82,8 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
     private router: Router,
     private notificationService: NotificationService,
     private codeEditorService: CodeEditorService,
-    private hubWorkflowService: HubWorkflowService
+    private hubWorkflowService: HubWorkflowService,
+    private location: Location,
   ) {
     this.wid = this.route.snapshot.params.id;
     this.currentUser = this.userService.getCurrentUser();
@@ -99,6 +102,13 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
       .pipe(untilDestroyed(this))
       .subscribe(workflowName => {
         this.workflowName = workflowName;
+      });
+
+    this.hubWorkflowService
+      .getWorkflowDescription(this.wid)
+      .pipe(untilDestroyed(this))
+      .subscribe(workflowDescription => {
+        this.workflowDescription = workflowDescription || "No description available";
       });
   }
 
@@ -219,4 +229,8 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
   }
 
   @Input() screenshot: string | null = null;
+
+  goBack(): void {
+    this.location.back();
+  }
 }

@@ -70,6 +70,18 @@ class HubWorkflowResource {
   }
 
   @GET
+  @Path("/workflow_description")
+  def getWorkflowDescription(@QueryParam("wid") wid: UInteger): String = {
+    context
+      .select(
+        WORKFLOW.DESCRIPTION
+      )
+      .from(WORKFLOW)
+      .where(WORKFLOW.WID.eq(wid))
+      .fetchOneInto(classOf[String])
+  }
+
+  @GET
   @Path("/public/{wid}")
   def retrievePublicWorkflow(
       @PathParam("wid") wid: UInteger

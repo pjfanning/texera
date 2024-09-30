@@ -34,6 +34,11 @@ export class HubWorkflowService {
     return this.http.get(`${this.BASE_URL}/workflow_name/`, { params, responseType: "text" });
   }
 
+  public getWorkflowDescription(wid: number): Observable<string> {
+    const params = new HttpParams().set("wid", wid);
+    return this.http.get(`${this.BASE_URL}/workflow_description/`, { params, responseType: "text" });
+  }
+
   public retrievePublicWorkflow(wid: number): Observable<Workflow> {
     return this.http.get<Workflow>(`${this.BASE_URL}/public/${wid}`).pipe(
       filter((workflow: Workflow) => workflow != null),
