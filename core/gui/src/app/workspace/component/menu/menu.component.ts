@@ -1,5 +1,5 @@
 import { DatePipe, Location } from "@angular/common";
-import { Component, ElementRef, Input, OnInit, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from "@angular/core";
 import { environment } from "../../../../environments/environment";
 import { UserService } from "../../../common/service/user/user.service";
 import {
@@ -536,4 +536,28 @@ export class MenuComponent implements OnInit {
   }
 
   protected readonly environment = environment;
+
+  // @Output() showOverlayEvent = new EventEmitter<void>();
+  // onShowOverlay() {
+  //   this.showOverlayEvent.emit();
+  // }
+  @Output() showOverlay = new EventEmitter<{ screenshot: string | null }>();
+
+  onShowOverlay() {
+    // eslint-disable-next-line rxjs-angular/prefer-takeuntil
+    this.reportGenerationService.generateWorkflowSnapshot("Workflow Name").subscribe({
+      next: (screenshot: string) => {
+        // Emit the screenshot to the parent component (workspace)
+        this.showOverlay.emit({ screenshot });
+      },
+      error: (error: unknown) => {
+        console.error("Error generating workflow snapshot:", error);
+        // Emit null if there's an error in screenshot generation
+        this.showOverlay.emit({ screenshot: null });
+      },
+      complete: () => {
+        console.log("Snapshot generation completed");
+      },
+    });
+  }
 }

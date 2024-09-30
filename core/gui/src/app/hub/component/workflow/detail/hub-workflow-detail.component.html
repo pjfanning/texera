@@ -11,21 +11,28 @@
     </div>
     <div>
       <h2>Created By</h2>
-      <p>{{ ownerUser.name }}</p>
+      <p>{{ ownerUser?.name }}</p>
     </div>
   </div>
+
   <h2>Preview</h2>
   <div class="preview-containers">
-    <texera-workflow-editor></texera-workflow-editor>
-    <texera-mini-map class="box"></texera-mini-map>
+    <!-- 如果有截图，则显示截图，设置高度和宽度 -->
+    <img *ngIf="screenshot" [src]="screenshot" alt="Workflow Screenshot"
+         style="max-width: 100%; max-height: 400px; display: block; margin: 0 auto;" />
+
+    <!-- 如果没有截图，则显示编辑器 -->
+    <ng-container *ngIf="!screenshot">
+      <texera-workflow-editor></texera-workflow-editor>
+      <texera-mini-map class="box"></texera-mini-map>
+    </ng-container>
   </div>
+
   <ng-template #codeEditor></ng-template>
+
   <div class="workflow-steps">
     <h2>Steps</h2>
-
-    <div
-      *ngFor="let step of workflow.steps"
-      class="workflow-step">
+    <div *ngFor="let step of workflow.steps" class="workflow-step">
       <h3>{{ step.name }}</h3>
       <p>{{ step.description }}</p>
       <p><strong>Status:</strong> {{ step.status }}</p>

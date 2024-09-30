@@ -4,9 +4,17 @@
 <texera-workflow-editor></texera-workflow-editor>
 <texera-menu
   [writeAccess]="writeAccess"
-  [pid]="pid"></texera-menu
+  [pid]="pid"
+  (showOverlay)="onShowOverlay($event)"></texera-menu
 ><span id="git-commit-id">Git hash: {{ gitCommitHash }}</span>
 <texera-mini-map class="box"></texera-mini-map>
 <texera-left-panel></texera-left-panel>
 <texera-property-editor></texera-property-editor>
 <ng-template #codeEditor></ng-template>
+
+<!-- Modal structure with texera-hub-workflow-detail -->
+<nz-modal [(nzVisible)]="isModalVisible" nzTitle="Workflow Detail" (nzOnCancel)="handleCancel()" (nzOnOk)="handleOk()">
+  <ng-container *nzModalContent>
+    <texera-hub-workflow-detail [screenshot]="screenshot"></texera-hub-workflow-detail>
+  </ng-container>
+</nz-modal>

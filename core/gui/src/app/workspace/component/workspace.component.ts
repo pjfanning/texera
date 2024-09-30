@@ -22,6 +22,7 @@ import { WorkflowConsoleService } from "../service/workflow-console/workflow-con
 import { OperatorReuseCacheStatusService } from "../service/workflow-status/operator-reuse-cache-status.service";
 import { CodeEditorService } from "../service/code-editor/code-editor.service";
 import { WorkflowMetadata } from "src/app/dashboard/type/workflow-metadata.interface";
+import { NzModalService } from "ng-zorro-antd/modal";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
 
@@ -59,7 +60,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     private message: NzMessageService,
     private router: Router,
     private notificationService: NotificationService,
-    private codeEditorService: CodeEditorService
+    private codeEditorService: CodeEditorService,
+    private modalService: NzModalService,
   ) {}
 
   ngOnInit() {
@@ -274,4 +276,28 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         this.workflowWebsocketService.reopenWebsocket(metadata.wid as number);
       });
   }
+
+  isModalVisible = false;
+  screenshot: string | null = null;
+
+  onShowOverlay(event: { screenshot: string | null }) {
+    const isWorkspace = this.route.snapshot.url.some(segment => segment.path === "workspace");
+
+    this.screenshot = isWorkspace ? event.screenshot : null;
+
+    this.isModalVisible = true;
+  }
+
+  // showModal(): void {
+  //   this.isModalVisible = true;
+  // }
+
+  handleOk(): void {
+    this.isModalVisible = false;
+  }
+
+  handleCancel(): void {
+    this.isModalVisible = false;
+  }
+
 }

@@ -1,4 +1,13 @@
-import { AfterViewInit, Component, OnInit, HostListener, OnDestroy, ViewChild, ViewContainerRef } from "@angular/core";
+import {
+  AfterViewInit,
+  Component,
+  OnInit,
+  HostListener,
+  OnDestroy,
+  ViewChild,
+  ViewContainerRef,
+  Input,
+} from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { ActivatedRoute, Router } from "@angular/router";
 import { environment } from "../../../../../environments/environment";
@@ -75,31 +84,39 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.hubWorkflowService
-      .getOwnerUser(this.wid)
-      .pipe(untilDestroyed(this))
-      .subscribe(owner => {
-        this.ownerUser = owner;
-      });
-    this.hubWorkflowService
-      .getWorkflowName(this.wid)
-      .pipe(untilDestroyed(this))
-      .subscribe(workflowName => {
-        this.workflowName = workflowName;
-      });
+
+    const isWorkspace = this.route.snapshot.url.some(segment => segment.path === 'workspace');
+
+    if (!this.screenshot && !isWorkspace) {
+      this.hubWorkflowService.getOwnerUser(this.wid)
+        .pipe(untilDestroyed(this))
+        .subscribe(owner => {
+          this.ownerUser = owner;
+        });
+      this.hubWorkflowService.getWorkflowName(this.wid)
+        .pipe(untilDestroyed(this))
+        .subscribe(workflowName => {
+          this.workflowName = workflowName;
+        });
+    }
   }
 
   ngAfterViewInit(): void {
+    const isWorkspace = this.route.snapshot.url.some(segment => segment.path === 'workspace');
+
     // clear the current workspace, reset as `WorkflowActionService.DEFAULT_WORKFLOW`
-    this.workflowActionService.resetAsNewWorkflow();
+    if (!this.screenshot && !isWorkspace) {
+      // clear the current workspace, reset as `WorkflowActionService.DEFAULT_WORKFLOW`
+      this.workflowActionService.resetAsNewWorkflow();
 
-    if (this.userSystemEnabled) {
-      this.registerReEstablishWebsocketUponWIdChange();
+      if (this.userSystemEnabled) {
+        this.registerReEstablishWebsocketUponWIdChange();
+      }
+
+      this.registerLoadOperatorMetadata();
+
+      this.codeEditorService.vc = this.codeEditorViewRef;
     }
-
-    this.registerLoadOperatorMetadata();
-
-    this.codeEditorService.vc = this.codeEditorViewRef;
   }
 
   @HostListener("window:beforeunload")
@@ -195,4 +212,7 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
         this.workflowWebsocketService.reopenWebsocket(wid);
       });
   }
+
+  @Input() screenshot: string | null = null;
+
 }
