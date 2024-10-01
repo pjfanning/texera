@@ -106,7 +106,8 @@ texera-mini-map {
 
 .workflow-panel {
   display: flex;
-  align-items: center;           // 按钮垂直居中对齐
+  align-items: center;
+  margin-bottom: 10px;
 }
 
 .clone-button {
@@ -114,6 +115,31 @@ texera-mini-map {
   color: white;
   border-radius: 15px;
   padding: 5px 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); // 按钮阴影
-  cursor: pointer;              // 鼠标悬停时显示为手形
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+.name-container h2 {
+  margin: 0;
+  padding: 0;
+}
+
+.name-header {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.owner-header h2 {
+  margin: 0;
+}
+
+.resource-owner p {
+  margin: 0;
+}
+
+.resource-name-edit-input {
+  width: 100%;
 }

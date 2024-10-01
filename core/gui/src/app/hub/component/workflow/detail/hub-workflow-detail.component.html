@@ -25,18 +25,47 @@
   </div>
 
   <div class="workflow-info">
-    <div>
-      <h2>Workflow Name</h2>
-      <p>{{ workflowName }}</p>
+    <div class="name-container">
+      <div class="name-header">
+        <h2>Workflow Name</h2>
+        <button
+          nz-button
+          nzType="text"
+          class="edit-name-button"
+          title="Edit Name"
+          (click)="onEditName()"
+          *ngIf="this.isWorkspace">
+          <i nz-icon nzTheme="outline" nzType="form"></i>
+        </button>
+      </div>
+      <div *ngIf="!editingName" class="resource-name truncate-single-line">
+        {{ workflowName }}
+      </div>
+      <input
+        *ngIf="editingName"
+        #nameInput
+        class="resource-name-edit-input"
+        [(ngModel)]="workflowName"
+        (blur)="confirmUpdateWorkflowCustomName(workflowName)"
+        (keydown.enter)="confirmUpdateWorkflowCustomName(workflowName)"
+        (click)="$event.stopPropagation()"
+        autofocus />
     </div>
+
     <div>
-      <h2>Created By</h2>
-      <p>{{ ownerName }}</p>
+      <div class="owner-header">
+        <h2>Created By</h2>
+      </div>
+      <div class="resource-owner">
+        <p>{{ ownerName }}</p>
+      </div>
     </div>
   </div>
+
   <div class="workflow-description">
     <h2>Description</h2>
     <p>{{workflowDescription}}</p>
+
   </div>
 
   <h2>Preview</h2>

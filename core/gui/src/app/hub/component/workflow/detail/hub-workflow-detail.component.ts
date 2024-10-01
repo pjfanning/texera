@@ -6,14 +6,17 @@ import {
   OnDestroy,
   ViewChild,
   ViewContainerRef,
-  Input,
+  Input, ElementRef,
 } from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { ActivatedRoute, Router } from "@angular/router";
 import { environment } from "../../../../../environments/environment";
 import { UserService } from "../../../../common/service/user/user.service";
 import { UndoRedoService } from "../../../../workspace/service/undo-redo/undo-redo.service";
-import { WorkflowPersistService } from "../../../../common/service/workflow-persist/workflow-persist.service";
+import {
+  DEFAULT_WORKFLOW_NAME,
+  WorkflowPersistService,
+} from "../../../../common/service/workflow-persist/workflow-persist.service";
 import { WorkflowWebsocketService } from "../../../../workspace/service/workflow-websocket/workflow-websocket.service";
 import { WorkflowActionService } from "../../../../workspace/service/workflow-graph/model/workflow-action.service";
 import { OperatorMetadataService } from "../../../../workspace/service/operator-metadata/operator-metadata.service";
@@ -240,6 +243,60 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
       .subscribe(newWid => {
         this.clonedWorklowId = newWid;
         this.router.navigate([`/workflow/${this.clonedWorklowId}`]);
+      });
+  }
+
+  editingName = false;
+  editingDescription = false;
+  @ViewChild("nameInput") nameInput!: ElementRef;
+
+  onEditName(): void {
+    this.editingName = true;
+    setTimeout(() => {
+      if (this.nameInput) {
+        const inputElement = this.nameInput.nativeElement;
+        const valueLength = inputElement.value.length;
+        inputElement.focus();
+        inputElement.setSelectionRange(valueLength, valueLength);
+      }
+    }, 0);
+  }
+
+  // onEditDescription(): void {
+  //   this.editingDescription = true;
+  //   setTimeout(() => {
+  //     if (this.descriptionInput) {
+  //       const textareaElement = this.descriptionInput.nativeElement;
+  //       const valueLength = textareaElement.value.length;
+  //       textareaElement.focus();
+  //       textareaElement.setSelectionRange(valueLength, valueLength);
+  //     }
+  //   }, 0);
+  // }
+
+  public confirmUpdateWorkflowCustomName(name: string): void {
+    this.workflowPersistService
+      .updateWorkflowName(this.wid, name || DEFAULT_WORKFLOW_NAME)
+      .pipe(untilDestroyed(this))
+      .subscribe(() => {
+        this.workflowName = name || DEFAULT_WORKFLOW_NAME;
+      })
+      .add(() => {
+        this.editingName = false;
+      });
+  }
+
+  public confirmUpdateWorkflowCustomDescription(description: string | undefined): void {
+    const updatedDescription = description !== undefined ? description : "";
+
+    this.workflowPersistService
+      .updateWorkflowDescription(this.wid, updatedDescription)
+      .pipe(untilDestroyed(this))
+      .subscribe(() => {
+        this.workflowDescription = updatedDescription;
+      })
+      .add(() => {
+        this.editingDescription = false;
       });
   }
 }
