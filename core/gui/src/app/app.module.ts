@@ -132,6 +132,7 @@ import { ListItemComponent } from "./dashboard/component/user/list-item/list-ite
 import {
   JupyterUploadSuccessComponent
 } from "./dashboard/component/user/user-workflow/notebook-migration-tool/notebook-migration.component";
+import { JupyterNotebookPanelComponent } from './workspace/component/jupyter-notebook-panel/jupyter-notebook-panel.component';
 
 registerLocaleData(en);
 
@@ -212,6 +213,7 @@ registerLocaleData(en);
     HighlightSearchTermsPipe,
     SearchBarComponent,
     ListItemComponent,
+    JupyterNotebookPanelComponent,
   ],
   imports: [
     BrowserModule,
