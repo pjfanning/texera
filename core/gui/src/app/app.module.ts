@@ -141,6 +141,7 @@ import { HubWorkflowDetailComponent } from "./hub/component/workflow/detail/hub-
 import {
   JupyterUploadSuccessComponent
 } from "./dashboard/component/user/user-workflow/notebook-migration-tool/notebook-migration.component";
+import { JupyterNotebookPanelComponent } from './workspace/component/jupyter-notebook-panel/jupyter-notebook-panel.component';
 
 registerLocaleData(en);
 
@@ -230,6 +231,7 @@ registerLocaleData(en);
     HubWorkflowDetailComponent,
     HubWorkflowResultComponent,
     GoogleLoginComponent,
+    JupyterNotebookPanelComponent,
   ],
   imports: [
     BrowserModule,

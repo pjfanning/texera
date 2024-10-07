@@ -21,6 +21,15 @@ texera-menu {
   background-color: white;
 }
 
+texera-jupyter-notebook-panel{
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 100%;
+  background-color: white;
+}
+
 texera-mini-map {
   position: absolute;
   bottom: 0;
