@@ -30,6 +30,7 @@ import { isDefined } from "../../../common/util/predicate";
 import { NzModalService } from "ng-zorro-antd/modal";
 import { ResultExportationComponent } from "../result-exportation/result-exportation.component";
 import { ReportGenerationService } from "../../service/report-generation/report-generation.service";
+import { PanelService } from "../../service/panel/panel.service";
 import { ShareAccessComponent } from "src/app/dashboard/component/user/share-access/share-access.component";
 /**
  * MenuComponent is the top level menu bar that shows
@@ -102,7 +103,8 @@ export class MenuComponent implements OnInit {
     public operatorMenu: OperatorMenuService,
     public coeditorPresenceService: CoeditorPresenceService,
     private modalService: NzModalService,
-    private reportGenerationService: ReportGenerationService
+    private reportGenerationService: ReportGenerationService,
+    private panelService: PanelService
   ) {
     workflowWebsocketService
       .subscribeToEvent("ExecutionDurationUpdateEvent")
@@ -1304,7 +1306,7 @@ export class MenuComponent implements OnInit {
 
   private openJupyterNotebookPanel(): void {
     // Assuming you have a service that handles the state of various panels
-    // this.panelService.openPanel('JupyterNotebookPanel');
+    this.panelService.openPanel("JupyterNotebookPanel");
   }
 
 

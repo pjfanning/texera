@@ -1,4 +1,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
+import { PanelService } from "../../service/panel/panel.service";
+import { Subject } from "rxjs";
+import { takeUntil } from "rxjs/operators";
 
 @Component({
   selector: "texera-jupyter-notebook-panel",
@@ -10,16 +13,29 @@ export class JupyterNotebookPanelComponent implements OnInit, OnDestroy {
 
   cellContent: string[] = [];
   highlightedCell: number | null = null;
-  isVisible: boolean = true; // Controls panel visibility
+  isVisible: boolean = true; // Tracks panel visibility
+  private destroy$ = new Subject<void>(); // Used to signal when to unsubscribe
 
-  constructor() {}
+  constructor(private panelService: PanelService) {}
 
   ngOnInit(): void {
+    // Listen for messages from the Jupyter notebook
     window.addEventListener("message", this.handleMessage);
+
+    // Subscribe to the PanelService to control the visibility of the panel
+    this.panelService.jupyterNotebookPanelVisible$
+      .pipe(takeUntil(this.destroy$)) // Unsubscribe when destroy$ emits
+      .subscribe((visible: boolean) => {
+        this.isVisible = visible;
+      });
   }
 
   ngOnDestroy(): void {
     window.removeEventListener("message", this.handleMessage);
+
+    // Emit a value to signal that all subscriptions should be unsubscribed
+    this.destroy$.next();
+    this.destroy$.complete(); // Close the subject to prevent memory leaks
   }
 
   handleMessage = (event: MessageEvent) => {
@@ -44,6 +60,6 @@ export class JupyterNotebookPanelComponent implements OnInit, OnDestroy {
   }
 
   closePanel() {
-    this.isVisible = false; // Hide the panel when close button is clicked
+    this.panelService.closeJupyterNotebookPanel(); // Hide the panel using the PanelService
   }
 }
