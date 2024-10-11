@@ -1,5 +1,6 @@
 import { Component, Input } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
+import { NzModalService } from "ng-zorro-antd/modal";
 import { JupyterNotebook, JupyterOutput } from "../../../../type/jupyter-notebook.interface";
 
 @Component({
@@ -14,7 +15,7 @@ export class JupyterUploadSuccessComponent {
   workflowGeneratingInProgress: boolean = false;
   workflowJsonContent: any; // variable to store the JSON content
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private modalService: NzModalService) {}
 
   getOutputText(output: JupyterOutput): string {
     if (output.output_type === "stream") {
@@ -37,21 +38,73 @@ export class JupyterUploadSuccessComponent {
   convertToWorkflow(): void {
     this.workflowGeneratingInProgress = true;
 
-    // TODO: replace with non-dummy backend
+    // Simulate workflow generation using mock data instead of an HTTP request
     setTimeout(() => {
-      // eslint-disable-next-line rxjs-angular/prefer-takeuntil
-      this.http.get("http://localhost:8000", { responseType: "text" }).subscribe({next: (data) => {
-        // Process the data
-        this.workflowJsonContent = data;
-        this.workflowGeneratingInProgress = false;
-        this.popupStage = 1; // Update the flag when conversion is done
-      }});
-    }, 5000);
+      const mockData = {
+        operators: [
+          { id: "1", type: "OperatorA", properties: {} },
+          { id: "2", type: "OperatorB", properties: {} },
+        ],
+        links: [
+          { source: "1", target: "2" },
+        ],
+        commentBoxes: [],
+        groups: [],
+        operatorPositions: {
+          "1": { x: 100, y: 200 },
+          "2": { x: 300, y: 400 },
+        },
+      };
+
+      // Process the mock data
+      this.workflowJsonContent = mockData; // Assign mock data as workflow content
+      this.workflowGeneratingInProgress = false;
+
+
+    }, 2000); // Simulate a delay of 2 seconds for processing
+  }
+
+  /**
+   * Process the selected datasets (CSV files)
+   */
+  private processDatasets(): void {
+    if (this.datasets.length > 0) {
+      this.datasets.forEach((file) => {
+        this.handleFileUploads(file);
+      });
+    }
+  }
+
+  /**
+   * Function to handle file uploads and process them (CSV dataset)
+   */
+  private handleFileUploads(file: Blob): void {
+    const reader = new FileReader();
+    reader.readAsText(file);
+    reader.onload = () => {
+      try {
+        const result = reader.result;
+        if (typeof result !== "string") {
+          throw new Error("Incorrect format: file is not a string");
+        }
+        const datasetContent = result; // Here we get the dataset content as CSV
+
+        // Handle the dataset content as needed (e.g., send it to backend or use in workflow)
+        console.log("Uploaded dataset content:", datasetContent);
+
+        // Update the workflow with dataset processing if needed
+        this.workflowJsonContent = { ...this.workflowJsonContent, datasetContent }; // Append dataset content
+
+        // Optional: Proceed to the next step or close the modal, etc.
+      } catch (error) {
+        console.error("Error processing the file: ", error);
+      }
+    };
   }
 
   compareOutput(): void {
     console.log("Generating output to compare");
-    this.popupStage = 2
-    // TODO
+    this.popupStage = 2;
+    // TODO: Implement the comparison logic here
   }
 }

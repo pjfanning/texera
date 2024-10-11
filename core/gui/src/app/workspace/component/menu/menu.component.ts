@@ -31,6 +31,7 @@ import { FileSelectionComponent } from "../file-selection/file-selection.compone
 import { NzModalService } from "ng-zorro-antd/modal";
 import { ResultExportationComponent } from "../result-exportation/result-exportation.component";
 import { ReportGenerationService } from "../../service/report-generation/report-generation.service";
+import { PanelService } from "../../service/panel/panel.service";
 /**
  * MenuComponent is the top level menu bar that shows
  *  the Texera title and workflow execution button
@@ -100,7 +101,8 @@ export class MenuComponent implements OnInit {
     public operatorMenu: OperatorMenuService,
     public coeditorPresenceService: CoeditorPresenceService,
     private modalService: NzModalService,
-    private reportGenerationService: ReportGenerationService
+    private reportGenerationService: ReportGenerationService,
+    private panelService: PanelService
   ) {
     workflowWebsocketService
       .subscribeToEvent("ExecutionDurationUpdateEvent")
@@ -1329,7 +1331,7 @@ export class MenuComponent implements OnInit {
 
   private openJupyterNotebookPanel(): void {
     // Assuming you have a service that handles the state of various panels
-    // this.panelService.openPanel('JupyterNotebookPanel');
+    this.panelService.openPanel("JupyterNotebookPanel");
   }
 
 
