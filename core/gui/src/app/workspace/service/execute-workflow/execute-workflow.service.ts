@@ -68,6 +68,15 @@ export class ExecuteWorkflowService {
     current: ExecutionStateInfo;
   }>();
 
+  private emailNotificationEnabled: boolean = false;
+
+  private readonly COMPLETED_PAUSED_OR_TERMINATED_STATES = [
+    ExecutionState.Completed,
+    ExecutionState.Failed,
+    ExecutionState.Killed,
+    ExecutionState.Paused,
+  ];
+
   constructor(
     private workflowActionService: WorkflowActionService,
     private workflowWebsocketService: WorkflowWebsocketService,
@@ -161,6 +170,15 @@ export class ExecuteWorkflowService {
       return this.currentState.errorMessages;
     }
     return [];
+  }
+
+  public executeWorkflowWithEmailNotification(
+    executionName: string,
+    enabled: boolean,
+    targetOperatorId?: string
+  ): void {
+    this.emailNotificationEnabled = enabled;
+    this.executeWorkflow(executionName, targetOperatorId);
   }
 
   public executeWorkflow(executionName: string, targetOperatorId?: string): void {
@@ -296,15 +314,7 @@ export class ExecuteWorkflowService {
       return;
     }
     this.updateWorkflowActionLock(stateInfo);
-    const isTransitionFromRunningToNonRunning =
-      this.currentState.state === ExecutionState.Running &&
-      [ExecutionState.Completed, ExecutionState.Failed, ExecutionState.Killed, ExecutionState.Paused].includes(
-        stateInfo.state
-      );
-
-    if (isTransitionFromRunningToNonRunning) {
-      this.sendWorkflowStatusEmail(stateInfo);
-    }
+    this.handleEmailNotification(stateInfo);
     const previousState = this.currentState;
     // update current state
     this.currentState = stateInfo;
@@ -313,6 +323,27 @@ export class ExecuteWorkflowService {
       previous: previousState,
       current: this.currentState,
     });
+  }
+
+  private handleEmailNotification(stateInfo: ExecutionStateInfo): void {
+    if (this.shouldSendEmailNotification(stateInfo)) {
+      this.sendWorkflowStatusEmail(stateInfo);
+    }
+  }
+
+  private shouldSendEmailNotification(stateInfo: ExecutionStateInfo): boolean {
+    return this.isEmailNotificationEnabled() && this.isTransitionFromRunningToCompletedPausedOrTerminated(stateInfo);
+  }
+
+  private isEmailNotificationEnabled(): boolean {
+    return environment.userSystemEnabled && this.emailNotificationEnabled;
+  }
+
+  private isTransitionFromRunningToCompletedPausedOrTerminated(stateInfo: ExecutionStateInfo): boolean {
+    return (
+      this.currentState.state === ExecutionState.Running &&
+      this.COMPLETED_PAUSED_OR_TERMINATED_STATES.includes(stateInfo.state)
+    );
   }
 
   /**
@@ -362,9 +393,9 @@ export class ExecuteWorkflowService {
       }) + " (UTC)";
 
     const baseUrl = this.document.location.origin;
-    const dashboardUrl = `${baseUrl}/dashboard/workspace/${workflow.wid}`;
+    const dashboardUrl = `${baseUrl}/dashboard/user/workspace/${workflow.wid}`;
 
-    const subject = `Workflow ${workflow.name} (${workflow.wid}) Status: ${stateInfo.state}`;
+    const subject = `[Texera] Workflow ${workflow.name} (${workflow.wid}) Status: ${stateInfo.state}`;
     const content = `
         Hello,
 
