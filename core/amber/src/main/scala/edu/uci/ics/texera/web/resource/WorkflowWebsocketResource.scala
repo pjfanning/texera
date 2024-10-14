@@ -91,6 +91,7 @@ class WorkflowWebsocketResource extends LazyLogging {
             sessionState.send(modifyLogicResponse)
           }
         case editingTimeCompilationRequest: EditingTimeCompilationRequest =>
+          // TODO: remove this after separating the workflow compiler as a standalone service
           val stateStore = if (executionStateOpt.isDefined) {
             val currentState =
               executionStateOpt.get.executionStateStore.metadataStore.getState.state
@@ -103,7 +104,6 @@ class WorkflowWebsocketResource extends LazyLogging {
             new ExecutionStateStore()
           }
           val workflowContext = new WorkflowContext(
-            uidOpt,
             sessionState.getCurrentWorkflowState.get.workflowId
           )
           try {
