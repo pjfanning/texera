@@ -10,6 +10,7 @@ import edu.uci.ics.amber.engine.common.Utils
 import org.bson.Document
 import org.ehcache.sizeof.SizeOf
 
+import java.io.ByteArrayInputStream
 import java.util
 import scala.collection.mutable
 
@@ -39,6 +40,9 @@ case class Tuple @JsonCreator() (
   checkSchemaMatchesFields(schema.getAttributes, fieldVals)
 
   override val inMemSize: Long = SizeOf.newInstance().deepSizeOf(this)
+
+  // Buffer value for size approximation accuracy for whether is beyond mongo document limit
+  private val BUFFER_SIZE: Long = 1024 * 1024 // 1MB buffer
 
   @JsonIgnore def length: Int = fieldVals.length
 
@@ -104,7 +108,14 @@ case class Tuple @JsonCreator() (
     }
     doc
   }
+
+  def asBytes(): ByteArrayInputStream = {
+    val data = Utils.objectMapper.writeValueAsBytes(this) // serialize Tuple to byte array
+    new ByteArrayInputStream(data)
+  }
 }
+
+
 
 object Tuple {
   val toDocument: Tuple => Document = (tuple: Tuple) => {
