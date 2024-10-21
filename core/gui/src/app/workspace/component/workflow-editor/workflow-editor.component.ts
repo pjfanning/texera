@@ -23,6 +23,7 @@ import { NzContextMenuService } from "ng-zorro-antd/dropdown";
 import { ActivatedRoute, Router } from "@angular/router";
 import * as _ from "lodash";
 import * as joint from "jointjs";
+import { PanelService } from "../../service/panel/panel.service";
 
 // jointjs interactive options for enabling and disabling interactivity
 // https://resources.jointjs.com/docs/jointjs/v3.2/joint.html#dia.Paper.prototype.options.interactive
@@ -87,7 +88,8 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
     private operatorMenu: OperatorMenuService,
     private route: ActivatedRoute,
     private router: Router,
-    public nzContextMenu: NzContextMenuService
+    public nzContextMenu: NzContextMenuService,
+    private panelService: PanelService
   ) {
     this.wrapper = this.workflowActionService.getJointGraphWrapper();
   }
@@ -502,28 +504,34 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
         const elementID = event[0].model.id.toString();
         const highlightedOperatorIDs = this.wrapper.getCurrentHighlightedOperatorIDs();
         const highlightedCommentBoxIDs = this.wrapper.getCurrentHighlightedCommentBoxIDs();
+
+        console.log(`${elementID}`)
+        this.panelService.onWorkflowComponentClick(elementID); // Highlight corresponding Jupyter notebook cell
+
+        // If in multiselect mode, toggle highlights on click
         if (event[1].shiftKey) {
-          // if in multiselect toggle highlights on click
           if (highlightedOperatorIDs.includes(elementID)) {
             this.workflowActionService.unhighlightOperators(elementID);
           } else if (this.workflowActionService.getTexeraGraph().hasOperator(elementID)) {
             this.workflowActionService.highlightOperators(<boolean>event[1].shiftKey, elementID);
+            this.panelService.onWorkflowComponentClick(elementID); // Highlight corresponding Jupyter notebook cell
           }
           if (highlightedCommentBoxIDs.includes(elementID)) {
             this.wrapper.unhighlightCommentBoxes(elementID);
           } else if (this.workflowActionService.getTexeraGraph().hasCommentBox(elementID)) {
             this.workflowActionService.highlightCommentBoxes(<boolean>event[1].shiftKey, elementID);
           }
-          // if in the multiselect mode, also highlight the links in between two highlighted operators
+
+          // If in the multiselect mode, also highlight the links between highlighted operators
           const allLinks: OperatorLink[] = this.workflowActionService.getTexeraGraph().getAllLinks();
           const linksToBeHighlighted: string[] = allLinks
             .filter(link => {
               const currentHighlightedOperatorIDs = this.wrapper.getCurrentHighlightedOperatorIDs();
               for (let sourceOperatorID of currentHighlightedOperatorIDs) {
-                // first make sure the link is not already highlighted
-                if (!(link.linkID in this.wrapper.getCurrentHighlightedLinkIDs)) {
+                // Make sure the link is not already highlighted
+                if (!(link.linkID in this.wrapper.getCurrentHighlightedLinkIDs())) {
                   if (sourceOperatorID === link.source.operatorID) {
-                    // iterate through all the other highlighted operators
+                    // Iterate through all the other highlighted operators
                     for (let targetOperatorID of currentHighlightedOperatorIDs.filter(
                       each => each != sourceOperatorID
                     )) {
@@ -538,9 +546,10 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
             .map(link => link.linkID);
           this.workflowActionService.highlightLinks(<boolean>event[1].shiftKey, ...linksToBeHighlighted);
         } else {
-          // else only highlight a single operator or group
+          // Else only highlight a single operator or group
           if (this.workflowActionService.getTexeraGraph().hasOperator(elementID)) {
             this.workflowActionService.highlightOperators(<boolean>event[1].shiftKey, elementID);
+
           } else if (this.workflowActionService.getOperatorGroup().hasGroup(elementID)) {
             this.wrapper.highlightGroups(elementID);
           } else if (this.workflowActionService.getTexeraGraph().hasCommentBox(elementID)) {
@@ -549,13 +558,14 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
         }
       });
 
-    // on user mouse clicks on blank area, unhighlight all operators and groups
+    // On user mouse clicks on blank area, unhighlight all operators and groups
     merge(fromJointPaperEvent(this.paper, "blank:pointerdown"), fromJointPaperEvent(this.paper, "blank:contextmenu"))
       .pipe(untilDestroyed(this))
       .subscribe(() => {
         this.wrapper.unhighlightElements(this.wrapper.getCurrentHighlights());
       });
   }
+
 
   private handleElementHightlightEvent(): void {
     // handle logical operator and group highlight / unhighlight events to let JointJS
