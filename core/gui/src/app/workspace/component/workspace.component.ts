@@ -22,6 +22,7 @@ import { WorkflowConsoleService } from "../service/workflow-console/workflow-con
 import { OperatorReuseCacheStatusService } from "../service/workflow-status/operator-reuse-cache-status.service";
 import { CodeEditorService } from "../service/code-editor/code-editor.service";
 import { WorkflowMetadata } from "src/app/dashboard/type/workflow-metadata.interface";
+import { PanelService } from "../service/panel/panel.service";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
 
@@ -59,7 +60,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     private message: NzMessageService,
     private router: Router,
     private notificationService: NotificationService,
-    private codeEditorService: CodeEditorService
+    private codeEditorService: CodeEditorService,
+    private panelService: PanelService
   ) {}
 
   ngOnInit() {
