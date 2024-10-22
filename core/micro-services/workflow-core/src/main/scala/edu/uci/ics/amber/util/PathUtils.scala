@@ -37,6 +37,8 @@ object PathUtils {
   // path of the dropwizard config file
   lazy val userResourcesConfigPath: Path = amberHomePath.resolve("user-resources")
 
+  lazy val gitDirectoryPath: Path = amberHomePath.getParent.getParent
+
   private def isHomePath(path: Path): Boolean = {
     path.toRealPath().endsWith(amberHomeDirectoryName)
   }

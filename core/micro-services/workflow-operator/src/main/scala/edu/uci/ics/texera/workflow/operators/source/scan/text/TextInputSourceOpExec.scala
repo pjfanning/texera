@@ -3,7 +3,7 @@ package edu.uci.ics.texera.workflow.operators.source.scan.text
 import edu.uci.ics.amber.core.tuple.AttributeTypeUtils.parseField
 import edu.uci.ics.amber.core.tuple.TupleLike
 import edu.uci.ics.texera.workflow.operators.source.scan.FileAttributeType
-import edu.uci.ics.texera.workflow.utils.executor.SourceOperatorExecutor
+import edu.uci.ics.amber.core.executor.SourceOperatorExecutor
 
 class TextInputSourceOpExec private[text] (
     fileAttributeType: FileAttributeType,

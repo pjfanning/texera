@@ -3,7 +3,7 @@ package edu.uci.ics.texera.workflow.operators.source.cache
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.core.tuple.TupleLike
 import edu.uci.ics.amber.storage.result.SinkStorageReader
-import edu.uci.ics.texera.workflow.utils.executor.SourceOperatorExecutor
+import edu.uci.ics.amber.core.executor.SourceOperatorExecutor
 
 class CacheSourceOpExec(storage: SinkStorageReader)
     extends SourceOperatorExecutor

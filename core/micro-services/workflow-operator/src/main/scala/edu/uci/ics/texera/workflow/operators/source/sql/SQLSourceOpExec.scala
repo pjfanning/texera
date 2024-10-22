@@ -2,7 +2,7 @@ package edu.uci.ics.texera.workflow.operators.source.sql
 
 import edu.uci.ics.amber.core.tuple.AttributeTypeUtils.{parseField, parseTimestamp}
 import edu.uci.ics.amber.core.tuple.{Attribute, AttributeType, Schema, Tuple, TupleLike}
-import edu.uci.ics.texera.workflow.utils.executor.SourceOperatorExecutor
+import edu.uci.ics.amber.core.executor.SourceOperatorExecutor
 
 import java.sql._
 import scala.collection.mutable.ArrayBuffer

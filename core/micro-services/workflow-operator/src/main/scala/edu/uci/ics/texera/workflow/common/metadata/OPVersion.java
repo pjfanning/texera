@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.workflow.common.metadata;
 
-import edu.uci.ics.texera.compilation.PathUtils;
+import edu.uci.ics.amber.util.PathUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 
@@ -16,7 +16,7 @@ public class OPVersion {
     private static Map<String, String> opMap = new HashMap<>();
     static {
         try {
-            git = Git.open(new File(PathUtils.gitPath().toString()));
+            git = Git.open(new File(PathUtils.gitDirectoryPath().toString()));
         } catch (IOException e) {
             e.printStackTrace();
         }

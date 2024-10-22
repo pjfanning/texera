@@ -6,7 +6,7 @@ import edu.uci.ics.amber.storage.dataset.DatasetFileDocument
 import edu.uci.ics.amber.util.JSONUtils.objectMapper
 import edu.uci.ics.texera.workflow.operators.source.scan.FileDecodingMethod
 import edu.uci.ics.texera.workflow.operators.source.scan.json.JSONUtil.JSONToMap
-import edu.uci.ics.texera.workflow.utils.executor.SourceOperatorExecutor
+import edu.uci.ics.amber.core.executor.SourceOperatorExecutor
 
 import java.io.{BufferedReader, InputStreamReader}
 import scala.jdk.CollectionConverters.IteratorHasAsScala

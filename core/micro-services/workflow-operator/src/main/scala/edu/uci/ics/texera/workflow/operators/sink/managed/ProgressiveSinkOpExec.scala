@@ -4,7 +4,7 @@ import edu.uci.ics.amber.core.tuple.{Tuple, TupleLike}
 import edu.uci.ics.amber.storage.result.SinkStorageWriter
 import edu.uci.ics.texera.workflow.operators.sink.IncrementalOutputMode
 import edu.uci.ics.texera.workflow.operators.sink.IncrementalOutputMode.{SET_DELTA, SET_SNAPSHOT}
-import edu.uci.ics.texera.workflow.utils.executor.SinkOperatorExecutor
+import edu.uci.ics.amber.core.executor.SinkOperatorExecutor
 
 class ProgressiveSinkOpExec(outputMode: IncrementalOutputMode, storage: SinkStorageWriter)
     extends SinkOperatorExecutor {

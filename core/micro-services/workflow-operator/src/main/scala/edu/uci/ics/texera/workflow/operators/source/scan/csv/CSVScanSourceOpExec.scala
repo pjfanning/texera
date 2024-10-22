@@ -4,7 +4,7 @@ import com.univocity.parsers.csv.{CsvFormat, CsvParser, CsvParserSettings}
 import edu.uci.ics.amber.core.tuple.{AttributeTypeUtils, Schema, TupleLike}
 import edu.uci.ics.amber.storage.dataset.DatasetFileDocument
 import edu.uci.ics.texera.workflow.operators.source.scan.FileDecodingMethod
-import edu.uci.ics.texera.workflow.utils.executor.SourceOperatorExecutor
+import edu.uci.ics.amber.core.executor.SourceOperatorExecutor
 
 import java.io.InputStreamReader
 import scala.collection.immutable.ArraySeq

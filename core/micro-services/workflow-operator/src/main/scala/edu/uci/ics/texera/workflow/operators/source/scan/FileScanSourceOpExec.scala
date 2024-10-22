@@ -3,7 +3,7 @@ package edu.uci.ics.texera.workflow.operators.source.scan
 import edu.uci.ics.amber.core.tuple.AttributeTypeUtils.parseField
 import edu.uci.ics.amber.core.tuple.TupleLike
 import edu.uci.ics.amber.storage.dataset.DatasetFileDocument
-import edu.uci.ics.texera.workflow.utils.executor.SourceOperatorExecutor
+import edu.uci.ics.amber.core.executor.SourceOperatorExecutor
 
 import java.io._
 import scala.collection.mutable
