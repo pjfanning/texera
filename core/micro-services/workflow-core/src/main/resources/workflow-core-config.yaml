@@ -6,4 +6,4 @@ storage:
     commit-batch-size: 1000
 
 user-sys:
-  enable: true
+  enable: false
