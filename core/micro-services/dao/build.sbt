@@ -81,8 +81,11 @@ libraryDependencies ++= Seq(
   "org.jooq" % "jooq-codegen" % "3.12.4"
 )
 
+/////////////////////////////////////////////////////////////////////////////
+// Additional Dependencies
+/////////////////////////////////////////////////////////////////////////////
+
 libraryDependencies ++= Seq(
-  "mysql" % "mysql-connector-java" % "8.0.23",
-  "com.typesafe" % "config" % "1.4.1",
-  "org.yaml" % "snakeyaml" % "1.29"
+  "mysql" % "mysql-connector-java" % "8.0.23",          // MySQL connector
+  "org.yaml" % "snakeyaml" % "1.29"                     // YAML reader
 )
