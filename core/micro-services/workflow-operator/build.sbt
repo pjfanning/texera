@@ -83,26 +83,6 @@ libraryDependencies ++= Seq(
   "com.fasterxml.jackson.module" % "jackson-module-no-ctor-deser" % jacksonVersion,
 )
 
-//akka
-val akkaVersion = "2.8.3"
-libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-actor" % akkaVersion,
-  "com.typesafe.akka" %% "akka-remote" % akkaVersion,
-  "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
-  "com.typesafe.akka" %% "akka-cluster-metrics" % akkaVersion,
-  "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
-  "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion,
-  "com.typesafe.akka" %% "akka-testkit" % akkaVersion,
-  "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
-  "io.kamon" % "sigar-loader" % "1.6.6-rev002",
-  "com.softwaremill.macwire" %% "macros" % "2.5.8" % Provided,
-  "com.softwaremill.macwire" %% "macrosakka" % "2.5.8" % Provided,
-  "com.softwaremill.macwire" %% "util" % "2.5.8",
-  "com.softwaremill.macwire" %% "proxy" % "2.5.8",
-  "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-  "ch.qos.logback" % "logback-classic" % "1.2.3"
-)
-
 /////////////////////////////////////////////////////////////////////////////
 // Additional Dependencies
 /////////////////////////////////////////////////////////////////////////////
@@ -119,4 +99,5 @@ libraryDependencies ++= Seq(
   "com.univocity" % "univocity-parsers" % "2.9.1",
   "edu.stanford.nlp" % "stanford-corenlp" % "4.5.4",
   "edu.stanford.nlp" % "stanford-corenlp" % "4.5.4" classifier "models",
+  "io.github.redouane59.twitter" % "twittered" % "2.21",
 )
