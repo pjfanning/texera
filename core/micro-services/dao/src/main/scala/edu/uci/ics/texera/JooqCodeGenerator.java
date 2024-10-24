@@ -20,7 +20,7 @@ import java.nio.file.Path;
  * The username, password and connection url is located in texera\core\conf\jdbc.conf
  * The configuration file is located in texera\core\conf\jooq-conf.xml
  */
-public class JooqCodeGeneration {
+public class JooqCodeGenerator {
 
     public static void main(String[] args) throws Exception {
         Path jooqXmlPath = Path.of("dao").resolve("src").resolve("main").resolve("resources").resolve("jooq-conf.xml");
