@@ -34,6 +34,7 @@ import { PowerState } from "../power-button/power-button.component";
 import { WorkflowPodBrainService } from "../../service/workflow-pod-brain/workflow-pod-brain.service";
 
 import { ShareAccessComponent } from "src/app/dashboard/component/user/share-access/share-access.component";
+import { UdfDebugService } from "../../service/operator-debug/udf-debug.service";
 /**
  * MenuComponent is the top level menu bar that shows
  *  the Texera title and workflow execution button

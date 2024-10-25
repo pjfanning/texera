@@ -139,6 +139,8 @@ import { HubWorkflowResultComponent } from "./hub/component/workflow/result/hub-
 import { HubWorkflowComponent } from "./hub/component/workflow/hub-workflow.component";
 import { HubWorkflowSearchBarComponent } from "./hub/component/workflow/search-bar/hub-workflow-search-bar.component";
 import { HubWorkflowDetailComponent } from "./hub/component/workflow/detail/hub-workflow-detail.component";
+import { BreakpointConditionInputComponent } from "./workspace/component/code-editor-dialog/breakpoint-condition-input/breakpoint-condition-input.component";
+import { CodeDebuggerComponent } from "./workspace/component/code-editor-dialog/code-debugger.component";
 
 registerLocaleData(en);
 
@@ -228,6 +230,8 @@ registerLocaleData(en);
     HubWorkflowDetailComponent,
     HubWorkflowResultComponent,
     GoogleLoginComponent,
+    BreakpointConditionInputComponent,
+    CodeDebuggerComponent,
   ],
   imports: [
     BrowserModule,
