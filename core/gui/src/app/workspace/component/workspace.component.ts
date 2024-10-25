@@ -40,6 +40,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   public gitCommitHash: string = Version.raw;
   public showResultPanel: boolean = false;
   public writeAccess: boolean = false;
+  public isLoading: boolean = false;
   userSystemEnabled = environment.userSystemEnabled;
   @ViewChild("codeEditor", { read: ViewContainerRef }) codeEditorViewRef!: ViewContainerRef;
   constructor(
@@ -160,6 +161,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
 
   loadWorkflowWithId(wid: number): void {
     // disable the workspace until the workflow is fetched from the backend
+    this.isLoading = true;
     this.workflowActionService.disableWorkflowModification();
     this.workflowPersistService
       .retrieveWorkflow(wid)
@@ -193,6 +195,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           // clear stack
           this.undoRedoService.clearUndoStack();
           this.undoRedoService.clearRedoStack();
+          this.isLoading = false;
         },
         () => {
           this.workflowActionService.resetAsNewWorkflow();
@@ -202,6 +205,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           this.undoRedoService.clearUndoStack();
           this.undoRedoService.clearRedoStack();
           this.message.error("You don't have access to this workflow, please log in with an appropriate account");
+          this.isLoading = false;
         }
       );
   }
