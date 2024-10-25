@@ -1,12 +1,9 @@
 package edu.uci.ics.amber.engine.common.model
 
 import edu.uci.ics.amber.engine.common.AmberConfig
-import edu.uci.ics.amber.engine.common.model.WorkflowContext.{
-  DEFAULT_EXECUTION_ID,
-  DEFAULT_WORKFLOW_ID,
-  DEFAULT_WORKFLOW_SETTINGS
-}
-import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
+import edu.uci.ics.amber.engine.common.model.WorkflowContext.{DEFAULT_EXECUTION_ID, DEFAULT_WORKFLOW_ID, DEFAULT_WORKFLOW_SETTINGS}
+import edu.uci.ics.amber.engine.common.storage.VirtualDocument
+import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, OperatorIdentity, WorkflowIdentity}
 
 object WorkflowContext {
   val DEFAULT_EXECUTION_ID: ExecutionIdentity = ExecutionIdentity(1L)
@@ -18,5 +15,6 @@ object WorkflowContext {
 class WorkflowContext(
     var workflowId: WorkflowIdentity = DEFAULT_WORKFLOW_ID,
     var executionId: ExecutionIdentity = DEFAULT_EXECUTION_ID,
-    var workflowSettings: WorkflowSettings = DEFAULT_WORKFLOW_SETTINGS
+    var workflowSettings: WorkflowSettings = DEFAULT_WORKFLOW_SETTINGS,
+    var operatorIdToDocumentMap: Map[OperatorIdentity, VirtualDocument[_]] = Map()
 )
