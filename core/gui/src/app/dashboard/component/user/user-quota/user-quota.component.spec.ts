@@ -26,4 +26,8 @@ describe("UserQuotaComponent", () => {
     component = fixture.componentInstance;
     userQuotaService = TestBed.inject(UserQuotaService) as jasmine.SpyObj<UserQuotaService>;
   });
+
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
 });
