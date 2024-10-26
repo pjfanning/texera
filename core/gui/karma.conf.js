@@ -2,16 +2,14 @@
 module.exports = function (config) {
   config.set({
     basePath: "",
-    frameworks: ['waitwebpack', "jasmine", "@angular-devkit/build-angular"],
+    frameworks: ["jasmine", "@angular-devkit/build-angular"],
     plugins: [
       require("karma-jasmine"),
       require("karma-chrome-launcher"),
-      require("karma-jasmine-html-reporter"),
-      require("./karma.waitwebpack"),
       require("@angular-devkit/build-angular/plugins/karma")
     ],
     client: {
-      clearContext: false, // Leave Jasmine Spec Runner output visible in the browser
+      clearContext: config.singleRun, // Leave Jasmine Spec Runner output visible in the browser
       jasmine: {
         random: false, // Disable random order for consistent test results
       },
@@ -30,10 +28,10 @@ module.exports = function (config) {
         ],
       },
     },
-    reporters: ["progress", "kjhtml"], // Use basic progress and HTML reporters
+    reporters: ["dots"], // Use basic progress and HTML reporters
     port: 9876, // Karma's web server port
     colors: true, // Enable colors in the output (reporters and logs)
-    logLevel: config.LOG_INFO, // Set log level
+    logLevel: config.LOG_DEBUG, // Set log level
     autoWatch: false, // Disable auto-watch to prevent re-runs in CI
     browsers: ["ChromeHeadlessCustom"], // Run tests in headless Chrome
     singleRun: true, // Ensure Karma exits after running tests once (useful for CI)

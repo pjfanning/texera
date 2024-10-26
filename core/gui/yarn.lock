@@ -5172,10 +5172,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jasmine@npm:3.10.3":
-  version: 3.10.3
-  resolution: "@types/jasmine@npm:3.10.3"
-  checksum: 10c0/638fb4c058cfdda3eea25ddecb17481f42f14b96c69b6509f14caee551c0aa76b61682734c868172e1122877063b6641dcdfad1b2ede78d41eb9d29c5b54202f
+"@types/jasmine@npm:4.6.4":
+  version: 4.6.4
+  resolution: "@types/jasmine@npm:4.6.4"
+  checksum: 10c0/3a42e8feeadd22b02b68d43ab46f72fc59a563e0c2d51c7e3d40d0d3bd342ba5a069a827049d8e7dbb2aa7b30befd266f88d75744dd48258347bf50f453562ab
   languageName: node
   linkType: hard
 
@@ -5206,6 +5206,25 @@ __metadata:
   version: 0.0.29
   resolution: "@types/json5@npm:0.0.29"
   checksum: 10c0/6bf5337bc447b706bb5b4431d37686aa2ea6d07cfd6f79cc31de80170d6ff9b1c7384a9c0ccbc45b3f512bae9e9f75c2e12109806a15331dc94e8a8db6dbb4ac
+  languageName: node
+  linkType: hard
+
+"@types/karma-firefox-launcher@npm:^2":
+  version: 2.1.4
+  resolution: "@types/karma-firefox-launcher@npm:2.1.4"
+  dependencies:
+    "@types/karma": "npm:*"
+  checksum: 10c0/52f74ec6aa232c658d726fe461747ff6a8207826dbb2074195b8d8d4e89da4deee0a2594c1efa851dbb3c99309ce3e22e23a3e0c0ba47eabafbecb260a090ec3
+  languageName: node
+  linkType: hard
+
+"@types/karma@npm:*":
+  version: 6.3.9
+  resolution: "@types/karma@npm:6.3.9"
+  dependencies:
+    "@types/node": "npm:*"
+    log4js: "npm:^6.4.1"
+  checksum: 10c0/5a548c66a0e89e5ce0ef5059ed6ef905b22cb4a86fc689f7c3c59e623713fab01fa523443a1ef634beac5626bb96a13bd6546b4efdbb325b55e7ccf6e57b554f
   languageName: node
   linkType: hard
 
@@ -11078,8 +11097,9 @@ __metadata:
     "@types/dagre": "npm:0.7.47"
     "@types/file-saver": "npm:2.0.5"
     "@types/graphlib": "npm:2.1.8"
-    "@types/jasmine": "npm:3.10.3"
+    "@types/jasmine": "npm:4.6.4"
     "@types/json-schema": "npm:7.0.9"
+    "@types/karma-firefox-launcher": "npm:^2"
     "@types/lodash": "npm:4.14.179"
     "@types/lodash-es": "npm:4.17.4"
     "@types/node": "npm:18.15.5"
