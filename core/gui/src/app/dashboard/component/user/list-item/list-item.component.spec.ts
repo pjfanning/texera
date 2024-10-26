@@ -10,21 +10,19 @@ describe("ListItemComponent", () => {
   let component: ListItemComponent;
   let fixture: ComponentFixture<ListItemComponent>;
   let workflowPersistService: jasmine.SpyObj<WorkflowPersistService>;
-  let nzModalService: jasmine.SpyObj<NzModalService>;
 
   beforeEach(async () => {
     const workflowPersistServiceSpy = jasmine.createSpyObj("WorkflowPersistService", [
       "updateWorkflowName",
       "updateWorkflowDescription",
     ]);
-    const nzModalServiceSpy = jasmine.createSpyObj("NzModalService", ["create"]);
 
     await TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       declarations: [ListItemComponent],
       providers: [
         { provide: WorkflowPersistService, useValue: workflowPersistServiceSpy },
-        { provide: NzModalService, useValue: nzModalServiceSpy },
+        NzModalService,
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -32,7 +30,6 @@ describe("ListItemComponent", () => {
     fixture = TestBed.createComponent(ListItemComponent);
     component = fixture.componentInstance;
     workflowPersistService = TestBed.inject(WorkflowPersistService) as jasmine.SpyObj<WorkflowPersistService>;
-    nzModalService = TestBed.inject(NzModalService) as jasmine.SpyObj<NzModalService>;
   });
 
   it("should update workflow name successfully", () => {
