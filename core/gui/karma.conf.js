@@ -28,7 +28,7 @@ module.exports = function (config) {
         ],
       },
     },
-    reporters: ["dots"], // Use basic progress and HTML reporters
+    reporters: ["dots"], // Use dots reporter
     port: 9876, // Karma's web server port
     colors: true, // Enable colors in the output (reporters and logs)
     logLevel: config.LOG_INFO, // Set log level
@@ -36,7 +36,7 @@ module.exports = function (config) {
     browsers: ["ChromeHeadlessCustom"], // Run tests in headless Chrome
     singleRun: true, // Ensure Karma exits after running tests once (useful for CI)
     restartOnFileChange: false, // Disable file change restarts in CI
-    captureTimeout: 10000, // 10-second timeout for capturing the browser
+    captureTimeout: 20000, // 20-second timeout for capturing the browser
     browserDisconnectTimeout: 20000, // 20-second disconnect timeout
     browserDisconnectTolerance: 2, // Allow up to 2 disconnects before failing
     browserNoActivityTimeout: 20000, // 20-second no-activity timeout
