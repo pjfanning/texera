@@ -17,14 +17,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        arch: [ x64, arm64 ]
+        exclude:
+          # Exclude arm64 for non-macOS platforms
+          - os: ubuntu-latest
+            arch: arm64
+          - os: windows-latest
+            arch: arm64
         node-version:
-          - 20
-        architecture:
-          - x64
+          - 18
     steps:
       - name: Checkout Texera
         uses: actions/checkout@v4
