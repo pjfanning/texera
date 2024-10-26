@@ -5209,25 +5209,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/karma-firefox-launcher@npm:^2":
-  version: 2.1.4
-  resolution: "@types/karma-firefox-launcher@npm:2.1.4"
-  dependencies:
-    "@types/karma": "npm:*"
-  checksum: 10c0/52f74ec6aa232c658d726fe461747ff6a8207826dbb2074195b8d8d4e89da4deee0a2594c1efa851dbb3c99309ce3e22e23a3e0c0ba47eabafbecb260a090ec3
-  languageName: node
-  linkType: hard
-
-"@types/karma@npm:*":
-  version: 6.3.9
-  resolution: "@types/karma@npm:6.3.9"
-  dependencies:
-    "@types/node": "npm:*"
-    log4js: "npm:^6.4.1"
-  checksum: 10c0/5a548c66a0e89e5ce0ef5059ed6ef905b22cb4a86fc689f7c3c59e623713fab01fa523443a1ef634beac5626bb96a13bd6546b4efdbb325b55e7ccf6e57b554f
-  languageName: node
-  linkType: hard
-
 "@types/lodash-es@npm:4.17.4":
   version: 4.17.4
   resolution: "@types/lodash-es@npm:4.17.4"
@@ -11099,7 +11080,6 @@ __metadata:
     "@types/graphlib": "npm:2.1.8"
     "@types/jasmine": "npm:4.6.4"
     "@types/json-schema": "npm:7.0.9"
-    "@types/karma-firefox-launcher": "npm:^2"
     "@types/lodash": "npm:4.14.179"
     "@types/lodash-es": "npm:4.17.4"
     "@types/node": "npm:18.15.5"
@@ -11138,7 +11118,6 @@ __metadata:
     karma: "npm:6.4.4"
     karma-chrome-launcher: "npm:3.2.0"
     karma-jasmine: "npm:5.1.0"
-    karma-jasmine-html-reporter: "npm:2.1.0"
     lodash-es: "npm:4.17.21"
     marked: "npm:4.3.0"
     monaco-breakpoints: "npm:0.2.0"
@@ -12629,17 +12608,6 @@ __metadata:
   dependencies:
     which: "npm:^1.2.1"
   checksum: 10c0/0cec1ae7d922110dc29cee36389d597157c82f019c8917259f9fa93d1f5ee8e19141c2eb74bfe30797cdb3adbc51a6b65fd18a9ebc1527c725c4acf62cd46d04
-  languageName: node
-  linkType: hard
-
-"karma-jasmine-html-reporter@npm:2.1.0":
-  version: 2.1.0
-  resolution: "karma-jasmine-html-reporter@npm:2.1.0"
-  peerDependencies:
-    jasmine-core: ^4.0.0 || ^5.0.0
-    karma: ^6.0.0
-    karma-jasmine: ^5.0.0
-  checksum: 10c0/c20b0b52eada370d66fb06eda1a767f2043fecc6c4647691c889f4f62aa0f8948811dc64f033ebab02085a2e27e79099034ebe1699facf4e24e6bbc5ad0c203f
   languageName: node
   linkType: hard
 
