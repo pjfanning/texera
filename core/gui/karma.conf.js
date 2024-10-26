@@ -31,7 +31,7 @@ module.exports = function (config) {
     reporters: ["dots"], // Use basic progress and HTML reporters
     port: 9876, // Karma's web server port
     colors: true, // Enable colors in the output (reporters and logs)
-    logLevel: config.LOG_DEBUG, // Set log level
+    logLevel: config.LOG_INFO, // Set log level
     autoWatch: false, // Disable auto-watch to prevent re-runs in CI
     browsers: ["ChromeHeadlessCustom"], // Run tests in headless Chrome
     singleRun: true, // Ensure Karma exits after running tests once (useful for CI)
