@@ -20,10 +20,7 @@ describe("ListItemComponent", () => {
     await TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       declarations: [ListItemComponent],
-      providers: [
-        { provide: WorkflowPersistService, useValue: workflowPersistServiceSpy },
-        NzModalService,
-      ],
+      providers: [{ provide: WorkflowPersistService, useValue: workflowPersistServiceSpy }, NzModalService],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
 
