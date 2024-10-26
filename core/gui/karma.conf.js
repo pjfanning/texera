@@ -20,11 +20,17 @@ module.exports = function (config) {
         flags: [
           "--no-sandbox",
           "--headless",
+          "--remote-debugging-port=9222", // Enable remote debugging for better error output
           "--disable-gpu",
           "--disable-translate",
           "--disable-extensions",
-          "--remote-debugging-port=9222", // Enable remote debugging for better error output
           "--disable-dev-shm-usage", // Avoid /dev/shm issues in CI environments
+          "--disable-extensions",
+          "--disable-background-networking",
+          "--disable-background-timer-throttling",
+          "--disable-backgrounding-occluded-windows",
+          "--disable-breakpad",
+          "--disable-sync",
         ],
       },
     },
