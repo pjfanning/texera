@@ -39,6 +39,7 @@ module.exports = function (config) {
     colors: true, // Enable colors in the output (reporters and logs)
     logLevel: config.LOG_INFO, // Set log level
     autoWatch: false, // Disable auto-watch to prevent re-runs in CI
+    concurrency: 1, // Launch only one browser at a time
     browsers: ["ChromeHeadlessCustom"], // Run tests in headless Chrome
     singleRun: true, // Ensure Karma exits after running tests once (useful for CI)
     restartOnFileChange: false, // Disable file change restarts in CI
