@@ -44,8 +44,8 @@ module.exports = function (config) {
     singleRun: true, // Ensure Karma exits after running tests once (useful for CI)
     restartOnFileChange: false, // Disable file change restarts in CI
     captureTimeout: 30000, // 30-second timeout for capturing the browser
-    browserDisconnectTimeout: 30000, // 30-second disconnect timeout
-    browserDisconnectTolerance: 2, // Allow up to 2 disconnects before failing
+    browserDisconnectTimeout: 60000, // 60-second disconnect timeout
+    browserDisconnectTolerance: 1, // Allow up to 1 disconnect before failing
     browserNoActivityTimeout: 60000, // 60-second no-activity timeout
   });
 };
