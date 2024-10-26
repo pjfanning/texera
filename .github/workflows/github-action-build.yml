@@ -22,7 +22,7 @@ jobs:
           - macos-latest
           - windows-latest
         node-version:
-          - 18
+          - 20
         architecture:
           - x64
     steps:
