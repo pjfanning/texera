@@ -43,9 +43,9 @@ module.exports = function (config) {
     browsers: ["ChromeHeadlessCustom"], // Run tests in headless Chrome
     singleRun: true, // Ensure Karma exits after running tests once (useful for CI)
     restartOnFileChange: false, // Disable file change restarts in CI
-    captureTimeout: 20000, // 20-second timeout for capturing the browser
-    browserDisconnectTimeout: 20000, // 20-second disconnect timeout
+    captureTimeout: 30000, // 30-second timeout for capturing the browser
+    browserDisconnectTimeout: 30000, // 30-second disconnect timeout
     browserDisconnectTolerance: 2, // Allow up to 2 disconnects before failing
-    browserNoActivityTimeout: 20000, // 20-second no-activity timeout
+    browserNoActivityTimeout: 60000, // 60-second no-activity timeout
   });
 };
