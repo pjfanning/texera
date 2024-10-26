@@ -17,6 +17,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: macos-latest
             arch: arm64
@@ -33,7 +34,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          architecture: ${{ matrix.architecture }}
+          architecture: ${{ matrix.arch }}
       - uses: actions/cache@v2
         with:
           path: |
