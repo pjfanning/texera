@@ -1,5 +1,13 @@
 FROM node:18-alpine AS nodegui
 
+# Install Python and other necessary build tools
+RUN apk add --no-cache python3 py3-pip make g++
+
+# Create a virtual environment and install setuptools
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip3 install setuptools
+
 WORKDIR /gui
 COPY core/gui/package.json core/gui/yarn.lock ./
 # Fake git-version.js during yarn install to prevent git from causing cache
@@ -10,9 +18,9 @@ COPY core/gui .
 # Position of .git doesn't matter since it's only there for the revision hash
 COPY .git ./.git
 RUN apk add --no-cache git && \
-	node git-version.js && \
-	apk del git && \
-	yarn run build
+    node git-version.js && \
+    apk del git && \
+    yarn run build
 
 FROM sbtscala/scala-sbt:eclipse-temurin-jammy-11.0.17_8_1.9.3_2.13.11
 
