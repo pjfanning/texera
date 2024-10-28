@@ -1267,7 +1267,10 @@ export class MenuComponent implements OnInit {
             }
           ],
           "groups": [],
-          "commentBoxes": []
+          "commentBoxes": [],
+          "settings": {
+            "dataTransferBatchSize": 400
+          }
         }
 
         const fileExtensionIndex = file.name.lastIndexOf(".");
@@ -1289,6 +1292,7 @@ export class MenuComponent implements OnInit {
           wid: undefined,
           creationTime: undefined,
           lastModifiedTime: undefined,
+          isPublished: 0,
           readonly: false,
         };
 

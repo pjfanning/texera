@@ -50,6 +50,26 @@
       rel="stylesheet"
       type="text/css" />
     <script src="https://cdn.jsdelivr.net/npm/jsoneditor@10.1.0/dist/jsoneditor.min.js"></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Link to Thebe CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/thebe@latest/lib/thebe.css">
+
+    <!-- Load Thebe JavaScript -->
+    <script type="text/javascript" src="https://unpkg.com/thebe@latest/lib/index.js"></script>
+
+    <script type="text/x-thebe-config">
+      {
+        useBinder: true,
+        binderSettings: {
+          repo: "zyratlo/binder-testing"
+        },
+        mountActivateWidget: true,
+        mountStatusWidget: true
+      }
+    </script>
   </head>
   <body>
     <texera-root></texera-root>

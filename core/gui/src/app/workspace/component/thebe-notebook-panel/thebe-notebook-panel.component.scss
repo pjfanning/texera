@@ -1,0 +1,69 @@
+.draggable-panel {
+  position: absolute;
+  top: 200px;
+  left: 200px;
+  width: 400px;
+  height: 400px;
+  background-color: #fff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  z-index: 1000;
+  resize: both;
+  flex-direction: column; /* Allow header and content stacking */
+  overflow: hidden;
+}
+
+.panel-header {
+  position: sticky; /* Keep the header fixed at the top while scrolling */
+  top: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #007bff;
+  color: white;
+  padding: 10px;
+  font-weight: bold;
+  text-align: center;
+  cursor: move;
+  z-index: 10; /* Ensure it stays on top of other content */
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.close-button:hover {
+  color: royalblue;
+}
+
+/* Jupyter notebook styles */
+.notebook {
+  flex: 1; /* Make the content section take up the remaining space */
+  overflow-y: auto; /* Only the content section will scroll */
+  max-width: 960px;
+  height: calc(100% - 40px); /* Adjust height for the header */
+  background-color: #fff;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.cell {
+  border: 1px solid #e0e0e0;
+  border-left: 4px solid #e0e0e0;
+  border-radius: 5px;
+  background-color: #f7f7f7;
+  padding: 10px;
+  margin: 10px;
+}
+
+h2 {
+  font-size: 20px;
+  color: #333;
+}

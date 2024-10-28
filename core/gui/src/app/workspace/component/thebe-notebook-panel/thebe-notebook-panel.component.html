@@ -1,0 +1,226 @@
+<!-- TODO re-add visibility checker -->
+<!--<div -->
+<!--  *ngIf="isVisible"-->
+<!--  class="draggable-panel"-->
+<!--  cdkDrag-->
+<!--  cdkDragBoundary="texera-workspace"-->
+<!--  cdkDragHandle=".panel-header"-->
+<!--&gt;-->
+<div
+  class="draggable-panel"
+  cdkDrag
+  cdkDragBoundary="texera-workspace"
+  cdkDragHandle=".panel-header"
+>
+
+  <div class="panel-header" cdkDragHandle>
+    <span>Jupyter Notebook</span>
+    <button class="close-button" (click)="closePanel()">X</button>
+  </div>
+
+  <div class="notebook">
+    <div class="thebe-activate"></div>
+    <div class="thebe-status"></div>
+
+    <h2>Importing Libraries</h2>
+    <div class="cell thebelab-cell">
+        <pre data-executable="true" data-language="python">
+# Import necessary libraries
+%pip install pandas
+%pip install matplotlib
+%pip install scikit-learn
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+
+# Load the dataset
+file_path = 'https://raw.githubusercontent.com/zyratlo/binder-testing/refs/heads/main/diabetes.csv'
+data = pd.read_csv(file_path)
+        </pre>
+    </div>
+
+    <h2>Data Preprocessing:</h2>
+    <div class="cell thebelab-cell">
+        <pre data-executable="true" data-language="python">
+# Remove duplicate rows
+data = data.drop_duplicates()
+
+# Remove rows with null values
+data = data.dropna()
+        </pre>
+    </div>
+
+    <div class="cell thebelab-cell">
+        <pre data-executable="true" data-language="python">
+# Print the minimum, maximum, and mean for all fields
+print("Minimum values:\\n", data.min())
+print("\\nMaximum values:\\n", data.max())
+print("\\nMean values:\\n", data.mean())
+        </pre>
+    </div>
+
+    <div class="cell thebelab-cell">
+        <pre data-executable="true" data-language="python">
+# Create a boxplot for the 'Pregnancies' field
+plt.figure(figsize=(8, 6))
+plt.boxplot(data['Pregnancies'], vert=False, patch_artist=True)
+plt.title('Boxplot of Pregnancies')
+plt.xlabel('Number of Pregnancies')
+plt.show()
+        </pre>
+    </div>
+
+    <div class="cell thebelab-cell">
+        <pre data-executable="true" data-language="python">
+# Full overview of the data
+data.describe()
+        </pre>
+    </div>
+
+    <div class="cell thebelab-cell">
+        <pre data-executable="true" data-language="python">
+# Separate features and target variable
+X = data.drop('Outcome', axis=1)
+y = data['Outcome']
+
+# Split data into training and testing sets (80% train, 20% test)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        </pre>
+    </div>
+
+    <div class="cell thebelab-cell">
+        <pre data-executable="true" data-language="python">
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+        </pre>
+    </div>
+
+    <h2>Model Training:</h2>
+    <div class="cell thebelab-cell">
+        <pre data-executable="true" data-language="python">
+# Train Random Forest model
+rf_model = RandomForestClassifier(random_state=42)
+rf_model.fit(X_train, y_train)
+rf_pred = rf_model.predict(X_test)
+rf_accuracy = accuracy_score(y_test, rf_pred)
+print(f"Random Forest Accuracy: &#123;rf_accuracy:.2%}")
+        </pre>
+    </div>
+
+    <div class="cell thebelab-cell">
+        <pre data-executable="true" data-language="python">
+# Train SVM model
+svm_model = SVC(random_state=42)
+svm_model.fit(X_train, y_train)
+svm_pred = svm_model.predict(X_test)
+svm_accuracy = accuracy_score(y_test, svm_pred)
+print(f"SVM Accuracy: &#123;svm_accuracy:.2%}")
+        </pre>
+    </div>
+
+    <div class="cell thebelab-cell">
+        <pre data-executable="true" data-language="python">
+# Train Decision Tree model
+dt_model = DecisionTreeClassifier(random_state=42)
+dt_model.fit(X_train, y_train)
+dt_pred = dt_model.predict(X_test)
+dt_accuracy = accuracy_score(y_test, dt_pred)
+print(f"Decision Tree Accuracy: &#123;dt_accuracy:.2%}")
+        </pre>
+    </div>
+
+    <div class="cell thebelab-cell">
+        <pre data-executable="true" data-language="python">
+# Train Logistic Regression model
+lr_model = LogisticRegression(random_state=42)
+lr_model.fit(X_train, y_train)
+lr_pred = lr_model.predict(X_test)
+lr_accuracy = accuracy_score(y_test, lr_pred)
+print(f"Logistic Regression Accuracy: &#123;lr_accuracy:.2%}")
+        </pre>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      console.log("DOM fully loaded and parsed");
+
+      function initializeThebe() {
+        const activateElement = document.querySelector(".thebe-activate");
+        const statusElement = document.querySelector(".thebe-status");
+
+        if (activateElement && statusElement) {
+          console.log("Thebe elements found. Bootstrapping...");
+          thebelab.bootstrap();
+        } else {
+          console.error("Thebe elements not found. Retrying...");
+          setTimeout(initializeThebe, 1000); // Retry after 1 second
+        }
+      }
+
+      initializeThebe();
+    });
+  </script>
+</div>
+
+
+
+
+
+
+
+
+
+<!-- TODO PRISM TESTING -->
+
+<!--<head>-->
+<!--  <meta charset="UTF-8">-->
+<!--  <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+
+<!--  &lt;!&ndash; Prism.js for Syntax Highlighting &ndash;&gt;-->
+<!--  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />-->
+<!--  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>-->
+<!--  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>-->
+<!--</head>-->
+
+<!--<div *ngIf="isVisible" class="draggable-panel" cdkDrag cdkDragBoundary="texera-workspace" cdkDragHandle=".panel-header">-->
+<!--  <div class="panel-header" cdkDragHandle>-->
+<!--    <span>Jupyter Notebook</span>-->
+<!--    <button class="close-button" (click)="closePanel()">X</button>-->
+<!--  </div>-->
+
+<!--  <div class="notebook">-->
+<!--    <h2>Importing Libraries</h2>-->
+<!--    <div class="cell" (click)="toggleHighlight()">-->
+<!--      <pre><code class="language-python line-numbers">-->
+<!--# Import necessary libraries-->
+<!--%pip install pandas-->
+<!--%pip install matplotlib-->
+<!--%pip install scikit-learn-->
+
+<!--import pandas as pd-->
+<!--from sklearn.model_selection import train_test_split-->
+<!--from sklearn.ensemble import RandomForestClassifier-->
+<!--from sklearn.svm import SVC-->
+<!--from sklearn.tree import DecisionTreeClassifier-->
+<!--from sklearn.linear_model import LogisticRegression-->
+<!--from sklearn.metrics import accuracy_score-->
+<!--from sklearn.preprocessing import StandardScaler-->
+<!--import matplotlib.pyplot as plt-->
+
+<!--# Load the dataset-->
+<!--file_path = 'diabetes.csv'-->
+<!--data = pd.read_csv(file_path)-->
+<!--      </code></pre>-->
+<!--    </div>-->
+<!--  </div>-->
+<!--</div>-->
+

@@ -21,7 +21,6 @@ import { SearchService } from "../../../service/user/search.service";
 import { SortMethod } from "../../../type/sort-method";
 import { isDefined } from "../../../../common/util/predicate";
 import { UserProjectService } from "../../../service/user/project/user-project.service";
-import { map, mergeMap, tap } from "rxjs/operators";
 import { JupyterUploadSuccessComponent } from "./notebook-migration-tool/notebook-migration.component";
 import { map, mergeMap, switchMap, tap } from "rxjs/operators";
 import { environment } from "../../../../../environments/environment";
@@ -623,6 +622,7 @@ export class UserWorkflowComponent implements AfterViewInit {
       groups: [],
       links: [],
       operatorPositions: {},
+      settings: {dataTransferBatchSize: 400}
     };
 
     // Parse notebook content and create operators, links, etc.
