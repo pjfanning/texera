@@ -61,11 +61,12 @@ class DatasetFileDocument(fileFullPath: Path) extends VirtualDocument[Nothing] {
     }
 
     fileRelativePath match {
-      case Some(path) => GitVersionControlLocalFileStorage.removeFileFromRepo(
-        PathUtils.getDatasetPath(dataset.getDid),
+      case Some(path) =>
+        GitVersionControlLocalFileStorage.removeFileFromRepo(
+          PathUtils.getDatasetPath(dataset.getDid),
           PathUtils.getDatasetPath(dataset.getDid).resolve(path)
-      )
-      case None       => // Do nothing
+        )
+      case None => // Do nothing
     }
   }
 }
