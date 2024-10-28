@@ -1,0 +1,11 @@
+{{- if .Values.createNamespaces }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wf-pod-brain
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wf-pod-pool
+{{- end }}
