@@ -3,10 +3,11 @@ import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { AppSettings } from "../../../common/app-setting";
 import { HubWorkflow } from "../../component/type/hub-workflow.interface";
-import { User } from "src/app/common/type/user";
+
 import { Workflow } from "../../../common/type/workflow";
 import { filter, map } from "rxjs/operators";
 import { WorkflowUtilService } from "../../../workspace/service/workflow-graph/util/workflow-util.service";
+import { User } from "../../../common/type/user";
 
 export const WORKFLOW_BASE_URL = `${AppSettings.getApiEndpoint()}/workflow`;
 
