@@ -25,8 +25,11 @@ import { NzUploadModule } from "ng-zorro-antd/upload";
 import { ScrollingModule } from "@angular/cdk/scrolling";
 import { NzAvatarModule } from "ng-zorro-antd/avatar";
 import { NzToolTipModule } from "ng-zorro-antd/tooltip";
-import { FileSaverService } from "../../../service/user/file/file-saver.service";
-import { testWorkflowEntries, testWorkflowFileNameConflictEntries } from "../../user-dashboard-test-fixtures";
+import {
+  testWorkflowEntries,
+  testWorkflowFileNameConflictEntries,
+  mockUserInfo,
+} from "../../user-dashboard-test-fixtures";
 import { FiltersComponent } from "../filters/filters.component";
 import { UserWorkflowListItemComponent } from "./user-workflow-list-item/user-workflow-list-item.component";
 import { UserProjectService } from "../../../service/user/project/user-project.service";
@@ -36,15 +39,19 @@ import { StubSearchService } from "../../../service/user/stub-search.service";
 import { SearchResultsComponent } from "../search-results/search-results.component";
 import { delay } from "rxjs";
 import { NzModalService } from "ng-zorro-antd/modal";
+import { NzButtonModule } from "ng-zorro-antd/button";
+import { DownloadService } from "../../../service/user/download/download.service";
+import { of } from "rxjs";
 
 describe("SavedWorkflowSectionComponent", () => {
   let component: UserWorkflowComponent;
   let fixture: ComponentFixture<UserWorkflowComponent>;
 
-  const fileSaverServiceSpy = jasmine.createSpyObj<FileSaverService>(["saveAs"]);
+  let downloadServiceSpy: jasmine.SpyObj<DownloadService>;
 
-  // must use waitForAsync for configureTestingModule in components with virtual scroll
   beforeEach(waitForAsync(() => {
+    downloadServiceSpy = jasmine.createSpyObj<DownloadService>(["downloadWorkflowsAsZip"]);
+
     TestBed.configureTestingModule({
       declarations: [
         UserWorkflowComponent,
@@ -62,11 +69,11 @@ describe("SavedWorkflowSectionComponent", () => {
         { provide: OperatorMetadataService, useClass: StubOperatorMetadataService },
         { provide: NZ_I18N, useValue: en_US },
         { provide: UserService, useClass: StubUserService },
-        { provide: FileSaverService, useValue: fileSaverServiceSpy },
         {
           provide: SearchService,
-          useValue: new StubSearchService(testWorkflowEntries),
+          useValue: new StubSearchService(testWorkflowEntries, mockUserInfo),
         },
+        { provide: DownloadService, useValue: downloadServiceSpy },
       ],
       imports: [
         FormsModule,
@@ -85,6 +92,7 @@ describe("SavedWorkflowSectionComponent", () => {
         NzUploadModule,
         ScrollingModule,
         NoopAnimationsModule,
+        NzButtonModule,
       ],
     }).compileComponents();
   }));
@@ -114,12 +122,15 @@ describe("SavedWorkflowSectionComponent", () => {
       await delay(10);
     }
   };
+
   it("searchNoInput", async () => {
     // When no search input is provided, it should show all workflows.
     await component.search();
     expect(component.searchResultsComponent.loading).toBeFalse();
     const SortedCase = component.searchResultsComponent.entries.map(workflow => workflow.name);
     expect(SortedCase).toEqual(["workflow 1", "workflow 2", "workflow 3", "workflow 4", "workflow 5"]);
+    console.log("Master Filter List:", component.filters.masterFilterList);
+
     expect(component.filters.masterFilterList).toEqual([]);
   });
 
@@ -159,6 +170,12 @@ describe("SavedWorkflowSectionComponent", () => {
   });
 
   it("searchByProjects", async () => {
+    component.filters.userProjectsDropdown = [
+      { pid: 1, name: "Project1", checked: false },
+      { pid: 2, name: "Project2", checked: false },
+      { pid: 3, name: "Project3", checked: false },
+    ];
+
     // If the project filter is applied, only those workflows belonging to those projects should be returned.
     component.filters.userProjectsDropdown[0].checked = true;
     component.filters.updateSelectedProjects();
@@ -237,6 +254,11 @@ describe("SavedWorkflowSectionComponent", () => {
     if (operatorGroup) {
       operatorGroup[3].checked = true; // Aggregation operator
       component.filters.updateSelectedOperators();
+      component.filters.userProjectsDropdown = [
+        { pid: 1, name: "Project1", checked: false },
+        { pid: 2, name: "Project2", checked: false },
+        { pid: 3, name: "Project3", checked: false },
+      ];
 
       component.filters.owners[0].checked = true; //Texera
       component.filters.owners[1].checked = true; //Angular
@@ -279,7 +301,25 @@ describe("SavedWorkflowSectionComponent", () => {
     );
     testWorkflowFileNameConflictEntries[0].checked = true;
     testWorkflowFileNameConflictEntries[2].checked = true;
+
+    downloadServiceSpy.downloadWorkflowsAsZip.and.returnValue(of(new Blob()));
+
     await component.onClickOpenDownloadZip();
-    expect(fileSaverServiceSpy.saveAs).toHaveBeenCalledTimes(1);
+
+    expect(downloadServiceSpy.downloadWorkflowsAsZip).toHaveBeenCalledTimes(1);
+    expect(downloadServiceSpy.downloadWorkflowsAsZip).toHaveBeenCalledWith([
+      {
+        id: testWorkflowFileNameConflictEntries[0].workflow.workflow.wid!,
+        name: testWorkflowFileNameConflictEntries[0].workflow.workflow.name,
+      },
+      {
+        id: testWorkflowFileNameConflictEntries[2].workflow.workflow.wid!,
+        name: testWorkflowFileNameConflictEntries[2].workflow.workflow.name,
+      },
+    ]);
+
+    // Check that the checked entries are unchecked after download
+    expect(testWorkflowFileNameConflictEntries[0].checked).toBeFalse();
+    expect(testWorkflowFileNameConflictEntries[2].checked).toBeFalse();
   });
 });

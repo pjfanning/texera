@@ -7,12 +7,12 @@ import com.github.toastshaman.dropwizard.auth.jwt.JwtAuthFilter
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
 import edu.uci.ics.amber.engine.common.AmberRuntime.scheduleRecurringCallThroughActorSystem
-import edu.uci.ics.amber.engine.common.{AmberConfig, AmberRuntime}
+import edu.uci.ics.amber.engine.common.{AmberConfig, AmberRuntime, Utils}
 import edu.uci.ics.amber.engine.common.client.AmberClient
+import edu.uci.ics.amber.engine.common.model.{PhysicalPlan, WorkflowContext}
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
 import edu.uci.ics.amber.engine.common.virtualidentity.ExecutionIdentity
-import edu.uci.ics.texera.Utils
-import edu.uci.ics.texera.Utils.{maptoStatusCode, objectMapper}
+import Utils.{maptoStatusCode, objectMapper}
 import edu.uci.ics.texera.web.auth.JwtAuth.jwtConsumer
 import edu.uci.ics.texera.web.auth.{
   GuestAuthFilter,
@@ -26,6 +26,7 @@ import edu.uci.ics.texera.web.resource._
 import edu.uci.ics.texera.web.resource.dashboard.DashboardResource
 import edu.uci.ics.texera.web.resource.dashboard.admin.execution.AdminExecutionResource
 import edu.uci.ics.texera.web.resource.dashboard.admin.user.AdminUserResource
+import edu.uci.ics.texera.web.resource.dashboard.hub.workflow.HubWorkflowResource
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.{
   DatasetAccessResource,
   DatasetResource
@@ -49,12 +50,14 @@ import edu.uci.ics.texera.web.resource.dashboard.user.workflow.{
   WorkflowResource,
   WorkflowVersionResource
 }
+import edu.uci.ics.texera.web.resource.languageserver.PythonLanguageServerManager
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService
 import edu.uci.ics.texera.web.storage.MongoDatabaseManager
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{COMPLETED, FAILED}
-import edu.uci.ics.texera.workflow.common.WorkflowContext
+import edu.uci.ics.amber.engine.common.workflowruntimestate.WorkflowAggregatedState.{
+  COMPLETED,
+  FAILED
+}
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 import io.dropwizard.auth.{AuthDynamicFeature, AuthValueFactoryProvider}
 import io.dropwizard.setup.{Bootstrap, Environment}
 import io.dropwizard.websockets.WebsocketBundle
@@ -137,6 +140,7 @@ object TexeraWebApplication {
         .resolve("web-config.yml")
         .toString
     )
+    PythonLanguageServerManager.startLanguageServer()
   }
 }
 
@@ -247,6 +251,7 @@ class TexeraWebApplication
     environment.jersey.register(classOf[PublicProjectResource])
     environment.jersey.register(classOf[WorkflowAccessResource])
     environment.jersey.register(classOf[WorkflowResource])
+    environment.jersey.register(classOf[HubWorkflowResource])
     environment.jersey.register(classOf[WorkflowVersionResource])
     environment.jersey.register(classOf[DatasetResource])
     environment.jersey.register(classOf[DatasetAccessResource])
@@ -258,6 +263,7 @@ class TexeraWebApplication
     environment.jersey.register(classOf[AdminExecutionResource])
     environment.jersey.register(classOf[UserQuotaResource])
     environment.jersey.register(classOf[UserDiscussionResource])
+    environment.jersey.register(classOf[AIAssistantResource])
   }
 
   /**

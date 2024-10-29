@@ -2,7 +2,6 @@ package edu.uci.ics.amber.engine.common
 
 import akka.actor.Address
 import com.typesafe.config.{Config, ConfigFactory}
-import edu.uci.ics.texera.Utils
 
 import java.io.File
 import java.net.URI
@@ -44,7 +43,8 @@ object AmberConfig {
     getConfSource.getInt("flow-control.credit-poll-interval-in-ms")
 
   // Network buffering configuration
-  def defaultBatchSize: Int = getConfSource.getInt("network-buffering.default-batch-size")
+  def defaultDataTransferBatchSize: Int =
+    getConfSource.getInt("network-buffering.default-data-transfer-batch-size")
   val enableAdaptiveNetworkBuffering: Boolean =
     getConfSource.getBoolean("network-buffering.enable-adaptive-buffering")
   val adaptiveBufferingTimeoutMs: Int =
@@ -105,4 +105,11 @@ object AmberConfig {
   // JDBC configuration
   val jdbcConfig: Config = getConfSource.getConfig("jdbc")
 
+  // Language server configuration
+  val pythonLanguageServerConfig: Config = getConfSource.getConfig("python-language-server")
+  // Python language server configuration
+  var aiAssistantConfig: Option[Config] = None
+  if (getConfSource.hasPath("ai-assistant-server")) {
+    aiAssistantConfig = Some(getConfSource.getConfig("ai-assistant-server"))
+  }
 }

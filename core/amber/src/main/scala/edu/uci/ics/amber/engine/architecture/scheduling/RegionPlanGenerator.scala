@@ -1,16 +1,14 @@
 package edu.uci.ics.amber.engine.architecture.scheduling
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.scheduling.RegionPlanGenerator.replaceVertex
 import edu.uci.ics.amber.engine.architecture.scheduling.resourcePolicies.{
   DefaultResourceAllocator,
   ExecutionClusterInfo
 }
+import edu.uci.ics.amber.engine.common.model.{PhysicalOp, PhysicalPlan, WorkflowContext}
 import edu.uci.ics.amber.engine.common.virtualidentity.{OperatorIdentity, PhysicalOpIdentity}
 import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
-import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.source.cache.CacheSourceOpDesc
 import org.jgrapht.graph.DirectedAcyclicGraph
@@ -56,7 +54,6 @@ abstract class RegionPlanGenerator(
     var physicalPlan: PhysicalPlan,
     opResultStorage: OpResultStorage
 ) {
-
   private val executionClusterInfo = new ExecutionClusterInfo()
 
   def generate(): (RegionPlan, PhysicalPlan)
@@ -64,7 +61,10 @@ abstract class RegionPlanGenerator(
   def allocateResource(
       regionDAG: DirectedAcyclicGraph[Region, RegionLink]
   ): Unit = {
-    val resourceAllocator = new DefaultResourceAllocator(physicalPlan, executionClusterInfo)
+    val dataTransferBatchSize = workflowContext.workflowSettings.dataTransferBatchSize
+
+    val resourceAllocator =
+      new DefaultResourceAllocator(physicalPlan, executionClusterInfo, dataTransferBatchSize)
     // generate the resource configs
     new TopologicalOrderIterator(regionDAG).asScala
       .foreach(region => {

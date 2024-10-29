@@ -9,9 +9,10 @@ import edu.uci.ics.amber.engine.architecture.scheduling.config.{
   OperatorConfig,
   ResourceConfig
 }
+import edu.uci.ics.amber.engine.common.model.PhysicalPlan
 import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity
 import edu.uci.ics.amber.engine.common.workflow.{PhysicalLink, PortIdentity}
-import edu.uci.ics.texera.workflow.common.workflow.{PartitionInfo, PhysicalPlan, UnknownPartition}
+import edu.uci.ics.texera.workflow.common.workflow.{PartitionInfo, UnknownPartition}
 
 import scala.collection.mutable
 
@@ -20,7 +21,8 @@ trait ResourceAllocator {
 }
 class DefaultResourceAllocator(
     physicalPlan: PhysicalPlan,
-    executionClusterInfo: ExecutionClusterInfo
+    executionClusterInfo: ExecutionClusterInfo,
+    dataTransferBatchSize: Int
 ) extends ResourceAllocator {
 
   // a map of a physical link to the partition info of the upstream/downstream of this link
@@ -67,7 +69,8 @@ class DefaultResourceAllocator(
         toPartitioning(
           operatorConfigs(physicalLink.fromOpId).workerConfigs.map(_.workerId),
           operatorConfigs(physicalLink.toOpId).workerConfigs.map(_.workerId),
-          linkPartitionInfos(physicalLink)
+          linkPartitionInfos(physicalLink),
+          this.dataTransferBatchSize
         )
       )
     }.toMap

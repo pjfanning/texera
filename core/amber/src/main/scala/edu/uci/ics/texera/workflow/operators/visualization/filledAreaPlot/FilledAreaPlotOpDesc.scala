@@ -2,10 +2,10 @@ package edu.uci.ics.texera.workflow.operators.visualization.filledAreaPlot
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
+import edu.uci.ics.amber.engine.common.model.tuple.{Attribute, AttributeType, Schema}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.operators.visualization.{
   VisualizationConstants,
@@ -43,6 +43,12 @@ class FilledAreaPlotOpDesc extends VisualizationOperator with PythonOperatorDesc
   @JsonPropertyDescription("Do you want to split the graph")
   var facetColumn: Boolean = false
 
+  @JsonProperty(required = false)
+  @JsonSchemaTitle("Pattern")
+  @JsonPropertyDescription("Add texture to the chart based on an attribute")
+  @AutofillAttributeName
+  var pattern: String = ""
+
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Schema.builder().add(new Attribute("html-content", AttributeType.STRING)).build()
   }
@@ -67,9 +73,10 @@ class FilledAreaPlotOpDesc extends VisualizationOperator with PythonOperatorDesc
     val colorArg = if (color.nonEmpty) s""", color="$color"""" else ""
     val facetColumnArg = if (facetColumn) s""", facet_col="$lineGroup"""" else ""
     val lineGroupArg = if (lineGroup.nonEmpty) s""", line_group="$lineGroup"""" else ""
+    val patternParam = if (pattern.nonEmpty) s""", pattern_shape="$pattern"""" else ""
 
     s"""
-             |            fig = px.area(table, x="$x", y="$y"$colorArg$facetColumnArg$lineGroupArg)
+             |            fig = px.area(table, x="$x", y="$y"$colorArg$facetColumnArg$lineGroupArg$patternParam)
              |""".stripMargin
   }
 

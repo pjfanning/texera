@@ -75,3 +75,51 @@ body {
 .disabled-click {
   pointer-events: none;
 }
+
+.select-and-button-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.spaced-button {
+  flex-shrink: 0;
+  width: 30px;
+  height: 24px;
+}
+
+nz-select {
+  flex-grow: 1;
+}
+
+.file-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-size,
+.version-size {
+  font-size: 12px;
+  color: #8c8c8c;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.version-size {
+  margin-top: 8px;
+}
+
+.icon-database,
+.icon-file {
+  font-size: 14px;
+}
+
+.version-size-badge {
+  margin-top: 10px;
+}
+
+.nz-tag {
+  font-size: 12px;
+}

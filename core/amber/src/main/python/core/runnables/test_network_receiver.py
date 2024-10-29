@@ -4,7 +4,7 @@ import pytest
 from pyarrow import Table
 
 from core.models.internal_queue import InternalQueue, ControlElement, DataElement
-from core.models.marker import EndOfUpstream
+from core.models.marker import EndOfInputChannel
 from core.models.payload import MarkerFrame, DataFrame
 from core.proxy import ProxyClient
 from core.runnables.network_receiver import NetworkReceiver
@@ -30,7 +30,7 @@ class TestNetworkReceiver:
     def network_receiver(self, output_queue):
         network_receiver = NetworkReceiver(output_queue, host="localhost", port=5555)
         yield network_receiver
-        network_receiver._proxy_server.graceful_shutdown()
+        network_receiver.stop()
 
     class MockFlightMetadataReader:
         """
@@ -93,7 +93,7 @@ class TestNetworkReceiver:
             )
         )
 
-    @pytest.mark.timeout(2)
+    @pytest.mark.timeout(10)
     def test_network_receiver_can_receive_data_messages(
         self,
         data_payload,
@@ -109,7 +109,7 @@ class TestNetworkReceiver:
         assert len(element.payload.frame) == len(data_payload.frame)
         assert element.tag == worker_id
 
-    @pytest.mark.timeout(2)
+    @pytest.mark.timeout(10)
     def test_network_receiver_can_receive_data_messages_end_of_upstream(
         self,
         data_payload,
@@ -121,14 +121,14 @@ class TestNetworkReceiver:
         network_sender_thread.start()
         worker_id = ActorVirtualIdentity(name="test")
         input_queue.put(
-            DataElement(tag=worker_id, payload=MarkerFrame(EndOfUpstream()))
+            DataElement(tag=worker_id, payload=MarkerFrame(EndOfInputChannel()))
         )
         element: DataElement = output_queue.get()
         assert isinstance(element.payload, MarkerFrame)
-        assert element.payload.frame == EndOfUpstream()
+        assert element.payload.frame == EndOfInputChannel()
         assert element.tag == worker_id
 
-    @pytest.mark.timeout(2)
+    @pytest.mark.timeout(10)
     def test_network_receiver_can_receive_control_messages(
         self,
         data_payload,

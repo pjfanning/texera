@@ -2,10 +2,10 @@ package edu.uci.ics.texera.workflow.operators.visualization.ganttChart
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
+import edu.uci.ics.amber.engine.common.model.tuple.{Attribute, AttributeType, Schema}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.operators.visualization.{
   VisualizationConstants,
@@ -48,7 +48,13 @@ class GanttChartOpDesc extends VisualizationOperator with PythonOperatorDescript
   @JsonSchemaTitle("Color Column")
   @JsonPropertyDescription("column to color tasks")
   @AutofillAttributeName
-  var color: String = _
+  var color: String = ""
+
+  @JsonProperty(required = false)
+  @JsonSchemaTitle("Pattern")
+  @JsonPropertyDescription("Add texture to the chart based on an attribute")
+  @AutofillAttributeName
+  var pattern: String = ""
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Schema.builder().add(new Attribute("html-content", AttributeType.STRING)).build()
@@ -72,9 +78,10 @@ class GanttChartOpDesc extends VisualizationOperator with PythonOperatorDescript
 
   def createPlotlyFigure(): String = {
     val colorSetting = if (color.nonEmpty) s", color='$color'" else ""
+    val patternParam = if (pattern.nonEmpty) s", pattern_shape='$pattern'" else ""
 
     s"""
-        |        fig = px.timeline(table, x_start='$start', x_end='$finish', y='$task' $colorSetting)
+        |        fig = px.timeline(table, x_start='$start', x_end='$finish', y='$task' $colorSetting $patternParam)
         |        fig.update_yaxes(autorange='reversed')
         |        fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
         |""".stripMargin

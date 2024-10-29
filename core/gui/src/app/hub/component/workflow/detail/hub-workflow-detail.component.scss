@@ -1,0 +1,149 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+}
+.container {
+  width: 80%;
+  margin: 30px auto 0;
+  padding: 20px;
+  background-color: #fff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+h1 {
+  color: #333;
+}
+.workflow-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.workflow-info div {
+  flex: 1;
+  padding: 10px;
+  background-color: #e9e9e9;
+  margin-right: 10px;
+}
+.workflow-info div:last-child {
+  margin-right: 0;
+}
+.workflow-steps {
+  margin-top: 20px;
+}
+.workflow-step {
+  background-color: #f9f9f9;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-left: 5px solid #007bff;
+}
+.workflow-step h3 {
+  margin: 0;
+  color: #007bff;
+}
+.workflow-step p {
+  margin: 5px 0;
+}
+
+.preview-containers {
+  position: relative;
+  height: 600px;
+}
+
+texera-mini-map {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  //z-index: 3;
+}
+
+.prevent-select {
+  user-select: none;
+}
+
+.workflow-description {
+  padding: 10px;
+  background-color: #e9e9e9;
+  margin-top: 20px;
+}
+
+.go-back-button {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+}
+
+.header-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+
+.workflow-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.clone-button,
+.like-button {
+  background-color: white;
+  color: black;
+  width: auto;
+  min-width: 90px;
+  height: 38px;
+  border-radius: 8px;
+  padding: 0 12px;
+  cursor: pointer;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-right: 10px;
+  margin-bottom: 10px;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.clone-button:hover,
+.like-button:hover {
+  background-color: #f0f0f0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.like-button.liked {
+  border-color: red;
+}
+
+.clone-button i,
+.like-icon {
+  font-size: 20px;
+  margin-right: 10px;
+}
+
+.like-icon.liked {
+  color: red;
+}
+
+.clone-button span,
+.like-button span {
+  font-size: 14px;
+  color: #888;
+  margin-left: 8px;
+}
+
+.like-button.liked span {
+  color: red;
+}
+
+.disabled-button {
+  background-color: #f0f0f0;
+  color: #a0a0a0;
+  border-color: #d0d0d0;
+  //cursor: not-allowed;
+}

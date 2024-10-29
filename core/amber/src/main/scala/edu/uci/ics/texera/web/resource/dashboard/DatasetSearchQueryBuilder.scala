@@ -14,6 +14,7 @@ import edu.uci.ics.texera.web.resource.dashboard.FulltextSearchQueryUtils.{
   getFullTextSearchFilter,
   getSubstringSearchFilter
 }
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.DashboardDataset
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -33,7 +34,8 @@ object DatasetSearchQueryBuilder extends SearchQueryBuilder {
   // For those public datasets, need external union to merge them
   override protected def constructFromClause(
       uid: UInteger,
-      params: DashboardResource.SearchQueryParams
+      params: DashboardResource.SearchQueryParams,
+      includePublic: Boolean = false
   ): TableLike[_] = {
     DATASET
       .leftJoin(DATASET_USER_ACCESS)
@@ -86,7 +88,8 @@ object DatasetSearchQueryBuilder extends SearchQueryBuilder {
           classOf[DatasetUserAccessPrivilege]
         ),
       dataset.getOwnerUid == uid,
-      List()
+      List(),
+      DatasetResource.calculateLatestDatasetVersionSize(dataset.getDid)
     )
     DashboardClickableFileEntry(
       resourceType = SearchQueryBuilder.DATASET_RESOURCE_TYPE,

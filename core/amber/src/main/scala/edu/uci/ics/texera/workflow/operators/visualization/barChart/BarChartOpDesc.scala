@@ -2,10 +2,10 @@ package edu.uci.ics.texera.workflow.operators.visualization.barChart
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
+import edu.uci.ics.amber.engine.common.model.tuple.{Attribute, AttributeType, Schema}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.operators.visualization.{
   VisualizationConstants,
@@ -47,6 +47,12 @@ class BarChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor
   @JsonPropertyDescription("Orientation Style")
   var horizontalOrientation: Boolean = _
 
+  @JsonProperty(required = false)
+  @JsonSchemaTitle("Pattern")
+  @JsonPropertyDescription("Add texture to the chart based on an attribute")
+  @AutofillAttributeName
+  var pattern: String = ""
+
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Schema.builder().add(new Attribute("html-content", AttributeType.STRING)).build()
   }
@@ -73,6 +79,10 @@ class BarChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor
     var isHorizontalOrientation = "False"
     if (horizontalOrientation)
       isHorizontalOrientation = "True"
+
+    var isPatternSelected = "False"
+    if (pattern != "")
+      isPatternSelected = "True"
 
     var isCategoryColumn = "False"
     if (categoryColumn != "No Selection")
@@ -102,9 +112,9 @@ class BarChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor
                        |        ${manipulateTable()}
                        |        if not table.empty and '$fields' != '$value':
                        |           if $isHorizontalOrientation:
-                       |               fig = go.Figure(px.bar(table, y='$fields', x='$value', color="$categoryColumn" if $isCategoryColumn else None, orientation = 'h'))
+                       |               fig = go.Figure(px.bar(table, y='$fields', x='$value', color="$categoryColumn" if $isCategoryColumn else None, pattern_shape="$pattern" if $isPatternSelected else None, orientation = 'h'))
                        |           else:
-                       |               fig = go.Figure(px.bar(table, y='$value', x='$fields', color="$categoryColumn" if $isCategoryColumn else None))
+                       |               fig = go.Figure(px.bar(table, y='$value', x='$fields', color="$categoryColumn" if $isCategoryColumn else None, pattern_shape="$pattern" if $isPatternSelected else None))
                        |           fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
                        |           html = plotly.io.to_html(fig, include_plotlyjs = 'cdn', auto_play = False)
                        |           # use latest plotly lib in html

@@ -25,13 +25,15 @@ import { saveAs } from "file-saver";
 import { NotificationService } from "src/app/common/service/notification/notification.service";
 import { OperatorMenuService } from "../../service/operator-menu/operator-menu.service";
 import { CoeditorPresenceService } from "../../service/workflow-graph/model/coeditor-presence.service";
-import { Subscription, timer } from "rxjs";
+import { firstValueFrom, Subscription, timer } from "rxjs";
 import { isDefined } from "../../../common/util/predicate";
-import { FileSelectionComponent } from "../file-selection/file-selection.component";
 import { NzModalService } from "ng-zorro-antd/modal";
 import { ResultExportationComponent } from "../result-exportation/result-exportation.component";
 import { ReportGenerationService } from "../../service/report-generation/report-generation.service";
+import { ShareAccessComponent } from "src/app/dashboard/component/user/share-access/share-access.component";
+import { UdfDebugService } from "../../service/operator-debug/udf-debug.service";
 import { PanelService } from "../../service/panel/panel.service";
+
 /**
  * MenuComponent is the top level menu bar that shows
  *  the Texera title and workflow execution button
@@ -56,12 +58,14 @@ import { PanelService } from "../../service/panel/panel.service";
 export class MenuComponent implements OnInit {
   public executionState: ExecutionState; // set this to true when the workflow is started
   public ExecutionState = ExecutionState; // make Angular HTML access enum definition
+  public emailNotificationEnabled: boolean = environment.workflowEmailNotificationEnabled;
   public isWorkflowValid: boolean = true; // this will check whether the workflow error or not
   public isWorkflowEmpty: boolean = false;
   public isSaving: boolean = false;
   public isWorkflowModifiable: boolean = false;
   public workflowId?: number;
 
+  @Input() public writeAccess: boolean = false;
   @Input() public pid?: number = undefined;
   @Input() public autoSaveState: string = "";
   @Input() public currentWorkflowName: string = ""; // reset workflowName
@@ -154,6 +158,23 @@ export class MenuComponent implements OnInit {
     this.handleWorkflowVersionDisplay();
   }
 
+  public async onClickOpenShareAccess(): Promise<void> {
+    this.modalService.create({
+      nzContent: ShareAccessComponent,
+      nzData: {
+        writeAccess: this.writeAccess,
+        type: "workflow",
+        id: this.workflowId,
+        allOwners: await firstValueFrom(this.workflowPersistService.retrieveOwners()),
+        inWorkspace: true,
+      },
+      nzFooter: null,
+      nzTitle: "Share this workflow with others",
+      nzCentered: true,
+      nzWidth: "800px",
+    });
+  }
+
   // apply a behavior to the run button via bound variables
   public applyRunButtonBehavior(behavior: { text: string; icon: string; disable: boolean; onClick: () => void }) {
     this.runButtonText = behavior.text;
@@ -192,7 +213,11 @@ export class MenuComponent implements OnInit {
           text: "Run",
           icon: "play-circle",
           disable: false,
-          onClick: () => this.executeWorkflowService.executeWorkflow(this.currentExecutionName),
+          onClick: () =>
+            this.executeWorkflowService.executeWorkflowWithEmailNotification(
+              this.currentExecutionName,
+              this.emailNotificationEnabled && environment.userSystemEnabled
+            ),
         };
       case ExecutionState.Initializing:
         return {
@@ -255,8 +280,8 @@ export class MenuComponent implements OnInit {
    * get the html to export all results.
    */
   public onClickGenerateReport(): void {
-    // Get notification
-    this.notificationService.info("The report is being generated...");
+    // Get notification and set nzDuration to 0 to prevent it from auto-closing
+    this.notificationService.blank("", "The report is being generated...", { nzDuration: 0 });
 
     const workflowName = this.currentWorkflowName;
     const WorkflowContent: WorkflowContent = this.workflowActionService.getWorkflowContent();
@@ -280,30 +305,24 @@ export class MenuComponent implements OnInit {
                 );
                 // Generate the final report as HTML after all results are retrieved
                 this.reportGenerationService.generateReportAsHtml(workflowSnapshotURL, sortedResults, workflowName);
+
+                // Close the notification after the report is generated
+                this.notificationService.remove();
+                this.notificationService.success("Report successfully generated.");
               },
               error: (error: unknown) => {
                 this.notificationService.error("Error in retrieving operator results: " + (error as Error).message);
+                // Close the notification on error
+                this.notificationService.remove();
               },
             });
         },
-        error: (e: unknown) => this.notificationService.error((e as Error).message),
+        error: (e: unknown) => {
+          this.notificationService.error((e as Error).message);
+          // Close the notification on error
+          this.notificationService.remove();
+        },
       });
-  }
-
-  /**
-   * This method checks whether the zoom ratio reaches minimum. If it is minimum, this method
-   *  will disable the zoom out button on the menu bar.
-   */
-  public isZoomRatioMin(): boolean {
-    return this.workflowActionService.getJointGraphWrapper().isZoomRatioMin();
-  }
-
-  /**
-   * This method checks whether the zoom ratio reaches maximum. If it is maximum, this method
-   *  will disable the zoom in button on the menu bar.
-   */
-  public isZoomRatioMax(): boolean {
-    return this.workflowActionService.getJointGraphWrapper().isZoomRatioMax();
   }
 
   /**
@@ -312,48 +331,6 @@ export class MenuComponent implements OnInit {
    */
   public onClickToggleGrids(): void {
     this.workflowActionService.getJointGraphWrapper().toggleGrids();
-  }
-
-  /**
-   * This method will decrease the zoom ratio and send the new zoom ratio value
-   *  to the joint graph wrapper to change overall zoom ratio that is used in
-   *  zoom buttons and mouse wheel zoom.
-   *
-   * If the zoom ratio already reaches minimum, this method will not do anything.
-   */
-  public onClickZoomOut(): void {
-    // if zoom is already at minimum, don't zoom out again.
-    if (this.isZoomRatioMin()) {
-      return;
-    }
-
-    // make the ratio small.
-    this.workflowActionService
-      .getJointGraphWrapper()
-      .setZoomProperty(
-        this.workflowActionService.getJointGraphWrapper().getZoomRatio() - JointGraphWrapper.ZOOM_CLICK_DIFF
-      );
-  }
-
-  /**
-   * This method will increase the zoom ratio and send the new zoom ratio value
-   *  to the joint graph wrapper to change overall zoom ratio that is used in
-   *  zoom buttons and mouse wheel zoom.
-   *
-   * If the zoom ratio already reaches maximum, this method will not do anything.
-   */
-  public onClickZoomIn(): void {
-    // if zoom is already reach maximum, don't zoom in again.
-    if (this.isZoomRatioMax()) {
-      return;
-    }
-
-    // make the ratio big.
-    this.workflowActionService
-      .getJointGraphWrapper()
-      .setZoomProperty(
-        this.workflowActionService.getJointGraphWrapper().getZoomRatio() + JointGraphWrapper.ZOOM_CLICK_DIFF
-      );
   }
 
   /**
@@ -372,7 +349,7 @@ export class MenuComponent implements OnInit {
    *
    */
   public onClickExportExecutionResult(exportType: string): void {
-    const modal = this.modalService.create({
+    this.modalService.create({
       nzTitle: "Export Result and Save to a Dataset",
       nzContent: ResultExportationComponent,
       nzData: {
@@ -430,6 +407,9 @@ export class MenuComponent implements OnInit {
 
         // Mock data conversion to a format compatible with Texera workflows
         const workflowContent: WorkflowContent = {
+          "settings": {
+            "dataTransferBatchSize": 400
+          },
           "operators": [
             {
               "operatorID": "CSVFileScan-operator-43e5d7f4-2d3d-498b-a97d-b4d242ee82cf",
@@ -1310,6 +1290,7 @@ export class MenuComponent implements OnInit {
         const workflow: Workflow = {
           content: workflowContent,
           name: workflowName,
+          isPublished: 0,
           description: undefined,
           wid: undefined,
           creationTime: undefined,
@@ -1367,6 +1348,7 @@ export class MenuComponent implements OnInit {
           creationTime: undefined,
           lastModifiedTime: undefined,
           readonly: false,
+          isPublished: 0,
         };
 
         this.workflowActionService.enableWorkflowModification();
@@ -1405,7 +1387,9 @@ export class MenuComponent implements OnInit {
     this.workflowPersistService
       .persistWorkflow(this.workflowActionService.getWorkflow())
       .pipe(
-        tap((updatedWorkflow: Workflow) => this.workflowActionService.setWorkflowMetadata(updatedWorkflow)),
+        tap((updatedWorkflow: Workflow) => {
+          this.workflowActionService.setWorkflowMetadata(updatedWorkflow);
+        }),
         filter(workflow => isDefined(localPid) && isDefined(workflow.wid)),
         mergeMap(workflow => this.userProjectService.addWorkflowToProject(localPid!, workflow.wid!)),
         untilDestroyed(this)

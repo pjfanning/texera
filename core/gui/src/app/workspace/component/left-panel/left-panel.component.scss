@@ -1,12 +1,11 @@
 :host {
-  display: block;
   height: 100%;
 }
 
 #left-container {
-  position: fixed;
-  top: 90px;
-  left: 215px;
+  position: absolute;
+  top: 80px;
+  left: 0;
   z-index: 3;
   user-select: none;
   background: white;
@@ -29,6 +28,20 @@
   border: none;
 }
 
+#docked-buttons {
+  position: fixed;
+  top: 80px;
+  z-index: 4;
+}
+
+#return-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+}
+
 #content {
   width: calc(100% - 33px);
   height: 100%;
@@ -38,7 +51,7 @@
   border-left: 1px solid #f0f0f0;
 }
 
-#divider {
+.divider {
   margin: 0;
 }
 

@@ -1,8 +1,17 @@
+<div class="spinner-container">
+  <nz-spin
+    [nzSpinning]="isLoading"
+    [nzSize]="'large'"
+    nzTip="Loading workflow..."></nz-spin>
+</div>
 <div id="result">
   <texera-result-panel></texera-result-panel>
 </div>
 <texera-workflow-editor></texera-workflow-editor>
-<texera-menu [pid]="pid"></texera-menu>
+<texera-menu
+  [writeAccess]="writeAccess"
+  [pid]="pid"></texera-menu
+>
 <texera-jupyter-notebook-panel></texera-jupyter-notebook-panel>
 <span id="git-commit-id">Git hash: {{ gitCommitHash }}</span>
 <texera-mini-map class="box"></texera-mini-map>

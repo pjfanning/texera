@@ -7,6 +7,8 @@ import { DatasetFileNode, getFullPathFromDatasetFileNode } from "../../../../../
 import { DatasetVersion } from "../../../../../common/type/dataset";
 import { switchMap } from "rxjs/operators";
 import { NotificationService } from "../../../../../common/service/notification/notification.service";
+import { DownloadService } from "../../../../service/user/download/download.service";
+import { formatSize } from "src/app/common/util/size-formatter.util";
 
 @UntilDestroy()
 @Component({
@@ -22,6 +24,8 @@ export class UserDatasetExplorerComponent implements OnInit {
   public userDatasetAccessLevel: "READ" | "WRITE" | "NONE" = "NONE";
 
   public currentDisplayedFileName: string = "";
+  public currentFileSize: number | undefined;
+  public currentDatasetVersionSize: number | undefined;
 
   public isRightBarCollapsed = false;
   public isMaximized = false;
@@ -38,7 +42,8 @@ export class UserDatasetExplorerComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private datasetService: DatasetService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private downloadService: DownloadService
   ) {}
 
   // item for control the resizeable sider
@@ -104,7 +109,7 @@ export class UserDatasetExplorerComponent implements OnInit {
         this.retrieveDatasetVersionList();
         this.renderDatasetViewSider();
       } else {
-        this.router.navigate([`/dashboard/dataset/${creationID}`]);
+        this.router.navigate([`/dashboard/user/dataset/${creationID}`]);
       }
     } else {
       // creation failed
@@ -113,7 +118,7 @@ export class UserDatasetExplorerComponent implements OnInit {
         this.isCreatingDataset = false;
         this.retrieveDatasetVersionList();
       } else {
-        this.router.navigate(["/dashboard/dataset"]);
+        this.router.navigate(["/dashboard/user/dataset"]);
       }
     }
   }
@@ -179,39 +184,23 @@ export class UserDatasetExplorerComponent implements OnInit {
 
   loadFileContent(node: DatasetFileNode) {
     this.currentDisplayedFileName = getFullPathFromDatasetFileNode(node);
+    this.currentFileSize = node.size;
   }
 
-  onClickDownloadCurrentFile() {
-    if (this.did && this.selectedVersion && this.selectedVersion.dvid) {
-      this.datasetService
-        .retrieveDatasetVersionSingleFile(this.currentDisplayedFileName)
-        .pipe(untilDestroyed(this))
-        .subscribe({
-          next: blob => {
-            // download this blob, the filename is the direct name of this file(e.g., /a/b/c.txt, name would be c.txt)
-            const url = URL.createObjectURL(blob);
+  onClickDownloadCurrentFile = (): void => {
+    if (!this.did || !this.selectedVersion?.dvid) return;
 
-            // Create a temporary link element
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = this.currentDisplayedFileName.split("/").pop() || "download"; // Extract the file name
+    this.downloadService.downloadSingleFile(this.currentDisplayedFileName).pipe(untilDestroyed(this)).subscribe();
+  };
 
-            // Append the link to the body
-            document.body.appendChild(a);
-            // Trigger the download
-            a.click();
-            // Remove the link after download
-            document.body.removeChild(a);
-            // Release the blob URL
-            URL.revokeObjectURL(url);
-            this.notificationService.info(`File ${this.currentDisplayedFileName} is downloading`);
-          },
-          error: (error: unknown) => {
-            this.notificationService.error(`Error downloading file '${this.currentDisplayedFileName}'`);
-          },
-        });
-    }
-  }
+  onClickDownloadVersionAsZip = (): void => {
+    if (!this.did || !this.selectedVersion?.dvid) return;
+
+    this.downloadService
+      .downloadDatasetVersion(this.did, this.selectedVersion.dvid, this.datasetName, this.selectedVersion.name)
+      .pipe(untilDestroyed(this))
+      .subscribe();
+  };
 
   onClickScaleTheView() {
     this.isMaximized = !this.isMaximized;
@@ -227,8 +216,9 @@ export class UserDatasetExplorerComponent implements OnInit {
       this.datasetService
         .retrieveDatasetVersionFileTree(this.did, this.selectedVersion.dvid)
         .pipe(untilDestroyed(this))
-        .subscribe(dataNodeList => {
-          this.fileTreeNodeList = dataNodeList;
+        .subscribe(data => {
+          this.fileTreeNodeList = data.fileNodes;
+          this.currentDatasetVersionSize = data.size;
           let currentNode = this.fileTreeNodeList[0];
           while (currentNode.type === "directory" && currentNode.children) {
             currentNode = currentNode.children[0];
@@ -248,4 +238,7 @@ export class UserDatasetExplorerComponent implements OnInit {
   userHasWriteAccess(): boolean {
     return this.userDatasetAccessLevel == "WRITE";
   }
+
+  // alias for formatSize
+  formatSize = formatSize;
 }

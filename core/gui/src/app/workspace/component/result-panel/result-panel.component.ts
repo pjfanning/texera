@@ -15,6 +15,7 @@ import { ErrorFrameComponent } from "./error-frame/error-frame.component";
 import { WorkflowConsoleService } from "../../service/workflow-console/workflow-console.service";
 import { NzResizeEvent } from "ng-zorro-antd/resizable";
 import { VisualizationFrameContentComponent } from "../visualization-panel-content/visualization-frame-content.component";
+import { calculateTotalTranslate3d } from "../../../common/util/panel-dock";
 
 /**
  * ResultPanelComponent is the bottom level area that displays the
@@ -37,6 +38,8 @@ export class ResultPanelComponent implements OnInit, OnDestroy {
   maxWidth = window.innerWidth;
   maxHeight = window.innerHeight;
   operatorTitle = "";
+  dragPosition = { x: 0, y: 0 };
+  returnPosition = { x: 0, y: 0 };
 
   // the highlighted operator ID for display result table / visualization / breakpoint
   currentOperatorId?: string | undefined;
@@ -61,7 +64,9 @@ export class ResultPanelComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     const style = localStorage.getItem("result-panel-style");
     if (style) document.getElementById("result-container")!.style.cssText = style;
-
+    const translates = document.getElementById("result-container")!.style.transform;
+    const [xOffset, yOffset, _] = calculateTotalTranslate3d(translates);
+    this.returnPosition = { x: -xOffset, y: -yOffset };
     this.registerAutoRerenderResultPanel();
     this.registerAutoOpenResultPanel();
     this.handleResultPanelForVersionPreview();
@@ -71,7 +76,11 @@ export class ResultPanelComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     localStorage.setItem("result-panel-width", String(this.width));
     localStorage.setItem("result-panel-height", String(this.height));
-    localStorage.setItem("result-panel-style", document.getElementById("result-container")!.style.cssText);
+
+    const resultContainer = document.getElementById("result-container");
+    if (resultContainer) {
+      localStorage.setItem("result-panel-style", resultContainer.style.cssText);
+    }
   }
 
   handleResultPanelForVersionPreview() {
@@ -268,6 +277,10 @@ export class ResultPanelComponent implements OnInit, OnDestroy {
     this.prevWidth = this.width;
     this.height = 32.5;
     this.width = 0;
+  }
+
+  resetPanelPosition() {
+    this.dragPosition = { x: this.returnPosition.x, y: this.returnPosition.y };
   }
 
   onResize({ width, height }: NzResizeEvent) {

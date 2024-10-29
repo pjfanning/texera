@@ -5,6 +5,7 @@
     [routerLink]="entryLink"
     nz-row
     nzAlign="middle">
+    <!-- Icon Column -->
     <div
       nz-col
       nzSpan="1">
@@ -14,26 +15,112 @@
           [nzType]="iconType"></i>
       </div>
     </div>
+
+    <!-- ID Column -->
     <div
       nz-col
-      nzSpan="11">
-      <div class="resource-name truncate-single-line"><em>#{{ entry.id }}</em> {{ entry.name }}</div>
-      <div class="resource-description truncate-single-line">{{ entry.description || ""}}</div>
+      nzSpan="1">
+      <div class="resource-id">
+        <em>#{{ entry.id }}</em>
+      </div>
     </div>
+
     <div
       nz-col
-      nzSpan="12">
+      nzSpan="10">
+      <div class="name-container">
+        <!-- Edit Name Buttons -->
+        <div
+          class="edit-button-group"
+          *ngIf="isPrivateSearch">
+          <button
+            nz-button
+            nzType="text"
+            class="edit-name-button"
+            title="Rename"
+            (click)="onEditName()"
+            (click)="$event.stopPropagation()">
+            <i
+              nz-icon
+              nzTheme="outline"
+              nzType="edit"></i>
+          </button>
+        </div>
+
+        <!-- Name -->
+        <div
+          class="resource-name truncate-single-line"
+          *ngIf="!editingName">
+          {{ entry.name }}
+        </div>
+        <input
+          *ngIf="editingName"
+          #nameInput
+          class="resource-name-edit-input"
+          [(ngModel)]="entry.name"
+          (blur)="confirmUpdateWorkflowCustomName(entry.name)"
+          (keydown.enter)="confirmUpdateWorkflowCustomName(entry.name)"
+          (click)="$event.stopPropagation()"
+          autofocus />
+      </div>
+
+      <!-- Description -->
+      <div cladd="description-container">
+        <!-- Edit Description Buttons -->
+        <div
+          class="edit-button-group"
+          *ngIf="isPrivateSearch">
+          <button
+            nz-button
+            nzType="text"
+            class="edit-description-button"
+            title="Edit Description"
+            (click)="onEditDescription()"
+            (click)="$event.stopPropagation()">
+            <i
+              nz-icon
+              nzTheme="outline"
+              nzType="form"></i>
+          </button>
+        </div>
+        <div
+          class="resource-description truncate-single-line"
+          *ngIf="!editingDescription">
+          {{ entry.description ? entry.description : '' }}
+        </div>
+        <textarea
+          *ngIf="editingDescription"
+          #descriptionInput
+          class="resource-description-edit-textarea"
+          [(ngModel)]="entry.description"
+          (blur)="confirmUpdateWorkflowCustomDescription(entry.description)"
+          (keydown.enter)="confirmUpdateWorkflowCustomDescription(entry.description)"
+          (click)="$event.stopPropagation()"
+          autofocus></textarea>
+      </div>
+    </div>
+
+    <div
+      nz-col
+      [nzSpan]="12">
       <div class="edit-info">
         <div class="resource-owner">
           <texera-user-avatar
             class="user-avatar"
-            googleAvatar=""
+            [googleAvatar]="'https://lh3.googleusercontent.com/a/' + (entry.ownerGoogleAvatar || '')"
             userColor="#1E90FF"
-            [userName]="entry.ownerName || 'User'">
+            [userName]="entry.ownerName || 'User'"
+            [isOwner]="entry.ownerId === this.currentUid">
           </texera-user-avatar>
         </div>
-        <div class="resource-time-info">Created: {{ formatTime(entry.creationTime) }}</div>
-        <div class="resource-time-info">Edited: {{ formatTime(entry.lastModifiedTime) }}</div>
+        <div class="resource-info-grid">
+          <div class="resource-info">
+            {{ entry.type==='workflow' ? formatViewCount(viewCount) + " " + (viewCount === 1 ? "view" : "views") : ''}}
+          </div>
+          <div class="resource-info">{{ entry.type === 'dataset' ? 'Size: ' + formatSize(entry.size) : '' }}</div>
+          <div class="resource-info">Created: {{ formatTime(entry.creationTime) }}</div>
+          <div class="resource-info">Edited: {{ formatTime(entry.lastModifiedTime) }}</div>
+        </div>
       </div>
     </div>
   </div>
@@ -42,9 +129,22 @@
     *ngIf="isPrivateSearch"
     class="button-group">
     <button
+      *ngIf="entry.type==='workflow'"
       nz-button
       nzType="text"
       class="dropdown-item"
+      title="Detail"
+      (click)="openDetailModal(this.entry.id)">
+      <i
+        nz-icon
+        nzTheme="outline"
+        nzType="eye"></i>
+    </button>
+    <button
+      nz-button
+      nzType="text"
+      class="dropdown-item"
+      title="Share"
       (click)="onClickOpenShareAccess()">
       <i
         nz-icon
@@ -56,6 +156,7 @@
       nzType="text"
       *ngIf="entry.type==='workflow'"
       class="dropdown-item"
+      title="Copy"
       (click)="duplicated.emit()">
       <i
         nz-icon
@@ -65,8 +166,9 @@
     <button
       nz-button
       nzType="text"
-      *ngIf="entry.type==='workflow'"
+      *ngIf="entry.type === 'workflow' || entry.type === 'dataset'"
       class="dropdown-item"
+      title="Download"
       (click)="onClickDownload()">
       <i
         nz-icon
@@ -77,13 +179,35 @@
       nz-button
       nzType="text"
       class="dropdown-item"
+      title="Delete"
       (nzOnConfirm)="deleted.emit()"
       nz-popconfirm
-      nzPopconfirmTitle="Confirm to delete this workflow.">
+      nzPopconfirmTitle="Confirm to delete this item.">
       <i
         nz-icon
         nzTheme="outline"
         nzType="delete"></i>
+    </button>
+  </div>
+  <div
+    *ngIf="!isPrivateSearch"
+    class="button-group">
+    <button
+      nz-button
+      nzType="text"
+      class="dropdown-item like-button"
+      title="Like"
+      [ngClass]="{ liked: isLiked, 'disabled-like': !currentUid }"
+      (click)="toggleLike(this.entry.id, this.currentUid)"
+      [attr.disabled]="!currentUid ? true : null">
+      <i
+        nz-icon
+        [nzTheme]="isLiked ? 'fill' : 'outline'"
+        [nzType]="'like'"
+        [ngClass]="isLiked ? 'liked' : 'not-liked'"
+        class="like-icon">
+      </i>
+      <span>{{ formatLikeCount(likeCount) }}</span>
     </button>
   </div>
 </nz-card>
