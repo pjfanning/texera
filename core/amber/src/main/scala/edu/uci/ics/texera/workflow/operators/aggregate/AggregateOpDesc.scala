@@ -5,20 +5,20 @@ import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.common.model.{PhysicalOp, PhysicalPlan, SchemaPropagationFunc}
 import edu.uci.ics.amber.engine.common.model.tuple.Schema
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ExecutionIdentity,
-  PhysicalOpIdentity,
-  WorkflowIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, PhysicalOpIdentity, WorkflowIdentity}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PhysicalLink, PortIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeNameList
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.workflow.HashPartition
 
+import javax.validation.constraints.{NotNull, Size}
+
 class AggregateOpDesc extends LogicalOp {
   @JsonProperty(value = "aggregations", required = true)
   @JsonPropertyDescription("multiple aggregation functions")
+  @NotNull(message = "aggregation cannot be null")
+  @Size(min = 1, message = "aggregations cannot be empty")
   var aggregations: List[AggregationOperation] = List()
 
   @JsonProperty("groupByKeys")
@@ -28,12 +28,13 @@ class AggregateOpDesc extends LogicalOp {
   var groupByKeys: List[String] = List()
 
   override def getPhysicalPlan(
-      workflowId: WorkflowIdentity,
-      executionId: ExecutionIdentity
-  ): PhysicalPlan = {
-//    if (aggregations.isEmpty) {
-//      throw new UnsupportedOperationException("Aggregation Functions Cannot be Empty")
-//    }
+                                workflowId: WorkflowIdentity,
+                                executionId: ExecutionIdentity
+                              ): PhysicalPlan = {
+    //    if (aggregations.isEmpty) {
+    ////      throw new UnsupportedOperationException("Aggregation Functions Cannot be Empty")
+    //      throw new RuntimeException("11222")
+    //    }
 
     // TODO: this is supposed to be blocking but due to limitations of materialization naming on the logical operator
     // we are keeping it not annotated as blocking.
