@@ -161,7 +161,8 @@ object WorkflowExecutionsResource {
       if (stats.isEmpty) {
         Map.empty[String, List[WorkflowRuntimeStatistics]]
       } else {
-        val beginTimestamp = stats.head.timestamp.getTime  // Convert timestamp to long for easier manipulation
+        val beginTimestamp =
+          stats.head.timestamp.getTime // Convert timestamp to long for easier manipulation
         stats.foldLeft(Map.empty[String, List[WorkflowRuntimeStatistics]]) { (acc, stat) =>
           val statsArray = acc.getOrElse(stat.operatorId, List.empty)
           val lastStat = statsArray.lastOption

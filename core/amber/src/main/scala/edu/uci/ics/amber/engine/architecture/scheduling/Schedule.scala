@@ -1,7 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.scheduling
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 case class Schedule(private val regionPlan: RegionPlan) extends Iterator[Set[Region]] {
   private val levels = mutable.Map.empty[RegionIdentity, Int]
