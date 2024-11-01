@@ -16,7 +16,6 @@ import org.jgrapht.graph.{AsUndirectedGraph, DirectedAcyclicGraph}
 import org.jgrapht.traverse.TopologicalOrderIterator
 import org.jgrapht.util.SupplierUtil
 
-import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, SetHasAsScala}
 import scala.util.control.Breaks.{break, breakable}
@@ -86,16 +85,18 @@ case class PhysicalPlan(
     jgraphtDag
   }
 
+  // These lazy vals are used by CostBasedRegionPlanGenerator for search pruning.
   @transient lazy val maxChains: Set[Set[PhysicalLink]] = this.getMaxChains
 
-  @transient lazy val allUndirectedCycles = this.getAllUndirectedCycles
+  @transient private lazy val allUndirectedCycles = this.getAllUndirectedCycles
 
-  @transient lazy val nonMaterializedBlockingAndDependeeLinks =
+  @transient lazy val nonMaterializedBlockingAndDependeeLinks: Set[PhysicalLink] =
     this.getNonMaterializedBlockingAndDependeeLinks
 
-  @transient lazy val nonBlockingLinks = this.getNonBlockingLinks
+  @transient lazy val nonBlockingLinks: Set[PhysicalLink] = this.getNonBlockingLinks
 
-  @transient lazy val nonCleanEdgeNonBlockingLinks = this.getNonCleanEdgeNonBlockingLinks
+  @transient lazy val nonCleanEdgeNonBlockingLinks: Set[PhysicalLink] =
+    this.getNonCleanEdgeNonBlockingLinks
 
   def getSourceOperatorIds: Set[PhysicalOpIdentity] =
     operatorMap.keys.filter(op => dag.inDegreeOf(op) == 0).toSet
@@ -222,12 +223,9 @@ case class PhysicalPlan(
     getOperator(link.toOpId).isSinkOperator
   }
 
-  def getAllNonMaterializedLinks: Set[PhysicalLink] = {
-    this.links.filter(l =>
-      !isMaterializedLink(l) && !l.fromOpId.logicalOpId.id.contains("cacheSource")
-    )
-  }
-
+  /**
+    * The effective blocking edges in CostBasedRegionPlanGenerator
+    */
   private def getNonMaterializedBlockingAndDependeeLinks: Set[PhysicalLink] = {
     operators
       .flatMap { physicalOp =>
@@ -282,24 +280,25 @@ case class PhysicalPlan(
     *
     * @return All non-blocking links that are not bridges.
     */
-  def getNonBridgeNonBlockingLinks: Set[PhysicalLink] = {
-    this.getNonBlockingLinks.diff(this.getBridges)
-  }
-
   private def getNonCleanEdgeNonBlockingLinks: Set[PhysicalLink] = {
     this.getNonBlockingLinks.diff(this.getCleanEdges)
   }
 
-  def getBridges: Set[PhysicalLink] =
+  private def getBridges: Set[PhysicalLink] =
     this.getNonBlockingLinks.intersect(
-      new BiconnectivityInspector[PhysicalOpIdentity, PhysicalLink](this.dag).getBridges.toSet
+      new BiconnectivityInspector[PhysicalOpIdentity, PhysicalLink](
+        this.dag
+      ).getBridges.asScala.toSet
     )
 
-  def getCleanEdges: Set[PhysicalLink] = {
+  /**
+    * Calculate clean edges using undirected cycles. If there are too many undirected cycles, we use bridges only.
+    */
+  private def getCleanEdges: Set[PhysicalLink] = {
     this.allUndirectedCycles match {
       case Some(allCycles) =>
         val allSimpleCyclesWithBlockingEdges = allCycles.filter(cycle =>
-          cycle.exists(link => this.getNonBridgeNonBlockingLinks.contains(link))
+          cycle.exists(link => this.getNonMaterializedBlockingAndDependeeLinks.contains(link))
         )
         this.getNonBlockingLinks.filter(nbEdge =>
           !allSimpleCyclesWithBlockingEdges.exists(cycle => cycle.contains(nbEdge))
@@ -308,10 +307,14 @@ case class PhysicalPlan(
     }
   }
 
+  /**
+    * Find all the undirected cycles in the physical plan using cycle bases. If there are too many cycles, fall back to
+    * bridges as all the discovered clean edges.
+    */
   private def getAllUndirectedCycles: Option[mutable.Set[Set[PhysicalLink]]] = {
     val cycleBases = new QueueBFSFundamentalCycleBasis[PhysicalOpIdentity, PhysicalLink](
       new AsUndirectedGraph[PhysicalOpIdentity, PhysicalLink](this.dag)
-    ).getCycleBasis.getCycles.asScala.map(edgeList => edgeList.toSet)
+    ).getCycleBasis.getCycles.asScala.map(edgeList => edgeList.asScala.toSet)
     val allCycles: mutable.Set[Set[PhysicalLink]] = cycleBases
 
     breakable {
@@ -336,7 +339,7 @@ case class PhysicalPlan(
           }
         }
         if (currentBase == allCycles) {
-          break
+          break()
         }
         if (allCycles.size > 1000) {
           println("Too many undirected cycles. Falling back to bridges.")
@@ -347,6 +350,9 @@ case class PhysicalPlan(
     Some(allCycles)
   }
 
+  /**
+    * Given a set of edges in a cycle, calculate the sequence of edges that form this cycle.
+    */
   private def getCycleTraversalFromCycleEdgeSet(
       undirectedCycle: Set[PhysicalLink]
   ): List[PhysicalLink] = {

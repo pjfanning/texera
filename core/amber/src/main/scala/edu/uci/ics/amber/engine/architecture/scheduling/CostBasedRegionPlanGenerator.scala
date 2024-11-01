@@ -13,12 +13,11 @@ import org.jgrapht.graph.{DirectedAcyclicGraph, DirectedPseudograph}
 import org.jgrapht.util.SupplierUtil
 import org.jooq.types.UInteger
 
-import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
-import scala.jdk.CollectionConverters.{CollectionHasAsScala, IteratorHasAsScala}
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 class CostBasedRegionPlanGenerator(
@@ -32,14 +31,14 @@ class CostBasedRegionPlanGenerator(
     )
     with LazyLogging {
 
-  private var firstExecution: Boolean = false
+  private var pastStatsAvailable: Boolean = false
 
   private lazy val operatorEstimatedTime = getOperatorEstimatedTime
 
   private def getOperatorEstimatedTime: Map[String, Double] = {
     val wid: UInteger = UInteger.valueOf(this.workflowContext.workflowId.id)
-    val previousStats = WorkflowExecutionsResource.getStatsForPasta(wid)
-    if (previousStats.isEmpty) firstExecution = true
+    val previousStats = WorkflowExecutionsResource.getStatsForRegionPlanGenerator(wid)
+    if (previousStats.isEmpty) pastStatsAvailable = false
     previousStats.map {
       case (operatorId, statsList) =>
         val latestStat = statsList.maxByOption(_.timestamp)
@@ -48,11 +47,11 @@ class CostBasedRegionPlanGenerator(
     }
   }
 
-  case class SearchResult(
+  private case class SearchResult(
       state: Set[PhysicalLink],
       regionDAG: DirectedAcyclicGraph[Region, RegionLink],
       cost: Double,
-      searchTime: Double = 0.0,
+      searchTime: Long = 0,
       searchFinished: Boolean = false,
       numStatesExplored: Int = 0
   )
@@ -169,7 +168,7 @@ class CostBasedRegionPlanGenerator(
         )
         topDownSearch(globalSearch = false)
       case Success(result) =>
-        println("Search time: " + result.searchTime)
+        logger.info(s"Search for region plan finished in ${result.searchTime / 1e6} ms.")
         result
     }
     // Only a non-dependee blocking link that has not already been materialized should be replaced
@@ -227,7 +226,7 @@ class CostBasedRegionPlanGenerator(
     *
     * @return A SearchResult containing the plan, the region DAG (without materializations added yet) and the cost.
     */
-  def bottomUpSearch(
+  private def bottomUpSearch(
       globalSearch: Boolean = true,
       oChains: Boolean = true,
       oCleanEdges: Boolean = true,
@@ -251,13 +250,6 @@ class CostBasedRegionPlanGenerator(
     )
 
     while (queue.nonEmpty) {
-      val searchTime = System.nanoTime() - startTime
-      if (searchTime > 3e11)
-        return bestResult.copy(
-          searchTime = searchTime,
-          searchFinished = false,
-          numStatesExplored = visited.size
-        )
       // A state is represented as a set of materialized non-blocking edges.
       val currentState = queue.dequeue()
       visited.add(currentState)
@@ -284,19 +276,18 @@ class CostBasedRegionPlanGenerator(
       }
 
       def expandFrontier(): Unit = {
-        val allBlockingEdges = // TODO: rename
+        val allCurrentMaterializedEdges =
           currentState ++ physicalPlan.nonMaterializedBlockingAndDependeeLinks
         // Generate and enqueue all neighbour states that haven't been visited
         var candidateEdges = originalNonBlockingEdges
           .diff(currentState)
         if (oChains) {
           val edgesInChainWithBlockingEdge = physicalPlan.maxChains
-            .filter(chain => chain.intersect(allBlockingEdges).nonEmpty)
+            .filter(chain => chain.intersect(allCurrentMaterializedEdges).nonEmpty)
             .flatten
-          candidateEdges =
-            candidateEdges.diff(
-              edgesInChainWithBlockingEdge
-            ) // Edges in chain with blocking edges should not be materialized
+          candidateEdges = candidateEdges.diff(
+            edgesInChainWithBlockingEdge
+          ) // Edges in chain with blocking edges should not be materialized
         }
 
         var unvisitedNeighborStates = candidateEdges
@@ -338,7 +329,7 @@ class CostBasedRegionPlanGenerator(
     )
   }
 
-  def topDownSearch(
+  private def topDownSearch(
       globalSearch: Boolean = true,
       oChains: Boolean = true,
       oCleanEdges: Boolean = true,
@@ -372,14 +363,6 @@ class CostBasedRegionPlanGenerator(
     )
 
     while (queue.nonEmpty) {
-      val searchTime = System.nanoTime() - startTime
-      if (searchTime > 3e11)
-        return bestResult.copy(
-          searchTime = searchTime,
-          searchFinished = false,
-          numStatesExplored = visited.size
-        )
-
       val currentState = queue.dequeue()
       visited.add(currentState)
       tryConnectRegionDAG(
@@ -395,11 +378,12 @@ class CostBasedRegionPlanGenerator(
             // Check if the current state is also hopeless
             val physicalLinksInRegionCycles = new HawickJamesSimpleCycles(regionGraph)
               .findSimpleCycles()
+              .asScala
               .flatMap { cycle =>
-                cycle.toList
+                cycle.asScala.toList
                   .sliding(2)
                   .map {
-                    case List(v1, v2) => regionGraph.getAllEdges(v1, v2).toSet
+                    case List(v1, v2) => regionGraph.getAllEdges(v1, v2).asScala.toSet
                     case _            => Set.empty[RegionLink]
                   }
               }
@@ -479,7 +463,7 @@ class CostBasedRegionPlanGenerator(
   private def evaluate(regions: Set[Region], regionLinks: Set[RegionLink]): Double = {
     // Without past statistics, we use number of materialized links as the cost.
     // Otherwise we use the wall-clock runtime as the cost.
-    if (this.firstExecution) regionLinks.size
+    if (!this.pastStatsAvailable) regionLinks.size
     else
       regions.foldLeft(0.0) { (sum, region) =>
         {

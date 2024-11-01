@@ -103,7 +103,9 @@ object WorkflowExecutionsResource {
       numWorkers: UInteger
   )
 
-  def getStatsForPasta(wid: UInteger): Map[String, List[WorkflowRuntimeStatistics]] = {
+  def getStatsForRegionPlanGenerator(
+      wid: UInteger
+  ): Map[String, List[WorkflowRuntimeStatistics]] = {
 
     val latestSuccessfulExecution = context
       .select(
@@ -127,7 +129,7 @@ object WorkflowExecutionsResource {
       .join(WORKFLOW_VERSION)
       .on(WORKFLOW_VERSION.VID.eq(WORKFLOW_EXECUTIONS.VID))
       .where(WORKFLOW_VERSION.WID.eq(wid).and(WORKFLOW_EXECUTIONS.STATUS.eq(3.toByte)))
-      .orderBy(WORKFLOW_EXECUTIONS.STARTING_TIME.asc())
+      .orderBy(WORKFLOW_EXECUTIONS.STARTING_TIME.desc())
       .limit(1)
       .fetchInto(classOf[WorkflowExecutionEntry])
       .asScala
@@ -136,7 +138,6 @@ object WorkflowExecutionsResource {
 
     if (latestSuccessfulExecution.isDefined) {
       val eid = latestSuccessfulExecution.get.eId
-      println(s"Using stats from: $eid for Pasta.")
       val stats = context
         .select(
           WORKFLOW_RUNTIME_STATISTICS.OPERATOR_ID,
