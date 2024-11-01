@@ -1,9 +1,6 @@
 package edu.uci.ics.texera.web.service
 
-import edu.uci.ics.amber.engine.architecture.rpc.{
-  ModifyLogicRequest,
-  PropagateChannelMarkerRequest
-}
+import edu.uci.ics.amber.engine.architecture.rpc.{ModifyLogicRequest, PropagateChannelMarkerRequest}
 import edu.uci.ics.amber.engine.architecture.scheduling.{Region, WorkflowExecutionCoordinator}
 import edu.uci.ics.amber.engine.common.model.PhysicalPlan
 import edu.uci.ics.amber.engine.common.PhysicalOpIdentity

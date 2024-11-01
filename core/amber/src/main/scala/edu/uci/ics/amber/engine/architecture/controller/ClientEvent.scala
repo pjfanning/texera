@@ -2,7 +2,11 @@ package edu.uci.ics.amber.engine.architecture.controller
 
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessagePayload
 import edu.uci.ics.amber.engine.common.model.tuple.Tuple
-import edu.uci.ics.amber.engine.common.{ActorVirtualIdentity, OperatorMetrics, WorkflowAggregatedState}
+import edu.uci.ics.amber.engine.common.{
+  ActorVirtualIdentity,
+  OperatorMetrics,
+  WorkflowAggregatedState
+}
 
 trait ClientEvent extends WorkflowFIFOMessagePayload
 

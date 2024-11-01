@@ -1,10 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.rpc.{
-  AsyncRPCContext,
-  FinalizeCheckpointRequest
-}
+import edu.uci.ics.amber.engine.architecture.rpc.{AsyncRPCContext, FinalizeCheckpointRequest}
 import edu.uci.ics.amber.engine.architecture.rpc.FinalizeCheckpointResponse
 import edu.uci.ics.amber.engine.architecture.worker.{
   DataProcessorRPCHandlerInitializer,

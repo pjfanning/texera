@@ -8,10 +8,7 @@ import edu.uci.ics.amber.engine.architecture.rpc.{
   EmptyRequest,
   PropagateChannelMarkerRequest
 }
-import edu.uci.ics.amber.engine.architecture.rpc.{
-  RetrieveWorkflowStateResponse,
-  StringResponse
-}
+import edu.uci.ics.amber.engine.architecture.rpc.{RetrieveWorkflowStateResponse, StringResponse}
 import edu.uci.ics.amber.engine.architecture.rpc.WorkerServiceGrpc.METHOD_RETRIEVE_STATE
 import edu.uci.ics.amber.engine.common.util.SELF
 import edu.uci.ics.amber.engine.common.ChannelMarkerIdentity

@@ -10,11 +10,7 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
 }
 import edu.uci.ics.amber.engine.architecture.control.utils.TrivialControlTester
 import edu.uci.ics.amber.engine.architecture.rpc._
-import edu.uci.ics.amber.engine.architecture.rpc.{
-  IntResponse,
-  ReturnInvocation,
-  StringResponse
-}
+import edu.uci.ics.amber.engine.architecture.rpc.{IntResponse, ReturnInvocation, StringResponse}
 import edu.uci.ics.amber.engine.architecture.rpc.RPCTesterGrpc.{
   METHOD_SEND_CHAIN,
   METHOD_SEND_COLLECT,

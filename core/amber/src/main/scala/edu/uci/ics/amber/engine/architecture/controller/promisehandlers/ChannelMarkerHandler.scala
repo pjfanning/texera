@@ -7,10 +7,7 @@ import edu.uci.ics.amber.engine.architecture.rpc.{
   ControlInvocation,
   PropagateChannelMarkerRequest
 }
-import edu.uci.ics.amber.engine.architecture.rpc.{
-  ControlReturn,
-  PropagateChannelMarkerResponse
-}
+import edu.uci.ics.amber.engine.architecture.rpc.{ControlReturn, PropagateChannelMarkerResponse}
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.util.CONTROLLER
 import edu.uci.ics.amber.engine.common.{ActorVirtualIdentity, ChannelIdentity}

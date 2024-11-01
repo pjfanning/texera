@@ -18,11 +18,7 @@ import edu.uci.ics.amber.engine.architecture.rpc.{
 }
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MainThreadDelegateMessage
 import edu.uci.ics.amber.engine.architecture.worker.managers.SerializationManager
-import edu.uci.ics.amber.engine.architecture.worker.WorkerState.{
-  COMPLETED,
-  READY,
-  RUNNING
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerState.{COMPLETED, READY, RUNNING}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerStatistics
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.executor.OperatorExecutor

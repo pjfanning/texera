@@ -2,9 +2,22 @@ package edu.uci.ics.texera.web.service
 
 import com.google.protobuf.timestamp.Timestamp
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.architecture.controller.{ExecutionStatsUpdate, FatalError, WorkerAssignmentUpdate, WorkflowRecoveryStatus}
+import edu.uci.ics.amber.engine.architecture.controller.{
+  ExecutionStatsUpdate,
+  FatalError,
+  WorkerAssignmentUpdate,
+  WorkflowRecoveryStatus
+}
 import edu.uci.ics.amber.engine.architecture.worker.PortTupleCountMapping
-import edu.uci.ics.amber.engine.common.{AmberConfig, OperatorMetrics, OperatorStatistics, OperatorWorkerMapping, Utils, WorkflowAggregatedState, WorkflowFatalError}
+import edu.uci.ics.amber.engine.common.{
+  AmberConfig,
+  OperatorMetrics,
+  OperatorStatistics,
+  OperatorWorkerMapping,
+  Utils,
+  WorkflowAggregatedState,
+  WorkflowFatalError
+}
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.model.WorkflowContext
 import edu.uci.ics.amber.error.ErrorUtils.{getOperatorFromActorIdOpt, getStackTraceWithAllCauses}
@@ -12,7 +25,12 @@ import Utils.maptoStatusCode
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowRuntimeStatistics
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowRuntimeStatisticsDao
 import edu.uci.ics.texera.web.{SqlServer, SubscriptionManager}
-import edu.uci.ics.texera.web.model.websocket.event.{ExecutionDurationUpdateEvent, OperatorAggregatedMetrics, OperatorStatisticsUpdateEvent, WorkerAssignmentUpdateEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  ExecutionDurationUpdateEvent,
+  OperatorAggregatedMetrics,
+  OperatorStatisticsUpdateEvent,
+  WorkerAssignmentUpdateEvent
+}
 import edu.uci.ics.texera.web.storage.ExecutionStateStore
 import edu.uci.ics.texera.web.storage.ExecutionStateStore.updateWorkflowState
 import edu.uci.ics.amber.engine.common.FatalErrorType.EXECUTION_FAILURE

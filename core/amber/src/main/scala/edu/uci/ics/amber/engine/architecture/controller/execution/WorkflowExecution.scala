@@ -3,7 +3,11 @@ package edu.uci.ics.amber.engine.architecture.controller.execution
 import edu.uci.ics.amber.engine.architecture.controller.execution.ExecutionUtils.aggregateMetrics
 import edu.uci.ics.amber.engine.architecture.scheduling.{Region, RegionIdentity}
 import edu.uci.ics.amber.engine.common.WorkflowAggregatedState._
-import edu.uci.ics.amber.engine.common.{OperatorMetrics, PhysicalOpIdentity, WorkflowAggregatedState}
+import edu.uci.ics.amber.engine.common.{
+  OperatorMetrics,
+  PhysicalOpIdentity,
+  WorkflowAggregatedState
+}
 
 import scala.collection.mutable
 

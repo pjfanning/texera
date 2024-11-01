@@ -1,7 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.controller.execution
 
 import edu.uci.ics.amber.engine.architecture.worker.PortTupleCountMapping
-import edu.uci.ics.amber.engine.common.{OperatorMetrics, OperatorStatistics, WorkflowAggregatedState}
+import edu.uci.ics.amber.engine.common.{
+  OperatorMetrics,
+  OperatorStatistics,
+  WorkflowAggregatedState
+}
 
 object ExecutionUtils {
 

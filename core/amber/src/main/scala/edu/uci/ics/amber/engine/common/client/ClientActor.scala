@@ -11,11 +11,7 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
 }
 import edu.uci.ics.amber.engine.architecture.controller.{ClientEvent, Controller, ControllerConfig}
 import edu.uci.ics.amber.engine.architecture.rpc.{AsyncRPCContext, ControlRequest}
-import edu.uci.ics.amber.engine.architecture.rpc.{
-  ControlException,
-  ControlReturn,
-  ReturnInvocation
-}
+import edu.uci.ics.amber.engine.architecture.rpc.{ControlException, ControlReturn, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{

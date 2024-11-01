@@ -19,11 +19,7 @@ import edu.uci.ics.texera.web.model.websocket.request.python.{
 }
 import edu.uci.ics.texera.web.model.websocket.response.python.PythonExpressionEvaluateResponse
 import edu.uci.ics.texera.web.storage.ExecutionStateStore
-import edu.uci.ics.amber.engine.common.{
-  EvaluatedValueList,
-  ExecutionConsoleStore,
-  OperatorConsole
-}
+import edu.uci.ics.amber.engine.common.{EvaluatedValueList, ExecutionConsoleStore, OperatorConsole}
 import edu.uci.ics.texera.web.model.websocket.request.RetryRequest
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
 

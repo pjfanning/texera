@@ -3,11 +3,7 @@ package edu.uci.ics.amber.engine.common.model
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
-import edu.uci.ics.amber.engine.common.{
-  ActorVirtualIdentity,
-  OperatorIdentity,
-  PhysicalOpIdentity
-}
+import edu.uci.ics.amber.engine.common.{ActorVirtualIdentity, OperatorIdentity, PhysicalOpIdentity}
 import edu.uci.ics.amber.engine.common.PhysicalLink
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, PartitionInfo, UnknownPartition}
 import org.jgrapht.alg.connectivity.BiconnectivityInspector

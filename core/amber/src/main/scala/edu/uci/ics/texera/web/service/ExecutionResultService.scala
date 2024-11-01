@@ -11,10 +11,19 @@ import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.model.tuple.Tuple
 import edu.uci.ics.amber.engine.common.OperatorIdentity
 import edu.uci.ics.amber.engine.common.IncrementalOutputMode.{SET_DELTA, SET_SNAPSHOT}
-import edu.uci.ics.texera.web.model.websocket.event.{PaginatedResultEvent, TexeraWebSocketEvent, WebResultUpdateEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  PaginatedResultEvent,
+  TexeraWebSocketEvent,
+  WebResultUpdateEvent
+}
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
 import edu.uci.ics.texera.web.service.ExecutionResultService.WebResultUpdate
-import edu.uci.ics.texera.web.storage.{ExecutionStateStore, OperatorResultMetadata, WorkflowResultStore, WorkflowStateStore}
+import edu.uci.ics.texera.web.storage.{
+  ExecutionStateStore,
+  OperatorResultMetadata,
+  WorkflowResultStore,
+  WorkflowStateStore
+}
 import edu.uci.ics.amber.engine.common.ExecutionMetadataStore
 import edu.uci.ics.amber.engine.common.WorkflowAggregatedState._
 import edu.uci.ics.texera.web.SubscriptionManager

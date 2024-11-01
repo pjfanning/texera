@@ -4,7 +4,11 @@ import java.time.{LocalDateTime, Duration => JDuration}
 import akka.actor.Cancellable
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.WorkflowAggregatedState.RUNNING
-import edu.uci.ics.amber.engine.common.{AmberRuntime, ExecutionMetadataStore, WorkflowAggregatedState}
+import edu.uci.ics.amber.engine.common.{
+  AmberRuntime,
+  ExecutionMetadataStore,
+  WorkflowAggregatedState
+}
 import edu.uci.ics.texera.web.storage.ExecutionStateStore
 
 import scala.concurrent.duration.DurationInt

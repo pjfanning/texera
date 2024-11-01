@@ -2,11 +2,7 @@ package edu.uci.ics.texera.workflow.common.workflow
 
 import edu.uci.ics.amber.engine.common.model.{PhysicalOp, WorkflowContext}
 import edu.uci.ics.amber.engine.common.model.tuple.{AttributeType, Schema}
-import edu.uci.ics.amber.engine.common.{
-  ExecutionIdentity,
-  OperatorIdentity,
-  WorkflowIdentity
-}
+import edu.uci.ics.amber.engine.common.{ExecutionIdentity, OperatorIdentity, WorkflowIdentity}
 import edu.uci.ics.amber.engine.common.{InputPort, OutputPort, PortIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.OperatorInfo
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp

@@ -9,10 +9,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
   FaultToleranceConfig,
   StateRestoreConfig
 }
-import edu.uci.ics.amber.engine.architecture.rpc.{
-  ChannelMarkerPayload,
-  ControlInvocation
-}
+import edu.uci.ics.amber.engine.architecture.rpc.{ChannelMarkerPayload, ControlInvocation}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.model.{PhysicalPlan, WorkflowContext}
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, WorkflowFIFOMessage}
