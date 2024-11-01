@@ -52,7 +52,6 @@ class CostBasedRegionPlanGenerator(
       regionDAG: DirectedAcyclicGraph[Region, RegionLink],
       cost: Double,
       searchTime: Long = 0,
-      searchFinished: Boolean = false,
       numStatesExplored: Int = 0
   )
 
@@ -151,7 +150,6 @@ class CostBasedRegionPlanGenerator(
     * @return A region DAG.
     */
   private def createRegionDAG(): DirectedAcyclicGraph[Region, RegionLink] = {
-    println(s"numOperators: ${physicalPlan.operators.size}, numLinks: ${physicalPlan.links.size}")
     val searchResultFuture: Future[SearchResult] = Future {
       if (AmberConfig.useTopDownSearch)
         topDownSearch(globalSearch = AmberConfig.useGlobalSearch)
@@ -222,9 +220,11 @@ class CostBasedRegionPlanGenerator(
     * The core of the search algorithm. If the input physical plan is already schedulable, no search will be executed.
     * Otherwise, depending on the configuration, either a global search or a greedy search will be performed to find
     * an optimal plan. The search starts from a plan where all non-blocking edges are pipelined, and leads to a low-cost
-    * schedulable plan. Optimizations based on chains and bridges are included in the search.
+    * schedulable plan by changing pipelined non-blocking edges to materialized. By default all pruning techniques
+    * are enabled (chains, clean edges, and early stopping on schedulable states).
     *
-    * @return A SearchResult containing the plan, the region DAG (without materializations added yet) and the cost.
+    * @return A SearchResult containing the plan, the region DAG (without materializations added yet), the cost, the
+    *         time to finish search, and the number of states explored.
     */
   private def bottomUpSearch(
       globalSearch: Boolean = true,
@@ -265,6 +265,10 @@ class CostBasedRegionPlanGenerator(
           expandFrontier()
       }
 
+      /**
+        * An internal method of bottom-up search that updates the current optimum if the examined state is schedulable
+        * and has a lower cost.
+        */
       def checkSchedulableState(regionDAG: DirectedAcyclicGraph[Region, RegionLink]): Unit = {
         if (oEarlyStop) schedulableStates.add(currentState)
         // Calculate the current state's cost and update the bestResult if it's lower
@@ -275,6 +279,9 @@ class CostBasedRegionPlanGenerator(
         }
       }
 
+      /**
+        * An internal method of bottom-up search to explore a state in the frontier.
+        */
       def expandFrontier(): Unit = {
         val allCurrentMaterializedEdges =
           currentState ++ physicalPlan.nonMaterializedBlockingAndDependeeLinks
@@ -324,11 +331,18 @@ class CostBasedRegionPlanGenerator(
     val searchTime = System.nanoTime() - startTime
     bestResult.copy(
       searchTime = searchTime,
-      searchFinished = true,
       numStatesExplored = visited.size
     )
   }
 
+  /**
+    * The search starts from a plan where all edges are materialized, and leads to a low-cost schedulable plan by
+    * changing materialized non-blocking edges to pipelined. By default, all pruning techniques are enabled (chains,
+    * clean edges, and early stopping on hopeless states.
+    *
+    * @return A SearchResult containing the plan, the region DAG (without materializations added yet), the cost, the
+    *         time to finish search, and the number of states explored.
+    */
   private def topDownSearch(
       globalSearch: Boolean = true,
       oChains: Boolean = true,
@@ -405,6 +419,10 @@ class CostBasedRegionPlanGenerator(
           if (!oEarlyStop || !isCurrentStateHopeless) expandFrontier()
       }
 
+      /**
+        * An internal method of top-down search that updates the current optimum if the examined state is schedulable
+        * and has a lower cost.
+        */
       def checkSchedulableState(regionDAG: DirectedAcyclicGraph[Region, RegionLink]): Unit = {
         // Calculate the current state's cost and update the bestResult if it's lower
         val cost =
@@ -414,6 +432,9 @@ class CostBasedRegionPlanGenerator(
         }
       }
 
+      /**
+        * An internal method of top-down search to explore a state in the frontier.
+        */
       def expandFrontier(): Unit = {
         // Generate and enqueue all neighbour states that haven't been visited
         var unvisitedNeighborStates = currentState
@@ -449,7 +470,6 @@ class CostBasedRegionPlanGenerator(
     val searchTime = System.nanoTime() - startTime
     bestResult.copy(
       searchTime = searchTime,
-      searchFinished = true,
       numStatesExplored = visited.size
     )
   }

@@ -103,6 +103,9 @@ object WorkflowExecutionsResource {
       numWorkers: UInteger
   )
 
+  /**
+    * Retrieve the latest successful execution to get statistics to calculate costs in CostBasedRegionPlanGenerator.
+    */
   def getStatsForRegionPlanGenerator(
       wid: UInteger
   ): Map[String, List[WorkflowRuntimeStatistics]] = {
