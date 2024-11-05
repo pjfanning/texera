@@ -1,106 +1,112 @@
 package edu.uci.ics.texera.web.service
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler.{
-  WorkerModifyLogic,
-  WorkerModifyLogicMultiple
+import edu.uci.ics.amber.engine.architecture.rpc.controlcommands.{
+  ModifyLogicRequest,
+  PropagateChannelMarkerRequest
 }
-import edu.uci.ics.amber.engine.common.ambermessage.EpochMarker
-import edu.uci.ics.amber.engine.common.virtualidentity.LayerIdentity
-import edu.uci.ics.texera.workflow.common.operators.StateTransferFunc
-import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
+import edu.uci.ics.amber.engine.architecture.scheduling.{Region, WorkflowExecutionCoordinator}
+import edu.uci.ics.amber.engine.common.model.PhysicalPlan
+import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity
 import org.jgrapht.alg.connectivity.ConnectivityInspector
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.jdk.CollectionConverters.{asScalaIterator, asScalaSet}
+import scala.jdk.CollectionConverters.SetHasAsScala
 
 object FriesReconfigurationAlgorithm {
 
-  def getOneToManyOperators(physicalPlan: PhysicalPlan): Set[LayerIdentity] = {
-    physicalPlan.operators.filter(op => op.isOneToManyOp).map(op => op.id).toSet
+  private def getOneToManyOperators(region: Region): Set[PhysicalOpIdentity] = {
+    region.getOperators.filter(op => op.isOneToManyOp).map(op => op.id)
   }
 
   def scheduleReconfigurations(
-      physicalPlan: PhysicalPlan,
-      reconfigurations: List[(OpExecConfig, Option[StateTransferFunc])],
+      workflowExecutionCoordinator: WorkflowExecutionCoordinator,
+      reconfiguration: ModifyLogicRequest,
       epochMarkerId: String
-  ): List[(LayerIdentity, EpochMarker)] = {
+  ): Set[PropagateChannelMarkerRequest] = {
     // independently schedule reconfigurations for each region:
-    physicalPlan
-      .getAllRegions()
-      .map(region => physicalPlan.subPlan(region.getOperators().toSet))
-      .flatMap(regionSubPlan => computeMCS(regionSubPlan, reconfigurations, epochMarkerId))
+    workflowExecutionCoordinator.getExecutingRegions
+      .flatMap(region => computeMCS(region, reconfiguration, epochMarkerId))
   }
 
   private def computeMCS(
-      physicalPlan: PhysicalPlan,
-      reconfigurations: List[(OpExecConfig, Option[StateTransferFunc])],
+      region: Region,
+      reconfiguration: ModifyLogicRequest,
       epochMarkerId: String
-  ): List[(LayerIdentity, EpochMarker)] = {
+  ): List[PropagateChannelMarkerRequest] = {
 
     // add all reconfiguration operators to M
-    val reconfigOps = reconfigurations.map(reconfigOp => reconfigOp._1.id).toSet
+    val reconfigOps = reconfiguration.updateRequest.map(req => req.targetOpId).toSet
     val M = mutable.Set.empty ++ reconfigOps
 
     // for each one-to-many operator, add it to M if its downstream has a reconfiguration operator
-    val oneToManyOperators = getOneToManyOperators(physicalPlan)
+    val oneToManyOperators = getOneToManyOperators(region)
     oneToManyOperators.foreach(oneToManyOp => {
-      val intersection = physicalPlan.getDescendants(oneToManyOp).toSet.intersect(reconfigOps)
+      val intersection = region.dag.getDescendants(oneToManyOp).asScala.intersect(reconfigOps)
       if (intersection.nonEmpty) {
         M += oneToManyOp
       }
     })
 
     // compute MCS based on M
-    var forwardVertices: Set[LayerIdentity] = Set()
-    var backwardVertices: Set[LayerIdentity] = Set()
+    var forwardVertices: Set[PhysicalOpIdentity] = Set()
+    var backwardVertices: Set[PhysicalOpIdentity] = Set()
 
-    val topologicalOps = asScalaIterator(physicalPlan.dag.iterator()).toList
+    val topologicalOps = region.topologicalIterator().toList
     val reverseTopologicalOps = topologicalOps.reverse
 
-    topologicalOps.foreach(op => {
-      val parents = physicalPlan.getUpstream(op)
+    topologicalOps.foreach(opId => {
+      val op = region.getOperator(opId)
+      val parents = op.inputPorts.flatMap(_._2._2).map(_.fromOpId)
       val fromParent: Boolean = parents.exists(p => forwardVertices.contains(p))
-      if (M.contains(op) || fromParent) {
-        forwardVertices += op
+      if (M.contains(opId) || fromParent) {
+        forwardVertices += opId
       }
     })
 
-    reverseTopologicalOps.foreach(op => {
-      val children = physicalPlan.getDownstream(op)
+    reverseTopologicalOps.foreach(opId => {
+      val op = region.getOperator(opId)
+      val children = op.outputPorts.flatMap(_._2._2).map(_.toOpId)
       val fromChildren: Boolean = children.exists(p => backwardVertices.contains(p))
-      if (M.contains(op) || fromChildren) {
-        backwardVertices += op
+      if (M.contains(opId) || fromChildren) {
+        backwardVertices += opId
       }
     })
 
     val resultMCSOpIds = forwardVertices.intersect(backwardVertices)
-    val mcsPlan = physicalPlan.subPlan(resultMCSOpIds)
+    val newLinks =
+      region.getLinks.filter(link =>
+        resultMCSOpIds.contains(link.fromOpId) && resultMCSOpIds.contains(link.toOpId)
+      )
+    val mcsPlan = PhysicalPlan(resultMCSOpIds.map(opId => region.getOperator(opId)), newLinks)
 
     // find the MCS components,
     // for each component, send an epoch marker to each of its source operators
-    val epochMarkers = new ArrayBuffer[(LayerIdentity, EpochMarker)]()
+    val epochMarkers = new ArrayBuffer[PropagateChannelMarkerRequest]()
 
     val connectedSets = new ConnectivityInspector(mcsPlan.dag).connectedSets()
     connectedSets.forEach(component => {
-      val componentSet = asScalaSet(component).toSet
-      val componentPlan = mcsPlan.subPlan(componentSet)
+      val componentSet = component.asScala.toSet
+      val componentPlan = mcsPlan.getSubPlan(componentSet)
 
       // generate the reconfiguration command for this component
-      val reconfigCommand = WorkerModifyLogicMultiple(
-        reconfigurations
-          .filter(o => component.contains(o._1.id))
-          .map(o => WorkerModifyLogic(o._1, o._2))
-      )
-
-      // find the source operators of the component
-      val sources = componentSet.filter(op => mcsPlan.getSourceOperators.contains(op))
-      sources.foreach(source => {
-        epochMarkers += ((source, EpochMarker(epochMarkerId, componentPlan, Some(reconfigCommand))))
-      })
+      //      val reconfigCommands =
+      //        reconfiguration.updateRequest
+      //          .filter(req => component.contains(req.targetOpId))
+      //      val reconfigTargets = reconfigCommands.map(_.targetOpId)
+      //
+      //      // find the source operators of the component
+      //      val sources = componentSet.intersect(mcsPlan.getSourceOperatorIds)
+      //      epochMarkers += PropagateChannelMarkerRequest(
+      //        sources.toSeq,
+      //        ChannelMarkerIdentity(epochMarkerId),
+      //        REQUIRE_ALIGNMENT,
+      //        componentPlan.operators.map(_.id).toSeq,
+      //        reconfigTargets,
+      //        ModifyLogicRequest(reconfigCommands),
+      //        METHOD_MODIFY_LOGIC.getBareMethodName
+      //      )
     })
-
     epochMarkers.toList
   }
 

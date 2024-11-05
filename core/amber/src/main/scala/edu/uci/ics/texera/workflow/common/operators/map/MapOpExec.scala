@@ -1,41 +1,22 @@
 package edu.uci.ics.texera.workflow.common.operators.map
 
-import edu.uci.ics.amber.engine.architecture.worker.PauseManager
-import edu.uci.ics.amber.engine.common.InputExhausted
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
-import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
-import edu.uci.ics.texera.workflow.common.tuple.Tuple
+import edu.uci.ics.amber.engine.common.executor.OperatorExecutor
+import edu.uci.ics.amber.engine.common.model.tuple.{Tuple, TupleLike}
 
 /**
   * Common operator executor of a map() function
   * A map() function transforms one input tuple to exactly one output tuple.
   */
-abstract class MapOpExec() extends OperatorExecutor with Serializable {
+abstract class MapOpExec extends OperatorExecutor with Serializable {
 
-  var mapFunc: Tuple => Tuple = _
+  private var mapFunc: Tuple => TupleLike = _
 
   /**
     * Provides the flatMap function of this executor, it should be called in the constructor
     * If the operator executor is implemented in Java, it should be called with:
-    * setMapFunc((Function1<TexeraTuple, TexeraTuple> & Serializable) func)
+    * setMapFunc((Function1<Tuple, TupleLike> & Serializable) func)
     */
-  def setMapFunc(func: Tuple => Tuple): Unit = {
-    mapFunc = func
-  }
+  def setMapFunc(func: Tuple => TupleLike): Unit = mapFunc = func
+  override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] = Iterator(mapFunc(tuple))
 
-  override def open(): Unit = {}
-
-  override def close(): Unit = {}
-
-  override def processTexeraTuple(
-      tuple: Either[Tuple, InputExhausted],
-      input: Int,
-      pauseManager: PauseManager,
-      asyncRPCClient: AsyncRPCClient
-  ): Iterator[Tuple] = {
-    tuple match {
-      case Left(t)  => Iterator(mapFunc(t))
-      case Right(_) => Iterator()
-    }
-  }
 }

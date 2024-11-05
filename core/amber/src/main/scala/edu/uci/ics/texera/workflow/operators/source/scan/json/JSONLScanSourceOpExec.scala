@@ -1,51 +1,51 @@
 package edu.uci.ics.texera.workflow.operators.source.scan.json
 
-import edu.uci.ics.texera.Utils.objectMapper
-import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorExecutor
-import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeTypeUtils.parseField
-import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
+import edu.uci.ics.amber.engine.common.executor.SourceOperatorExecutor
+import edu.uci.ics.amber.engine.common.Utils.objectMapper
+import edu.uci.ics.amber.engine.common.model.tuple.AttributeTypeUtils.parseField
+import edu.uci.ics.amber.engine.common.model.tuple.{Schema, TupleLike}
+import edu.uci.ics.amber.engine.common.storage.DocumentFactory
+import edu.uci.ics.texera.workflow.operators.source.scan.FileDecodingMethod
 import edu.uci.ics.texera.workflow.operators.source.scan.json.JSONUtil.JSONToMap
 
-import java.io.{BufferedReader, FileInputStream, InputStreamReader}
-import scala.collection.JavaConverters._
+import java.io.{BufferedReader, InputStreamReader}
+import java.net.URI
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.util.{Failure, Success, Try}
 
 class JSONLScanSourceOpExec private[json] (
-    val desc: JSONLScanSourceOpDesc,
-    val startOffset: Int,
-    val endOffset: Int
+    fileUri: String,
+    fileEncoding: FileDecodingMethod,
+    startOffset: Int,
+    endOffset: Int,
+    flatten: Boolean,
+    schemaFunc: () => Schema
 ) extends SourceOperatorExecutor {
   private var schema: Schema = _
   private var rows: Iterator[String] = _
   private var reader: BufferedReader = _
 
-  override def produceTexeraTuple(): Iterator[Tuple] = {
-    rows
-      .map(line => {
-        try {
-          val fields = scala.collection.mutable.ArrayBuffer.empty[Object]
-          val data = JSONToMap(objectMapper.readTree(line), flatten = desc.flatten)
-
-          for (fieldName <- schema.getAttributeNames.asScala) {
-            if (data.contains(fieldName))
-              fields += parseField(data(fieldName), schema.getAttribute(fieldName).getType)
-            else {
-              fields += null
-            }
-          }
-
-          Tuple.newBuilder(schema).addSequentially(fields.toArray).build
-        } catch {
-          case _: Throwable => null
+  override def produceTuple(): Iterator[TupleLike] = {
+    rows.flatMap { line =>
+      Try {
+        val data = JSONToMap(objectMapper.readTree(line), flatten).withDefaultValue(null)
+        val fields = schema.getAttributeNames.map { fieldName =>
+          parseField(data(fieldName), schema.getAttribute(fieldName).getType)
         }
-      })
-      .filter(tuple => tuple != null)
-
+        TupleLike(fields: _*)
+      } match {
+        case Success(tuple) => Some(tuple)
+        case Failure(_)     => None
+      }
+    }
   }
   override def open(): Unit = {
-    schema = desc.inferSchema()
+    schema = schemaFunc()
     reader = new BufferedReader(
-      new InputStreamReader(new FileInputStream(desc.filePath.get), desc.fileEncoding.getCharset)
+      new InputStreamReader(
+        DocumentFactory.newReadonlyDocument(new URI(fileUri)).asInputStream(),
+        fileEncoding.getCharset
+      )
     )
     rows = reader.lines().iterator().asScala.slice(startOffset, endOffset)
   }

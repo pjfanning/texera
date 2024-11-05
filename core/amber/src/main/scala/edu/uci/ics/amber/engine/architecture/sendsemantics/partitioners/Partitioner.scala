@@ -1,53 +1,45 @@
 package edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners
 
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
-import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  DataFrame,
-  DataPayload,
-  EndOfUpstream,
-  EpochMarker
-}
-import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputGateway
+import edu.uci.ics.amber.engine.common.AmberConfig
+import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, MarkerFrame}
+import edu.uci.ics.amber.engine.common.model.Marker
+import edu.uci.ics.amber.engine.common.model.tuple.Tuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable.ArrayBuffer
 
 trait Partitioner extends Serializable {
-  def getBucketIndex(tuple: ITuple): Iterator[Int]
+  def getBucketIndex(tuple: Tuple): Iterator[Int]
 
   def allReceivers: Seq[ActorVirtualIdentity]
 }
 
 class NetworkOutputBuffer(
     val to: ActorVirtualIdentity,
-    val dataOutputPort: NetworkOutputPort[DataPayload],
-    val batchSize: Int = Constants.defaultBatchSize
+    val dataOutputPort: NetworkOutputGateway,
+    val batchSize: Int = AmberConfig.defaultDataTransferBatchSize
 ) {
 
-  var buffer = new ArrayBuffer[ITuple]()
+  var buffer = new ArrayBuffer[Tuple]()
 
-  def addTuple(tuple: ITuple): Unit = {
+  def addTuple(tuple: Tuple): Unit = {
     buffer.append(tuple)
     if (buffer.size >= batchSize) {
       flush()
     }
   }
 
-  def addEpochMarker(epochMarker: EpochMarker): Unit = {
+  def sendMarker(marker: Marker): Unit = {
     flush()
-    dataOutputPort.sendTo(to, epochMarker)
-  }
-
-  def noMore(): Unit = {
+    dataOutputPort.sendTo(to, MarkerFrame(marker))
     flush()
-    dataOutputPort.sendTo(to, EndOfUpstream())
   }
 
   def flush(): Unit = {
     if (buffer.nonEmpty) {
       dataOutputPort.sendTo(to, DataFrame(buffer.toArray))
-      buffer = new ArrayBuffer[ITuple]()
+      buffer = new ArrayBuffer[Tuple]()
     }
   }
 

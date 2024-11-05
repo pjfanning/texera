@@ -3,25 +3,18 @@ package edu.uci.ics.texera.workflow.operators.udf.python
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.texera.workflow.common.metadata.{
-  InputPort,
-  OperatorGroupConstants,
-  OperatorInfo,
-  OutputPort
-}
-import edu.uci.ics.texera.workflow.common.operators.{
-  PortDescriptor,
-  OperatorDescriptor,
-  StateTransferFunc
-}
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, OperatorSchemaInfo, Schema}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
+import edu.uci.ics.amber.engine.common.model.{PhysicalOp, SchemaPropagationFunc}
+import edu.uci.ics.amber.engine.common.model.tuple.{Attribute, Schema}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
+import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
+import edu.uci.ics.texera.workflow.common.operators.{LogicalOp, PortDescription, StateTransferFunc}
 import edu.uci.ics.texera.workflow.common.workflow.{PartitionInfo, UnknownPartition}
+import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
 
-import scala.collection.JavaConverters._
 import scala.util.{Success, Try}
 
-class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
+class PythonUDFOpDescV2 extends LogicalOp {
   @JsonProperty(
     required = true,
     defaultValue =
@@ -52,7 +45,7 @@ class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
   @JsonPropertyDescription("Input your code here")
   var code: String = ""
 
-  @JsonProperty(required = true)
+  @JsonProperty(required = true, defaultValue = "1")
   @JsonSchemaTitle("Worker count")
   @JsonPropertyDescription("Specify how many parallel workers to lunch")
   var workers: Int = Int.box(1)
@@ -69,7 +62,10 @@ class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
   )
   var outputColumns: List[Attribute] = List()
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
+  override def getPhysicalOp(
+      workflowId: WorkflowIdentity,
+      executionId: ExecutionIdentity
+  ): PhysicalOp = {
     Preconditions.checkArgument(workers >= 1, "Need at least 1 worker.", Array())
     val opInfo = this.operatorInfo
     val partitionRequirement: List[Option[PartitionInfo]] = if (inputPorts != null) {
@@ -77,61 +73,86 @@ class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
     } else {
       opInfo.inputPorts.map(_ => None)
     }
-    val dependency: Map[Int, Int] = if (inputPorts != null) {
-      inputPorts.zipWithIndex.flatMap {
-        case (port, i) => port.dependencies.map(dependee => i -> dependee)
-      }.toMap
-    } else {
-      Map()
+
+    val propagateSchema = (inputSchemas: Map[PortIdentity, Schema]) => {
+      //    Preconditions.checkArgument(schemas.length == 1)
+      val inputSchema = inputSchemas(operatorInfo.inputPorts.head.id)
+      val outputSchemaBuilder = Schema.builder()
+      // keep the same schema from input
+      if (retainInputColumns) outputSchemaBuilder.add(inputSchema)
+      // for any pythonUDFType, it can add custom output columns (attributes).
+      if (outputColumns != null) {
+        if (retainInputColumns) { // check if columns are duplicated
+
+          for (column <- outputColumns) {
+            if (inputSchema.containsAttribute(column.getName))
+              throw new RuntimeException("Column name " + column.getName + " already exists!")
+          }
+        }
+        outputSchemaBuilder.add(outputColumns).build()
+      }
+      Map(operatorInfo.outputPorts.head.id -> outputSchemaBuilder.build())
     }
 
     if (workers > 1)
-      OpExecConfig
-        .oneToOneLayer(
+      PhysicalOp
+        .oneToOnePhysicalOp(
+          workflowId,
+          executionId,
           operatorIdentifier,
-          _ => new PythonUDFOpExecV2(code, operatorSchemaInfo.outputSchemas.head)
+          OpExecInitInfo(code, "python")
         )
-        .copy(
-          numWorkers = workers,
-          derivePartition = _ => UnknownPartition(),
-          isOneToManyOp = true,
-          inputPorts = opInfo.inputPorts,
-          outputPorts = opInfo.outputPorts,
-          partitionRequirement = partitionRequirement,
-          dependency = dependency
-        )
+        .withDerivePartition(_ => UnknownPartition())
+        .withInputPorts(operatorInfo.inputPorts)
+        .withOutputPorts(operatorInfo.outputPorts)
+        .withPartitionRequirement(partitionRequirement)
+        .withIsOneToManyOp(true)
+        .withParallelizable(true)
+        .withSuggestedWorkerNum(workers)
+        .withPropagateSchema(SchemaPropagationFunc(propagateSchema))
     else
-      OpExecConfig
-        .manyToOneLayer(
+      PhysicalOp
+        .manyToOnePhysicalOp(
+          workflowId,
+          executionId,
           operatorIdentifier,
-          _ => new PythonUDFOpExecV2(code, operatorSchemaInfo.outputSchemas.head)
+          OpExecInitInfo(code, "python")
         )
-        .copy(
-          derivePartition = _ => UnknownPartition(),
-          isOneToManyOp = true,
-          inputPorts = opInfo.inputPorts,
-          outputPorts = opInfo.outputPorts,
-          partitionRequirement = partitionRequirement,
-          dependency = dependency
-        )
+        .withDerivePartition(_ => UnknownPartition())
+        .withInputPorts(operatorInfo.inputPorts)
+        .withOutputPorts(operatorInfo.outputPorts)
+        .withPartitionRequirement(partitionRequirement)
+        .withIsOneToManyOp(true)
+        .withParallelizable(false)
+        .withPropagateSchema(SchemaPropagationFunc(propagateSchema))
   }
 
   override def operatorInfo: OperatorInfo = {
     val inputPortInfo = if (inputPorts != null) {
-      inputPorts.map(p => InputPort(p.displayName, p.allowMultiInputs))
+      inputPorts.zipWithIndex.map {
+        case (portDesc: PortDescription, idx) =>
+          InputPort(
+            PortIdentity(idx),
+            displayName = portDesc.displayName,
+            allowMultiLinks = portDesc.allowMultiInputs,
+            dependencies = portDesc.dependencies.map(idx => PortIdentity(idx))
+          )
+      }
     } else {
-      List(InputPort("", allowMultiInputs = true))
+      List(InputPort(PortIdentity(), allowMultiLinks = true))
     }
     val outputPortInfo = if (outputPorts != null) {
-      outputPorts.map(p => OutputPort(p.displayName))
+      outputPorts.zipWithIndex.map {
+        case (portDesc, idx) => OutputPort(PortIdentity(idx), displayName = portDesc.displayName)
+      }
     } else {
-      List(OutputPort(""))
+      List(OutputPort())
     }
 
     OperatorInfo(
       "Python UDF",
       "User-defined function operator in Python script",
-      OperatorGroupConstants.UDF_GROUP,
+      OperatorGroupConstants.PYTHON_GROUP,
       inputPortInfo,
       outputPortInfo,
       dynamicInputPorts = true,
@@ -144,7 +165,7 @@ class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     //    Preconditions.checkArgument(schemas.length == 1)
     val inputSchema = schemas(0)
-    val outputSchemaBuilder = Schema.newBuilder
+    val outputSchemaBuilder = Schema.builder()
     // keep the same schema from input
     if (retainInputColumns) outputSchemaBuilder.add(inputSchema)
     // for any pythonUDFType, it can add custom output columns (attributes).
@@ -156,15 +177,17 @@ class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
             throw new RuntimeException("Column name " + column.getName + " already exists!")
         }
       }
-      outputSchemaBuilder.add(outputColumns.asJava).build
+      outputSchemaBuilder.add(outputColumns).build()
     }
-    outputSchemaBuilder.build
+    outputSchemaBuilder.build()
   }
 
   override def runtimeReconfiguration(
-      newOpDesc: OperatorDescriptor,
-      operatorSchemaInfo: OperatorSchemaInfo
-  ): Try[(OpExecConfig, Option[StateTransferFunc])] = {
-    Success(newOpDesc.operatorExecutor(operatorSchemaInfo), None)
+      workflowId: WorkflowIdentity,
+      executionId: ExecutionIdentity,
+      oldLogicalOp: LogicalOp,
+      newLogicalOp: LogicalOp
+  ): Try[(PhysicalOp, Option[StateTransferFunc])] = {
+    Success(newLogicalOp.getPhysicalOp(workflowId, executionId), None)
   }
 }

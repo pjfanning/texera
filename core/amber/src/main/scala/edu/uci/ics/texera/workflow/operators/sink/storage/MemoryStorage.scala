@@ -1,13 +1,22 @@
 package edu.uci.ics.texera.workflow.operators.sink.storage
 
-import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
+import edu.uci.ics.amber.engine.common.model.tuple.{Schema, Tuple}
+import edu.uci.ics.texera.workflow.operators.sink.storage.MemoryStorage.storageMapping
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+object MemoryStorage {
+  val storageMapping: mutable.Map[String, ArrayBuffer[Tuple]] =
+    mutable.HashMap[String, ArrayBuffer[Tuple]]()
+}
+class MemoryStorage(key: String) extends SinkStorageReader with SinkStorageWriter {
 
-class MemoryStorage(schema: Schema) extends SinkStorageReader with SinkStorageWriter {
-
-  private val results = new ArrayBuffer[Tuple]()
+  private def results: ArrayBuffer[Tuple] = {
+    if (!storageMapping.contains(key)) {
+      storageMapping(key) = new ArrayBuffer[Tuple]()
+    }
+    storageMapping(key)
+  }
 
   override def getAll: Iterable[Tuple] =
     synchronized {
@@ -38,7 +47,7 @@ class MemoryStorage(schema: Schema) extends SinkStorageReader with SinkStorageWr
 
   override def close(): Unit = {}
 
-  override def getStorageWriter(): SinkStorageWriter = this
+  override def getStorageWriter: SinkStorageWriter = this
 
   override def getRange(from: Int, to: Int): Iterable[Tuple] =
     synchronized {
@@ -48,4 +57,8 @@ class MemoryStorage(schema: Schema) extends SinkStorageReader with SinkStorageWr
   override def getCount: Long = results.length
 
   override def getSchema: Schema = schema
+
+  override def setSchema(schema: Schema): Unit = {
+    this.schema = schema
+  }
 }

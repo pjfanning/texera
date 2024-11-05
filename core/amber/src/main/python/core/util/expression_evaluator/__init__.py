@@ -3,10 +3,7 @@ import re
 from collections.abc import Iterator, Mapping
 from typing import Any, Dict, List, Optional, Pattern, Tuple
 
-from proto.edu.uci.ics.amber.engine.architecture.worker import (
-    EvaluatedValue,
-    TypedValue,
-)
+from proto.edu.uci.ics.amber.engine.architecture.rpc import EvaluatedValue, TypedValue
 
 
 class ExpressionEvaluator:
@@ -149,9 +146,11 @@ class ExpressionEvaluator:
     @staticmethod
     def _extract_container_items(value: Any) -> List[TypedValue]:
         return ExpressionEvaluator._to_typed_values(
-            value.items()
-            if ExpressionEvaluator._is_mapping(value)
-            else enumerate(value),
+            (
+                value.items()
+                if ExpressionEvaluator._is_mapping(value)
+                else enumerate(value)
+            ),
             parent=value,
             to_getitem=True,
             ref_as_repr=True,
@@ -182,9 +181,11 @@ class ExpressionEvaluator:
                 value_ref=repr(k) if ref_as_repr else k,
                 value_str=repr(v),
                 value_type=type(v).__name__,
-                expandable=ExpressionEvaluator._is_expandable(v, parent=parent)
-                if check_expandable
-                else False,
+                expandable=(
+                    ExpressionEvaluator._is_expandable(v, parent=parent)
+                    if check_expandable
+                    else False
+                ),
             )
             for k, v in kv_iter
         ]

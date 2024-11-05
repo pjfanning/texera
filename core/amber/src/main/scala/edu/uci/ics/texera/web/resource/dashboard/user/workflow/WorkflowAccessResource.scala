@@ -1,12 +1,14 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.workflow
 
 import edu.uci.ics.texera.web.SqlServer
+import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.common.AccessEntry
 import edu.uci.ics.texera.web.model.jooq.generated.Tables.{
   PROJECT_USER_ACCESS,
   USER,
   WORKFLOW_OF_PROJECT,
-  WORKFLOW_USER_ACCESS
+  WORKFLOW_USER_ACCESS,
+  WORKFLOW
 }
 import edu.uci.ics.texera.web.model.jooq.generated.enums.WorkflowUserAccessPrivilege
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
@@ -16,8 +18,10 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
 }
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowUserAccess
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.context
+import io.dropwizard.auth.Auth
 import org.jooq.DSLContext
 import org.jooq.types.UInteger
+
 import java.util
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs._
@@ -33,7 +37,10 @@ object WorkflowAccessResource {
     * @return boolean value indicating yes/no
     */
   def hasReadAccess(wid: UInteger, uid: UInteger): Boolean = {
-    getPrivilege(wid, uid).eq(WorkflowUserAccessPrivilege.READ) || hasWriteAccess(wid, uid)
+    isPublic(wid) || getPrivilege(wid, uid).eq(WorkflowUserAccessPrivilege.READ) || hasWriteAccess(
+      wid,
+      uid
+    )
   }
 
   /**
@@ -73,6 +80,14 @@ object WorkflowAccessResource {
     } else {
       access.getPrivilege
     }
+  }
+
+  def isPublic(wid: UInteger): Boolean = {
+    context
+      .select(WORKFLOW.IS_PUBLISHED)
+      .from(WORKFLOW)
+      .where(WORKFLOW.WID.eq(wid))
+      .fetchOneInto(classOf[Boolean])
   }
 }
 
@@ -136,15 +151,25 @@ class WorkflowAccessResource() {
   def grantAccess(
       @PathParam("wid") wid: UInteger,
       @PathParam("email") email: String,
-      @PathParam("privilege") privilege: String
+      @PathParam("privilege") privilege: String,
+      @Auth user: SessionUser
   ): Unit = {
-    workflowUserAccessDao.merge(
-      new WorkflowUserAccess(
-        userDao.fetchOneByEmail(email).getUid,
-        wid,
-        WorkflowUserAccessPrivilege.valueOf(privilege)
+    if (email.equals(user.getEmail)) {
+      throw new BadRequestException("You cannot grant access to yourself!")
+    }
+    try {
+      workflowUserAccessDao.merge(
+        new WorkflowUserAccess(
+          userDao.fetchOneByEmail(email).getUid,
+          wid,
+          WorkflowUserAccessPrivilege.valueOf(privilege)
+        )
       )
-    )
+    } catch {
+      case _: NullPointerException =>
+        throw new BadRequestException(s"User $email Not Found!")
+    }
+
   }
 
   /**

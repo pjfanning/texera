@@ -1,0 +1,92 @@
+<div id="texera-workspace">
+  <ul
+    nz-menu
+    id="result-buttons"
+    [ngClass]="{'shadow':  !width}">
+    <li
+      nz-menu-item
+      (click)="closePanel()"
+      *ngIf="width">
+      <span
+        nz-icon
+        nzType="minus"></span>
+    </li>
+    <li
+      nz-menu-divider
+      id="divider"></li>
+    <li
+      nz-menu-item
+      (click)="openPanel()"
+      *ngIf="!width"
+      nz-tooltip="Result Panel: {{operatorTitle}}">
+      <span
+        nz-icon
+        nzType="border"></span>
+    </li>
+  </ul>
+</div>
+
+<div
+  id="result-container"
+  cdkDrag
+  cdkDragBoundary="texera-workspace"
+  nz-resizable
+  [nzMinWidth]="300"
+  [nzMinHeight]="250"
+  [nzMaxWidth]="window.innerWidth"
+  [nzMaxHeight]="window.innerHeight"
+  [style.width.px]="width"
+  [style.height.px]="height"
+  (nzResize)="onResize($event)"
+  [cdkDragFreeDragPosition]="dragPosition">
+  <ul
+    nz-menu
+    id="panel-button"
+    [ngClass]="{'shadow':  !width}">
+    <button
+      nz-button
+      nzType="text"
+      (click)="resetPanelPosition()"
+      *ngIf="width">
+      <span
+        nz-icon
+        nzType="enter"></span>
+    </button>
+    <li
+      nz-menu-item
+      (click)="closePanel()"
+      *ngIf="width">
+      <span
+        nz-icon
+        nzType="minus"></span>
+    </li>
+  </ul>
+  <div
+    id="content"
+    *ngIf="width">
+    <h4
+      id="title"
+      cdkDragHandle>
+      Result Panel: {{operatorTitle}}
+    </h4>
+    <nz-tabset
+      [nzSize]="'small'"
+      [nzTabPosition]="'left'">
+      <div *ngIf="frameComponentConfigs.size === 0">
+        <nz-tab nzTitle="Result">
+          <div style="text-align: center">
+            <h4>No results available to display.</h4>
+          </div>
+        </nz-tab>
+      </div>
+      <div *ngFor="let config of frameComponentConfigs | keyvalue">
+        <nz-tab nzTitle="{{config.key}}">
+          <ng-container *ngComponentOutlet="config.value.component;inputs: config.value.componentInputs"></ng-container>
+        </nz-tab>
+      </div>
+    </nz-tabset>
+  </div>
+  <nz-resize-handles
+    *ngIf="width"
+    [nzDirections]="['right', 'bottom', 'bottomRight']"></nz-resize-handles>
+</div>

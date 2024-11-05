@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.web
 
-import edu.uci.ics.amber.engine.common.AmberUtils
+import edu.uci.ics.amber.engine.common.AmberRuntime
 import org.apache.commons.jcs3.access.exception.InvalidArgumentException
 
 import scala.annotation.tailrec
@@ -14,7 +14,7 @@ object TexeraRunWorker {
       list match {
         case Nil => map
         case "--serverAddr" :: value :: tail =>
-          nextOption(map ++ Map('serverAddr -> value), tail)
+          nextOption(map ++ Map(Symbol("serverAddr") -> value), tail)
         case option :: tail =>
           throw new InvalidArgumentException("unknown command-line arg")
       }
@@ -25,7 +25,7 @@ object TexeraRunWorker {
   def main(args: Array[String]): Unit = {
     val argMap = parseArgs(args)
     // start actor system worker node
-    AmberUtils.startActorWorker(argMap.get('serverAddr).asInstanceOf[Option[String]])
+    AmberRuntime.startActorWorker(argMap.get(Symbol("serverAddr")).asInstanceOf[Option[String]])
   }
 
 }

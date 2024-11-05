@@ -4,21 +4,25 @@
 package edu.uci.ics.texera.web.model.jooq.generated;
 
 
-import edu.uci.ics.texera.web.model.jooq.generated.tables.File;
-import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfProject;
-import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfWorkflow;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetUserAccess;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Project;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.ProjectUserAccess;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.PublicProject;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.User;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.UserConfig;
-import edu.uci.ics.texera.web.model.jooq.generated.tables.UserFileAccess;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Workflow;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowExecutions;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowOfProject;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowOfUser;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowRuntimeStatistics;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserAccess;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserActivity;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserClones;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserLikes;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowVersion;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowViewCount;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +39,7 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class TexeraDb extends SchemaImpl {
 
-    private static final long serialVersionUID = -804967438;
+    private static final long serialVersionUID = 2026314588;
 
     /**
      * The reference instance of <code>texera_db</code>
@@ -43,19 +47,19 @@ public class TexeraDb extends SchemaImpl {
     public static final TexeraDb TEXERA_DB = new TexeraDb();
 
     /**
-     * The table <code>texera_db.file</code>.
+     * The table <code>texera_db.dataset</code>.
      */
-    public final File FILE = edu.uci.ics.texera.web.model.jooq.generated.tables.File.FILE;
+    public final Dataset DATASET = edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET;
 
     /**
-     * The table <code>texera_db.file_of_project</code>.
+     * The table <code>texera_db.dataset_user_access</code>.
      */
-    public final FileOfProject FILE_OF_PROJECT = edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfProject.FILE_OF_PROJECT;
+    public final DatasetUserAccess DATASET_USER_ACCESS = edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetUserAccess.DATASET_USER_ACCESS;
 
     /**
-     * The table <code>texera_db.file_of_workflow</code>.
+     * The table <code>texera_db.dataset_version</code>.
      */
-    public final FileOfWorkflow FILE_OF_WORKFLOW = edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfWorkflow.FILE_OF_WORKFLOW;
+    public final DatasetVersion DATASET_VERSION = edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION;
 
     /**
      * The table <code>texera_db.project</code>.
@@ -83,11 +87,6 @@ public class TexeraDb extends SchemaImpl {
     public final UserConfig USER_CONFIG = edu.uci.ics.texera.web.model.jooq.generated.tables.UserConfig.USER_CONFIG;
 
     /**
-     * The table <code>texera_db.user_file_access</code>.
-     */
-    public final UserFileAccess USER_FILE_ACCESS = edu.uci.ics.texera.web.model.jooq.generated.tables.UserFileAccess.USER_FILE_ACCESS;
-
-    /**
      * The table <code>texera_db.workflow</code>.
      */
     public final Workflow WORKFLOW = edu.uci.ics.texera.web.model.jooq.generated.tables.Workflow.WORKFLOW;
@@ -108,14 +107,39 @@ public class TexeraDb extends SchemaImpl {
     public final WorkflowOfUser WORKFLOW_OF_USER = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowOfUser.WORKFLOW_OF_USER;
 
     /**
+     * The table <code>texera_db.workflow_runtime_statistics</code>.
+     */
+    public final WorkflowRuntimeStatistics WORKFLOW_RUNTIME_STATISTICS = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowRuntimeStatistics.WORKFLOW_RUNTIME_STATISTICS;
+
+    /**
      * The table <code>texera_db.workflow_user_access</code>.
      */
     public final WorkflowUserAccess WORKFLOW_USER_ACCESS = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserAccess.WORKFLOW_USER_ACCESS;
 
     /**
+     * The table <code>texera_db.workflow_user_activity</code>.
+     */
+    public final WorkflowUserActivity WORKFLOW_USER_ACTIVITY = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserActivity.WORKFLOW_USER_ACTIVITY;
+
+    /**
+     * The table <code>texera_db.workflow_user_clones</code>.
+     */
+    public final WorkflowUserClones WORKFLOW_USER_CLONES = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserClones.WORKFLOW_USER_CLONES;
+
+    /**
+     * The table <code>texera_db.workflow_user_likes</code>.
+     */
+    public final WorkflowUserLikes WORKFLOW_USER_LIKES = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserLikes.WORKFLOW_USER_LIKES;
+
+    /**
      * The table <code>texera_db.workflow_version</code>.
      */
     public final WorkflowVersion WORKFLOW_VERSION = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowVersion.WORKFLOW_VERSION;
+
+    /**
+     * The table <code>texera_db.workflow_view_count</code>.
+     */
+    public final WorkflowViewCount WORKFLOW_VIEW_COUNT = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowViewCount.WORKFLOW_VIEW_COUNT;
 
     /**
      * No further instances allowed
@@ -139,20 +163,24 @@ public class TexeraDb extends SchemaImpl {
 
     private final List<Table<?>> getTables0() {
         return Arrays.<Table<?>>asList(
-            File.FILE,
-            FileOfProject.FILE_OF_PROJECT,
-            FileOfWorkflow.FILE_OF_WORKFLOW,
+            Dataset.DATASET,
+            DatasetUserAccess.DATASET_USER_ACCESS,
+            DatasetVersion.DATASET_VERSION,
             Project.PROJECT,
             ProjectUserAccess.PROJECT_USER_ACCESS,
             PublicProject.PUBLIC_PROJECT,
             User.USER,
             UserConfig.USER_CONFIG,
-            UserFileAccess.USER_FILE_ACCESS,
             Workflow.WORKFLOW,
             WorkflowExecutions.WORKFLOW_EXECUTIONS,
             WorkflowOfProject.WORKFLOW_OF_PROJECT,
             WorkflowOfUser.WORKFLOW_OF_USER,
+            WorkflowRuntimeStatistics.WORKFLOW_RUNTIME_STATISTICS,
             WorkflowUserAccess.WORKFLOW_USER_ACCESS,
-            WorkflowVersion.WORKFLOW_VERSION);
+            WorkflowUserActivity.WORKFLOW_USER_ACTIVITY,
+            WorkflowUserClones.WORKFLOW_USER_CLONES,
+            WorkflowUserLikes.WORKFLOW_USER_LIKES,
+            WorkflowVersion.WORKFLOW_VERSION,
+            WorkflowViewCount.WORKFLOW_VIEW_COUNT);
     }
 }

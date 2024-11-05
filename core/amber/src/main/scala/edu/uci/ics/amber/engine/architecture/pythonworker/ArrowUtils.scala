@@ -1,13 +1,14 @@
 package edu.uci.ics.amber.engine.architecture.pythonworker
 
-import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeTypeUtils.AttributeTypeException
-import edu.uci.ics.texera.workflow.common.tuple.schema.{
+import com.typesafe.scalalogging.LazyLogging
+import edu.uci.ics.amber.engine.common.model.tuple.{
   Attribute,
   AttributeType,
   AttributeTypeUtils,
-  Schema
+  Schema,
+  Tuple
 }
+import AttributeTypeUtils.AttributeTypeException
 import org.apache.arrow.vector.types.FloatingPointPrecision
 import org.apache.arrow.vector.types.TimeUnit.MILLISECOND
 import org.apache.arrow.vector.types.pojo.ArrowType.PrimitiveType
@@ -26,11 +27,10 @@ import org.apache.arrow.vector.{
 
 import java.nio.charset.StandardCharsets
 import java.util
-import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
-import scala.jdk.CollectionConverters.asJavaIterableConverter
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.language.implicitConversions
 
-object ArrowUtils {
+object ArrowUtils extends LazyLogging {
 
   implicit def bool2int(b: Boolean): Int = if (b) 1 else 0
 
@@ -54,9 +54,9 @@ object ArrowUtils {
     val schema = toTexeraSchema(arrowSchema)
 
     Tuple
-      .newBuilder(schema)
+      .builder(schema)
       .addSequentially(
-        vectorSchemaRoot.getFieldVectors
+        vectorSchemaRoot.getFieldVectors.asScala
           .map((fieldVector: FieldVector) => {
             val value: AnyRef = fieldVector.getObject(rowIndex)
             try {
@@ -66,13 +66,12 @@ object ArrowUtils {
 
             } catch {
               case e: Exception =>
-                e.printStackTrace()
+                logger.warn("Caught error during parsing Arrow value back to Texera value", e)
                 null
             }
 
           })
           .toArray
-          .asInstanceOf[Array[AnyRef]]
       )
       .build()
 
@@ -86,11 +85,10 @@ object ArrowUtils {
     */
   def toTexeraSchema(arrowSchema: org.apache.arrow.vector.types.pojo.Schema): Schema =
     Schema
-      .newBuilder()
+      .builder()
       .add(
-        arrowSchema.getFields.toIterable
+        arrowSchema.getFields.asScala
           .map(field => new Attribute(field.getName, toAttributeType(field.getType)))
-          .asJava
       )
       .build()
 
@@ -151,11 +149,11 @@ object ArrowUtils {
     */
   def setTexeraTuple(tuple: Tuple, index: Int, vectorSchemaRoot: VectorSchemaRoot): Unit = {
     val arrowSchema = vectorSchemaRoot.getSchema
-    val arrowFields = arrowSchema.getFields.toList
+    val arrowFields = arrowSchema.getFields.asScala.toList
 
     for (i <- arrowFields.indices) {
       val vector: FieldVector = vectorSchemaRoot.getVector(i)
-      val value = tuple.get(i)
+      val value = tuple.getField[AnyRef](i)
       val isNull = value == null
       arrowFields.apply(i).getFieldType.getType match {
         case _: ArrowType.Int =>
@@ -188,7 +186,10 @@ object ArrowUtils {
               index,
               !isNull,
               if (isNull) 0L
-              else AttributeTypeUtils.parseField(value, AttributeType.LONG).asInstanceOf[Long]
+              else
+                AttributeTypeUtils
+                  .parseField(value, AttributeType.LONG)
+                  .asInstanceOf[Long]
             )
 
         case _: ArrowType.Utf8 =>

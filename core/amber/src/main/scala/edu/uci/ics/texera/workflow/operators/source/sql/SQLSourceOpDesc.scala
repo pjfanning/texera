@@ -3,6 +3,7 @@ package edu.uci.ics.texera.workflow.operators.source.sql
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
+import edu.uci.ics.amber.engine.common.model.tuple.{Attribute, AttributeType, Schema}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.{
   AutofillAttributeName,
   BatchByColumn,
@@ -10,7 +11,6 @@ import edu.uci.ics.texera.workflow.common.metadata.annotations.{
   UIWidget
 }
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
 import java.sql._
 
@@ -110,7 +110,7 @@ abstract class SQLSourceOpDesc extends SourceOperatorDescriptor {
     * Make sure all the required parameters are not empty,
     * then query the remote PostgreSQL server for the table schema
     *
-    * @return Texera.Tuple.Schema
+    * @return Tuple.Schema
     */
   override def sourceSchema(): Schema = {
     if (
@@ -126,14 +126,14 @@ abstract class SQLSourceOpDesc extends SourceOperatorDescriptor {
 
   /**
     * Establish a connection with the database server base on the info provided by the user
-    * query the MetaData of the table and generate a Texera.tuple.schema accordingly
+    * query the MetaData of the table and generate a Tuple.schema accordingly
     * the "switch" code block shows how SQL data types are mapped to Texera AttributeTypes
     *
     * @return Schema
     */
   protected def querySchema: Schema = {
     updatePort()
-    val schemaBuilder = Schema.newBuilder
+    val schemaBuilder = Schema.builder()
     try {
       val connection = establishConn
       connection.setReadOnly(true)
@@ -178,10 +178,9 @@ abstract class SQLSourceOpDesc extends SourceOperatorDescriptor {
         }
       }
       connection.close()
-      schemaBuilder.build
+      schemaBuilder.build()
     } catch {
       case e @ (_: SQLException | _: ClassCastException) =>
-        e.printStackTrace()
         throw new RuntimeException(
           this.getClass.getSimpleName + " failed to connect to the database. " + e.getMessage
         )

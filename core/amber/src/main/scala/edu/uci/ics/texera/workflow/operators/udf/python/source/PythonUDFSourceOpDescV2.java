@@ -4,22 +4,30 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.google.common.base.Preconditions;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig;
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecFunc;
-import edu.uci.ics.texera.workflow.common.metadata.InputPort;
+import edu.uci.ics.amber.engine.common.model.PhysicalOp;
+import edu.uci.ics.amber.engine.common.model.SchemaPropagationFunc;
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo;
+import edu.uci.ics.amber.engine.common.virtualidentity.ExecutionIdentity;
+import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity;
+import edu.uci.ics.amber.engine.common.workflow.InputPort;
+import edu.uci.ics.amber.engine.common.workflow.OutputPort;
+import edu.uci.ics.amber.engine.common.workflow.PortIdentity;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorGroupConstants;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorInfo;
-import edu.uci.ics.texera.workflow.common.metadata.OutputPort;
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor;
-import edu.uci.ics.texera.workflow.common.tuple.schema.Attribute;
-import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo;
-import edu.uci.ics.texera.workflow.common.tuple.schema.Schema;
+import edu.uci.ics.amber.engine.common.model.tuple.Attribute;
+import edu.uci.ics.amber.engine.common.model.tuple.Schema;
+import edu.uci.ics.texera.workflow.operators.util.OperatorDescriptorUtils;
+import scala.Option;
+import scala.collection.immutable.Map;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import static java.util.Collections.singletonList;
-import static scala.collection.JavaConverters.asScalaBuffer;
+import static scala.jdk.javaapi.CollectionConverters.asScala;
 
 
 public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
@@ -38,7 +46,7 @@ public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
     @JsonPropertyDescription("Input your code here")
     public String code;
 
-    @JsonProperty(required = true)
+    @JsonProperty(required = true, defaultValue = "1")
     @JsonSchemaTitle("Worker count")
     @JsonPropertyDescription("Specify how many parallel workers to lunch")
     public Integer workers = 1;
@@ -49,15 +57,37 @@ public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
     public List<Attribute> columns;
 
     @Override
-    public OpExecConfig operatorExecutor(OperatorSchemaInfo operatorSchemaInfo) {
-        OpExecFunc exec = (OpExecFunc & Serializable) (i) ->
-                new PythonUDFSourceOpExecV2(code, operatorSchemaInfo.outputSchemas()[0]);
+    public PhysicalOp getPhysicalOp(WorkflowIdentity workflowId, ExecutionIdentity executionId) {
+        OpExecInitInfo exec = OpExecInitInfo.apply(code, "python");
         Preconditions.checkArgument(workers >= 1, "Need at least 1 worker.");
+        SchemaPropagationFunc func = SchemaPropagationFunc.apply((Function<Map<PortIdentity, Schema>, Map<PortIdentity, Schema>> & Serializable) inputSchemas -> {
+            // Initialize a Java HashMap
+            java.util.Map<PortIdentity, Schema> javaMap = new java.util.HashMap<>();
+
+            javaMap.put(operatorInfo().outputPorts().head().id(), sourceSchema());
+
+            // Convert the Java Map to a Scala immutable Map
+            return OperatorDescriptorUtils.toImmutableMap(javaMap);
+        });
+        PhysicalOp physicalOp = PhysicalOp.sourcePhysicalOp(
+                        workflowId,
+                        executionId,
+                        operatorIdentifier(),
+                        exec
+                )
+                .withInputPorts(operatorInfo().inputPorts())
+                .withOutputPorts(operatorInfo().outputPorts())
+                .withIsOneToManyOp(true)
+                .withPropagateSchema(func)
+                .withLocationPreference(Option.empty());
+
+
         if (workers > 1) {
-            return OpExecConfig.oneToOneLayer(operatorIdentifier(), exec).withNumWorkers(workers)
-                    .withIsOneToManyOp(true);
+            return physicalOp
+                    .withParallelizable(true)
+                    .withSuggestedWorkerNum(workers);
         } else {
-            return OpExecConfig.manyToOneLayer(operatorIdentifier(), exec).withIsOneToManyOp(true);
+            return physicalOp.withParallelizable(false);
         }
 
     }
@@ -67,9 +97,9 @@ public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
         return new OperatorInfo(
                 "1-out Python UDF",
                 "User-defined function operator in Python script",
-                OperatorGroupConstants.UDF_GROUP(),
-                scala.collection.immutable.List.empty(),
-                asScalaBuffer(singletonList(new OutputPort(""))).toList(),
+                OperatorGroupConstants.PYTHON_GROUP(),
+                asScala(new ArrayList<InputPort>()).toList(),
+                asScala(singletonList(new OutputPort(new PortIdentity(0, false), "", false))).toList(),
                 false,
                 false,
                 true,
@@ -79,11 +109,11 @@ public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
 
     @Override
     public Schema sourceSchema() {
-        Schema.Builder outputSchemaBuilder = Schema.newBuilder();
+        Schema.Builder outputSchemaBuilder = Schema.builder();
 
         // for any pythonUDFType, it can add custom output columns (attributes).
         if (columns != null) {
-            outputSchemaBuilder.add(columns).build();
+            outputSchemaBuilder.add(asScala(columns)).build();
         }
         return outputSchemaBuilder.build();
     }

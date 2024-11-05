@@ -3,21 +3,23 @@ package edu.uci.ics.texera.web
 import java.time.{LocalDateTime, Duration => JDuration}
 import akka.actor.Cancellable
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.texera.web.storage.JobStateStore
-import edu.uci.ics.texera.web.workflowruntimestate.{JobMetadataStore, WorkflowAggregatedState}
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
+import edu.uci.ics.amber.engine.architecture.rpc.controlreturns.WorkflowAggregatedState
+import edu.uci.ics.amber.engine.architecture.rpc.controlreturns.WorkflowAggregatedState.RUNNING
+import edu.uci.ics.amber.engine.common.AmberRuntime
+import edu.uci.ics.texera.web.storage.ExecutionStateStore
+import edu.uci.ics.amber.engine.common.workflowruntimestate.ExecutionMetadataStore
 
 import scala.concurrent.duration.DurationInt
 
 class WorkflowLifecycleManager(id: String, cleanUpTimeout: Int, cleanUpCallback: () => Unit)
     extends LazyLogging {
   private var userCount = 0
-  private var cleanUpJob: Cancellable = Cancellable.alreadyCancelled
+  private var cleanUpExecution: Cancellable = Cancellable.alreadyCancelled
 
   private[this] def setCleanUpDeadline(status: WorkflowAggregatedState): Unit = {
     synchronized {
       if (userCount > 0 || status == RUNNING) {
-        cleanUpJob.cancel()
+        cleanUpExecution.cancel()
         logger.info(
           s"[$id] workflow state clean up postponed. current user count = $userCount, workflow status = $status"
         )
@@ -28,11 +30,11 @@ class WorkflowLifecycleManager(id: String, cleanUpTimeout: Int, cleanUpCallback:
   }
 
   private[this] def refreshDeadline(): Unit = {
-    if (cleanUpJob.isCancelled || cleanUpJob.cancel()) {
+    if (cleanUpExecution.isCancelled || cleanUpExecution.cancel()) {
       logger.info(
         s"[$id] workflow state clean up will start at ${LocalDateTime.now().plus(JDuration.ofSeconds(cleanUpTimeout))}"
       )
-      cleanUpJob = TexeraWebApplication.scheduleCallThroughActorSystem(cleanUpTimeout.seconds) {
+      cleanUpExecution = AmberRuntime.scheduleCallThroughActorSystem(cleanUpTimeout.seconds) {
         cleanUp()
       }
     }
@@ -44,7 +46,7 @@ class WorkflowLifecycleManager(id: String, cleanUpTimeout: Int, cleanUpCallback:
         // do nothing
         logger.info(s"[$id] workflow state clean up failed. current user count = $userCount")
       } else {
-        cleanUpJob.cancel()
+        cleanUpExecution.cancel()
         cleanUpCallback()
         logger.info(s"[$id] workflow state clean up completed.")
       }
@@ -54,7 +56,7 @@ class WorkflowLifecycleManager(id: String, cleanUpTimeout: Int, cleanUpCallback:
   def increaseUserCount(): Unit = {
     synchronized {
       userCount += 1
-      cleanUpJob.cancel()
+      cleanUpExecution.cancel()
       logger.info(s"[$id] workflow state clean up postponed. current user count = $userCount")
     }
   }
@@ -70,9 +72,9 @@ class WorkflowLifecycleManager(id: String, cleanUpTimeout: Int, cleanUpCallback:
     }
   }
 
-  def registerCleanUpOnStateChange(stateStore: JobStateStore): Unit = {
-    cleanUpJob.cancel()
-    stateStore.jobMetadataStore.getStateObservable.subscribe { newState: JobMetadataStore =>
+  def registerCleanUpOnStateChange(stateStore: ExecutionStateStore): Unit = {
+    cleanUpExecution.cancel()
+    stateStore.metadataStore.getStateObservable.subscribe { newState: ExecutionMetadataStore =>
       setCleanUpDeadline(newState.state)
     }
   }

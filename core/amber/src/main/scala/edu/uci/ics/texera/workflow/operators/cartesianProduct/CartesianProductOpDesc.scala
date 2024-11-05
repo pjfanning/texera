@@ -1,72 +1,80 @@
 package edu.uci.ics.texera.workflow.operators.cartesianProduct
 
-import com.google.common.base.Preconditions
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.texera.workflow.common.metadata.{
-  InputPort,
-  OperatorGroupConstants,
-  OperatorInfo,
-  OutputPort
-}
-import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, OperatorSchemaInfo, Schema}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
+import edu.uci.ics.amber.engine.common.model.{PhysicalOp, SchemaPropagationFunc}
+import edu.uci.ics.amber.engine.common.model.tuple.{Attribute, Schema}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
+import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
+import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
+import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 
-class CartesianProductOpDesc extends OperatorDescriptor {
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
-    OpExecConfig
-      .oneToOneLayer(
+class CartesianProductOpDesc extends LogicalOp {
+  override def getPhysicalOp(
+      workflowId: WorkflowIdentity,
+      executionId: ExecutionIdentity
+  ): PhysicalOp = {
+    PhysicalOp
+      .oneToOnePhysicalOp(
+        workflowId,
+        executionId,
         operatorIdentifier,
-        _ => new CartesianProductOpExec(operatorSchemaInfo)
+        OpExecInitInfo((_, _) => new CartesianProductOpExec())
       )
-      .copy(
-        inputPorts = operatorInfo.inputPorts,
-        outputPorts = operatorInfo.outputPorts,
-        // uses just one worker for now, reads all elements from "left" input port 0 first
-        /*
-          TODO : refactor to parallelize this operator for better performance and scalability
-           - can consider hash partition on larger input, broadcast smaller table to each partition
-         */
-        numWorkers = 1,
-        blockingInputs = List(0),
-        dependency = Map(1 -> 0)
+      .withInputPorts(operatorInfo.inputPorts)
+      .withOutputPorts(operatorInfo.outputPorts)
+      .withPropagateSchema(
+        SchemaPropagationFunc(inputSchemas =>
+          Map(
+            operatorInfo.outputPorts.head.id -> getOutputSchema(
+              Array(
+                inputSchemas(operatorInfo.inputPorts.head.id),
+                inputSchemas(operatorInfo.inputPorts.last.id)
+              )
+            )
+          )
+        )
       )
+      // TODO : refactor to parallelize this operator for better performance and scalability:
+      //  can consider hash partition on larger input, broadcast smaller table to each partition
+      .withParallelizable(false)
+
   }
 
-  /*
-    returns a Schema in order of the left input attributes followed by the right attributes
-    duplicate attribute names are handled with an increasing suffix count
-
-    Left schema attributes should always retain the same name in output schema
-
-    For example, Left(dup, dup#@1, dup#@2) cartesian product with Right(r1, r2, dup)
-    has output schema: (dup, dup#@1, dup#@2, r1, r2, dup#@3)
-
-    Since the last attribute of Right is a duplicate, it increases suffix until it is
-    no longer a duplicate, resulting in dup#@3
-   */
+  /**
+    *    returns a Schema in order of the left input attributes followed by the right attributes
+    *    duplicate attribute names are handled with an increasing suffix count
+    *
+    *    Left schema attributes should always retain the same name in output schema
+    *
+    *    For example, Left(dup, dup#@1, dup#@2) cartesian product with Right(r1, r2, dup)
+    *    has output schema: (dup, dup#@1, dup#@2, r1, r2, dup#@3)
+    *
+    *    Since the last attribute of Right is a duplicate, it increases suffix until it is
+    *    no longer a duplicate, resulting in dup#@3
+    */
   def getOutputSchemaInternal(schemas: Array[Schema]): Schema = {
-    // ensure there are exactly two input port schemas to consider
-    Preconditions.checkArgument(schemas.length == 2)
-
     // merge left / right schemas together, sequentially with left schema first
-    val builder = Schema.newBuilder()
+    val builder = Schema.builder()
     val leftSchema = schemas(0)
+    val leftAttributeNames = leftSchema.getAttributeNames
     val rightSchema = schemas(1)
+    val rightAttributeNames = rightSchema.getAttributeNames
     builder.add(leftSchema)
-    rightSchema.getAttributes.forEach(attr => {
-      var attributeName: String = attr.getName
-      // append numerical suffix in case of duplicate attributes
-      var suffix: Int = 0
-      while (builder.build().containsAttribute(attributeName)) {
-        suffix += 1
-        attributeName = s"${attr.getName}#@$suffix"
+    rightSchema.getAttributes.foreach(attr => {
+      var newName = attr.getName
+      while (
+        leftAttributeNames.contains(newName) || rightAttributeNames
+          .filterNot(attrName => attrName == attr.getName)
+          .contains(newName)
+      ) {
+        newName = s"$newName#@1"
       }
-      if (suffix == 0) {
+      if (newName == attr.getName) {
         // non-duplicate attribute, add to builder as is
         builder.add(attr)
       } else {
         // renamed the duplicate attribute, construct new Attribute
-        builder.add(new Attribute(attributeName, attr.getType))
+        builder.add(new Attribute(newName, attr.getType))
       }
     })
     builder.build()
@@ -76,8 +84,11 @@ class CartesianProductOpDesc extends OperatorDescriptor {
     OperatorInfo(
       "Cartesian Product",
       "Append fields together to get the cartesian product of two inputs",
-      OperatorGroupConstants.UTILITY_GROUP,
-      inputPorts = List(InputPort("left"), InputPort("right")),
+      OperatorGroupConstants.JOIN_GROUP,
+      inputPorts = List(
+        InputPort(PortIdentity(), displayName = "left"),
+        InputPort(PortIdentity(1), displayName = "right", dependencies = List(PortIdentity()))
+      ),
       outputPorts = List(OutputPort())
     )
 

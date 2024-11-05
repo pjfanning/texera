@@ -3,20 +3,11 @@ package edu.uci.ics.texera.workflow.operators.visualization.bubbleChart
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
-import edu.uci.ics.texera.workflow.common.metadata.{
-  InputPort,
-  OperatorGroupConstants,
-  OperatorInfo,
-  OutputPort
-}
+import edu.uci.ics.amber.engine.common.model.tuple.{Attribute, AttributeType, Schema}
+import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
-import edu.uci.ics.texera.workflow.common.tuple.schema.{
-  Attribute,
-  AttributeType,
-  OperatorSchemaInfo,
-  Schema
-}
+import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.operators.visualization.{
   VisualizationConstants,
   VisualizationOperator
@@ -46,11 +37,6 @@ class BubbleChartOpDesc extends VisualizationOperator with PythonOperatorDescrip
   @JsonPropertyDescription("Data column to determine bubble size")
   @AutofillAttributeName var zValue: String = ""
 
-  @JsonProperty(value = "title", required = true)
-  @JsonSchemaTitle("Title")
-  @JsonPropertyDescription("Title of Chart")
-  var title: String = "My Bubble Chart"
-
   @JsonProperty(value = "enableColor", defaultValue = "false")
   @JsonSchemaTitle("Enable Color")
   @JsonPropertyDescription("Colors bubbles using a data column")
@@ -64,7 +50,7 @@ class BubbleChartOpDesc extends VisualizationOperator with PythonOperatorDescrip
   override def chartType: String = VisualizationConstants.HTML_VIZ
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
-    Schema.newBuilder.add(new Attribute("html-content", AttributeType.STRING)).build
+    Schema.builder().add(new Attribute("html-content", AttributeType.STRING)).build()
   }
 
   override def operatorInfo: OperatorInfo =
@@ -75,8 +61,6 @@ class BubbleChartOpDesc extends VisualizationOperator with PythonOperatorDescrip
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort())
     )
-
-  override def numWorkers() = 1
 
   def manipulateTable(): String = {
     assert(xValue.nonEmpty && yValue.nonEmpty && zValue.nonEmpty)
@@ -91,13 +75,13 @@ class BubbleChartOpDesc extends VisualizationOperator with PythonOperatorDescrip
     assert(xValue.nonEmpty && yValue.nonEmpty && zValue.nonEmpty)
     s"""
        |        if '$enableColor' == 'true':
-       |            fig = go.Figure(px.scatter(table, x='$xValue', y='$yValue', size='$zValue', size_max=100, title='$title', color='$colorCategory'))
+       |            fig = go.Figure(px.scatter(table, x='$xValue', y='$yValue', size='$zValue', size_max=100, color='$colorCategory'))
        |        else:
-       |            fig = go.Figure(px.scatter(table, x='$xValue', y='$yValue', size='$zValue', size_max=100, title='$title'))
+       |            fig = go.Figure(px.scatter(table, x='$xValue', y='$yValue', size='$zValue', size_max=100))
        |""".stripMargin
   }
 
-  override def generatePythonCode(operatorSchemaInfo: OperatorSchemaInfo): String = {
+  override def generatePythonCode(): String = {
     val finalCode = s"""
         |from pytexera import *
         |
@@ -124,6 +108,7 @@ class BubbleChartOpDesc extends VisualizationOperator with PythonOperatorDescrip
         |        if table.empty:
         |            yield {'html-content': self.render_error("No valid rows left (every row has at least 1 missing value).")}
         |            return
+        |        fig.update_layout(margin=dict(l=0, r=0, b=0, t=0))
         |        html = plotly.io.to_html(fig, include_plotlyjs = 'cdn', auto_play = False)
         |        yield {'html-content':html}
         |""".stripMargin

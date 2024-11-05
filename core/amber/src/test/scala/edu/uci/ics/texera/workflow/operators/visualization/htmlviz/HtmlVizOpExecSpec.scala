@@ -1,11 +1,11 @@
 package edu.uci.ics.texera.workflow.operators.visualization.htmlviz
 
-import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.{
+import edu.uci.ics.amber.engine.common.model.tuple.{
   Attribute,
   AttributeType,
-  OperatorSchemaInfo,
-  Schema
+  Schema,
+  SchemaEnforceable,
+  Tuple
 }
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
@@ -18,20 +18,22 @@ class HtmlVizOpExecSpec extends AnyFlatSpec with BeforeAndAfter {
   val desc: HtmlVizOpDesc = new HtmlVizOpDesc()
 
   val outputSchema: Schema = desc.getOutputSchema(Array(schema))
-  val operatorSchemaInfo: OperatorSchemaInfo =
-    OperatorSchemaInfo(Array(schema), Array(outputSchema))
 
   def tuple(): Tuple =
     Tuple
-      .newBuilder(schema)
+      .builder(schema)
       .addSequentially(Array("hello", "<html></html>"))
       .build()
 
   it should "process a target field" in {
-    val htmlVizOpExec = new HtmlVizOpExec("field1", operatorSchemaInfo)
+    val htmlVizOpExec = new HtmlVizOpExec("field1")
     htmlVizOpExec.open()
     val processedTuple: Tuple =
-      htmlVizOpExec.processTexeraTuple(Left(tuple()), 0, null, null).next()
+      htmlVizOpExec
+        .processTuple(tuple(), 0)
+        .next()
+        .asInstanceOf[SchemaEnforceable]
+        .enforceSchema(outputSchema)
 
     assert(processedTuple.getField("html-content").asInstanceOf[String] == "hello")
 
@@ -39,10 +41,14 @@ class HtmlVizOpExecSpec extends AnyFlatSpec with BeforeAndAfter {
 
   it should "process another target field" in {
 
-    val htmlVizOpExec = new HtmlVizOpExec("field2", operatorSchemaInfo)
+    val htmlVizOpExec = new HtmlVizOpExec("field2")
     htmlVizOpExec.open()
     val processedTuple: Tuple =
-      htmlVizOpExec.processTexeraTuple(Left(tuple()), 0, null, null).next()
+      htmlVizOpExec
+        .processTuple(tuple(), 0)
+        .next()
+        .asInstanceOf[SchemaEnforceable]
+        .enforceSchema(outputSchema)
 
     assert(processedTuple.getField("html-content").asInstanceOf[String] == "<html></html>")
 

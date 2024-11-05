@@ -1,11 +1,13 @@
 package edu.uci.ics.texera.workflow.operators.source.scan.csv
 
-import edu.uci.ics.texera.workflow.common.WorkflowContext
-import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, OperatorSchemaInfo, Schema}
+import edu.uci.ics.amber.engine.common.model.WorkflowContext
+import edu.uci.ics.amber.engine.common.model.tuple.{AttributeType, Schema}
+import edu.uci.ics.amber.engine.common.workflow.PortIdentity
+import WorkflowContext.{DEFAULT_EXECUTION_ID, DEFAULT_WORKFLOW_ID}
+import edu.uci.ics.texera.workflow.common.storage.FileResolver
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
 
-import scala.collection.convert.ImplicitConversions.`list asScalaBuffer`
 class CSVScanSourceOpDescSpec extends AnyFlatSpec with BeforeAndAfter {
 
   val workflowContext = new WorkflowContext()
@@ -13,7 +15,11 @@ class CSVScanSourceOpDescSpec extends AnyFlatSpec with BeforeAndAfter {
   var parallelCsvScanSourceOpDesc: ParallelCSVScanSourceOpDesc = _
   before {
     csvScanSourceOpDesc = new CSVScanSourceOpDesc()
+    csvScanSourceOpDesc.outputPortToSchemaMapping(PortIdentity()) =
+      csvScanSourceOpDesc.getOutputSchema(Array())
     parallelCsvScanSourceOpDesc = new ParallelCSVScanSourceOpDesc()
+    parallelCsvScanSourceOpDesc.outputPortToSchemaMapping(PortIdentity()) =
+      parallelCsvScanSourceOpDesc.getOutputSchema(Array())
   }
 
   it should "infer schema from single-line-data csv" in {
@@ -22,6 +28,9 @@ class CSVScanSourceOpDescSpec extends AnyFlatSpec with BeforeAndAfter {
     parallelCsvScanSourceOpDesc.customDelimiter = Some(",")
     parallelCsvScanSourceOpDesc.hasHeader = true
     parallelCsvScanSourceOpDesc.setContext(workflowContext)
+    parallelCsvScanSourceOpDesc.setFileUri(
+      FileResolver.resolve(parallelCsvScanSourceOpDesc.fileName.get)
+    )
     val inferredSchema: Schema = parallelCsvScanSourceOpDesc.inferSchema()
 
     assert(inferredSchema.getAttributes.length == 14)
@@ -37,6 +46,9 @@ class CSVScanSourceOpDescSpec extends AnyFlatSpec with BeforeAndAfter {
     parallelCsvScanSourceOpDesc.customDelimiter = Some(",")
     parallelCsvScanSourceOpDesc.hasHeader = false
     parallelCsvScanSourceOpDesc.setContext(workflowContext)
+    parallelCsvScanSourceOpDesc.setFileUri(
+      FileResolver.resolve(parallelCsvScanSourceOpDesc.fileName.get)
+    )
 
     val inferredSchema: Schema = parallelCsvScanSourceOpDesc.inferSchema()
 
@@ -51,6 +63,7 @@ class CSVScanSourceOpDescSpec extends AnyFlatSpec with BeforeAndAfter {
     csvScanSourceOpDesc.customDelimiter = Some(",")
     csvScanSourceOpDesc.hasHeader = true
     csvScanSourceOpDesc.setContext(workflowContext)
+    csvScanSourceOpDesc.setFileUri(FileResolver.resolve(csvScanSourceOpDesc.fileName.get))
 
     val inferredSchema: Schema = csvScanSourceOpDesc.inferSchema()
 
@@ -65,6 +78,7 @@ class CSVScanSourceOpDescSpec extends AnyFlatSpec with BeforeAndAfter {
     csvScanSourceOpDesc.customDelimiter = Some(",")
     csvScanSourceOpDesc.hasHeader = false
     csvScanSourceOpDesc.setContext(workflowContext)
+    csvScanSourceOpDesc.setFileUri(FileResolver.resolve(csvScanSourceOpDesc.fileName.get))
 
     val inferredSchema: Schema = csvScanSourceOpDesc.inferSchema()
 
@@ -80,6 +94,7 @@ class CSVScanSourceOpDescSpec extends AnyFlatSpec with BeforeAndAfter {
     csvScanSourceOpDesc.customDelimiter = Some(";")
     csvScanSourceOpDesc.hasHeader = false
     csvScanSourceOpDesc.setContext(workflowContext)
+    csvScanSourceOpDesc.setFileUri(FileResolver.resolve(csvScanSourceOpDesc.fileName.get))
 
     val inferredSchema: Schema = csvScanSourceOpDesc.inferSchema()
 
@@ -95,13 +110,12 @@ class CSVScanSourceOpDescSpec extends AnyFlatSpec with BeforeAndAfter {
     csvScanSourceOpDesc.customDelimiter = Some(";")
     csvScanSourceOpDesc.hasHeader = false
     csvScanSourceOpDesc.setContext(workflowContext)
+    csvScanSourceOpDesc.setFileUri(FileResolver.resolve(csvScanSourceOpDesc.fileName.get))
 
-    val emptySchema = Schema.newBuilder().build()
-    val operatorSchemaInfo = OperatorSchemaInfo(Array(emptySchema), Array(emptySchema))
     assert(
-      csvScanSourceOpDesc
-        .operatorExecutor(operatorSchemaInfo)
-        .numWorkers == 1
+      !csvScanSourceOpDesc
+        .getPhysicalOp(DEFAULT_WORKFLOW_ID, DEFAULT_EXECUTION_ID)
+        .parallelizable
     )
   }
 

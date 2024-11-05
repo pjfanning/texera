@@ -1,56 +1,57 @@
 package edu.uci.ics.texera.workflow.common.operators
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
-import edu.uci.ics.texera.workflow.operators.udf.python.PythonUDFOpExecV2
-import edu.uci.ics.texera.workflow.operators.udf.python.source.PythonUDFSourceOpExecV2
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfoWithCode
+import edu.uci.ics.amber.engine.common.model.{PhysicalOp, SchemaPropagationFunc}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
 
-import scala.collection.mutable
+trait PythonOperatorDescriptor extends LogicalOp {
+  override def getPhysicalOp(
+      workflowId: WorkflowIdentity,
+      executionId: ExecutionIdentity
+  ): PhysicalOp = {
+    val opExecInitInfo = OpExecInitInfoWithCode((_, _) => (generatePythonCode(), "python"))
 
-trait PythonOperatorDescriptor extends OperatorDescriptor {
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
-    val generatedCode = generatePythonCode(operatorSchemaInfo)
-    if (asSource()) {
-      OpExecConfig
-        .localLayer(
-          operatorIdentifier,
-          _ =>
-            new PythonUDFSourceOpExecV2(
-              generatedCode,
-              operatorSchemaInfo.outputSchemas.head
-            )
-        )
-        .copy(numWorkers = numWorkers(), dependency = dependency().toMap)
+    val physicalOp = if (asSource()) {
+      PhysicalOp.sourcePhysicalOp(
+        workflowId,
+        executionId,
+        operatorIdentifier,
+        opExecInitInfo
+      )
     } else {
-      OpExecConfig
-        .oneToOneLayer(
-          operatorIdentifier,
-          _ =>
-            new PythonUDFOpExecV2(
-              generatedCode,
-              operatorSchemaInfo.outputSchemas.head
-            )
-        )
-        .copy(numWorkers = numWorkers(), dependency = dependency().toMap)
+      PhysicalOp.oneToOnePhysicalOp(
+        workflowId,
+        executionId,
+        operatorIdentifier,
+        opExecInitInfo
+      )
     }
+
+    physicalOp
+      .withInputPorts(operatorInfo.inputPorts)
+      .withOutputPorts(operatorInfo.outputPorts)
+      .withParallelizable(parallelizable())
+      .withPropagateSchema(
+        SchemaPropagationFunc(inputSchemas =>
+          Map(
+            operatorInfo.outputPorts.head.id -> getOutputSchema(
+              operatorInfo.inputPorts.map(_.id).map(inputSchemas(_)).toArray
+            )
+          )
+        )
+      )
   }
 
-  def numWorkers(): Int = Constants.numWorkerPerNode
-
-  def dependency(): mutable.Map[Int, Int] = mutable.Map()
+  def parallelizable(): Boolean = false
 
   def asSource(): Boolean = false
 
   /**
     * This method is to be implemented to generate the actual Python source code
-    * based on operators predicates. It also has access to input and output schema
-    * information for reference or validation purposes.
+    * based on operators predicates.
     *
-    * @param operatorSchemaInfo the actual input and output schema information of
-    *                           this operator.
     * @return a String representation of the executable Python source code.
     */
-  def generatePythonCode(operatorSchemaInfo: OperatorSchemaInfo): String
+  def generatePythonCode(): String
 
 }

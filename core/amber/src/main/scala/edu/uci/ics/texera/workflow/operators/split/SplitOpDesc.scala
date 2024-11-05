@@ -1,41 +1,61 @@
 package edu.uci.ics.texera.workflow.operators.split
 
-import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription}
+import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.texera.workflow.common.metadata.{
-  InputPort,
-  OperatorGroupConstants,
-  OperatorInfo,
-  OutputPort
-}
-import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
-import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
+import edu.uci.ics.amber.engine.common.model.{PhysicalOp, SchemaPropagationFunc}
+import edu.uci.ics.amber.engine.common.model.tuple.Schema
+import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
+import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
+import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
+import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 
 import scala.util.Random
 
-class SplitOpDesc extends OperatorDescriptor {
+class SplitOpDesc extends LogicalOp {
 
   @JsonProperty(value = "training percentage", required = false, defaultValue = "80")
   @JsonPropertyDescription("percentage of training split data (default 80%)")
   var k: Int = 80
 
-  // Store random seeds for each executor to satisfy the fault tolerance requirement.
-  @JsonIgnore
-  val seeds: Array[Int] = Array.fill(Constants.currentWorkerNum)(Random.nextInt)
+  @JsonProperty(value = "random seed", required = false)
+  @JsonPropertyDescription("Random seed for split")
+  var seed: Int = Random.nextInt()
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
-    OpExecConfig.oneToOneLayer(operatorIdentifier, i => new SplitOpExec(i._1, this))
+  override def getPhysicalOp(
+      workflowId: WorkflowIdentity,
+      executionId: ExecutionIdentity
+  ): PhysicalOp = {
+    PhysicalOp
+      .oneToOnePhysicalOp(
+        workflowId,
+        executionId,
+        operatorIdentifier,
+        OpExecInitInfo((_, _) => new SplitOpExec(k, seed))
+      )
+      .withInputPorts(operatorInfo.inputPorts)
+      .withOutputPorts(operatorInfo.outputPorts)
+      .withParallelizable(false)
+      .withPropagateSchema(
+        SchemaPropagationFunc(inputSchemas =>
+          operatorInfo.outputPorts
+            .map(_.id)
+            .map(id => id -> inputSchemas(operatorInfo.inputPorts.head.id))
+            .toMap
+        )
+      )
   }
 
   override def operatorInfo: OperatorInfo = {
     OperatorInfo(
       userFriendlyName = "Training/Testing Split",
       operatorDescription = "Split training and testing data to two different ports",
-      operatorGroupName = OperatorGroupConstants.UTILITY_GROUP,
+      operatorGroupName = OperatorGroupConstants.MACHINE_LEARNING_GROUP,
       inputPorts = List(InputPort()),
-      outputPorts = List(OutputPort("training"), OutputPort("testing")),
+      outputPorts = List(
+        OutputPort(PortIdentity(), displayName = "training"),
+        OutputPort(PortIdentity(1), displayName = "testing")
+      ),
       dynamicInputPorts = true,
       dynamicOutputPorts = true
     )

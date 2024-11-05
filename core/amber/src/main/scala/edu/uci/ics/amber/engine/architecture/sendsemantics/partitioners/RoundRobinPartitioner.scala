@@ -1,16 +1,17 @@
 package edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners
 
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.RoundRobinPartitioning
-import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.model.tuple.Tuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 case class RoundRobinPartitioner(partitioning: RoundRobinPartitioning) extends Partitioner {
-  var roundRobinIndex = 0
+  private var roundRobinIndex = 0
+  private val receivers = partitioning.channels.map(_.toWorkerId).distinct
 
-  override def getBucketIndex(tuple: ITuple): Iterator[Int] = {
-    roundRobinIndex = (roundRobinIndex + 1) % partitioning.receivers.length
+  override def getBucketIndex(tuple: Tuple): Iterator[Int] = {
+    roundRobinIndex = (roundRobinIndex + 1) % receivers.length
     Iterator(roundRobinIndex)
   }
 
-  override def allReceivers: Seq[ActorVirtualIdentity] = partitioning.receivers
+  override def allReceivers: Seq[ActorVirtualIdentity] = receivers
 }

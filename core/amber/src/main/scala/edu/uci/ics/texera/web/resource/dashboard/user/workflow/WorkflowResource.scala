@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.workflow
 
+import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
@@ -11,24 +12,24 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
   WorkflowUserAccessDao
 }
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
+import edu.uci.ics.texera.web.resource.dashboard.hub.workflow.HubWorkflowResource.recordUserActivity
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
 import io.dropwizard.auth.Auth
-import org.jooq.{Condition, TableField}
+import org.jooq.Condition
 import org.jooq.impl.DSL.{groupConcatDistinct, noCondition}
 import org.jooq.types.UInteger
 
 import java.sql.Timestamp
-import java.text.{ParseException, SimpleDateFormat}
 import java.util
-import java.util.concurrent.TimeUnit
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs._
 import javax.ws.rs.core.MediaType
-import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.control.NonFatal
+import javax.servlet.http.HttpServletRequest
+import javax.ws.rs.core.Context
 
 /**
   * This file handles various request related to saved-workflows.
@@ -46,6 +47,14 @@ object WorkflowResource {
     context.configuration()
   )
   final private lazy val workflowOfProjectDao = new WorkflowOfProjectDao(context.configuration)
+
+  def getWorkflowName(wid: UInteger): String = {
+    val workflow = workflowDao.fetchOneByWid(wid)
+    if (workflow == null) {
+      throw new NotFoundException(s"Workflow with id $wid not found")
+    }
+    workflow.getName
+  }
 
   private def insertWorkflow(workflow: Workflow, user: User): Unit = {
     workflowDao.insert(workflow)
@@ -80,7 +89,8 @@ object WorkflowResource {
       accessLevel: String,
       ownerName: String,
       workflow: Workflow,
-      projectIDs: List[UInteger]
+      projectIDs: List[UInteger],
+      ownerId: UInteger
   )
 
   case class WorkflowWithPrivilege(
@@ -90,176 +100,39 @@ object WorkflowResource {
       content: String,
       creationTime: Timestamp,
       lastModifiedTime: Timestamp,
+      isPublished: Byte,
       readonly: Boolean
   )
 
   case class WorkflowIDs(wids: List[UInteger], pid: Option[UInteger])
 
-  def createWorkflowFilterCondition(
-      creationStartDate: String,
-      creationEndDate: String,
-      modifiedStartDate: String,
-      modifiedEndDate: String,
-      workflowIDs: java.util.List[UInteger],
-      owners: java.util.List[String],
-      operators: java.util.List[String],
-      projectIds: java.util.List[UInteger]
-  ): Condition = {
-    noCondition()
-      // Apply creation_time date filter
-      .and(getDateFilter(creationStartDate, creationEndDate, WORKFLOW.CREATION_TIME))
-      // Apply lastModified_time date filter
-      .and(getDateFilter(modifiedStartDate, modifiedEndDate, WORKFLOW.LAST_MODIFIED_TIME))
-      // Apply workflowID filter
-      .and(getWorkflowIdFilter(workflowIDs))
-      // Apply owner filter
-      .and(getOwnerFilter(owners))
-      // Apply operators filter
-      .and(getOperatorsFilter(operators))
-      // Apply projectId filter
-      .and(getProjectFilter(projectIds, WORKFLOW_OF_PROJECT.PID))
-  }
+  private def updateWorkflowField(
+      workflow: Workflow,
+      sessionUser: SessionUser,
+      updateFunction: Workflow => Unit
+  ): Unit = {
+    val wid = workflow.getWid
+    val user = sessionUser.getUser
 
-  /**
-    * Helper function to retrieve the owner filter.
-    * Applies a filter based on the specified owner emails.
-    *
-    * @param owners The list of owner emails to filter by.
-    * @return The owner filter.
-    */
-  def getOwnerFilter(owners: java.util.List[String]): Condition = {
-    var ownerFilter: Condition = noCondition()
-    val ownerSet: mutable.Set[String] = mutable.Set()
-    if (owners != null && !owners.isEmpty) {
-      for (owner <- owners) {
-        if (!ownerSet(owner)) {
-          ownerSet += owner
-          ownerFilter = ownerFilter.or(USER.EMAIL.eq(owner))
-        }
-      }
+    if (
+      workflowOfUserExists(wid, user.getUid) || WorkflowAccessResource.hasWriteAccess(
+        wid,
+        user.getUid
+      )
+    ) {
+      val userWorkflow = workflowDao.fetchOneByWid(wid)
+      updateFunction(userWorkflow)
+      workflowDao.update(userWorkflow)
+    } else {
+      throw new ForbiddenException("No sufficient access privilege.")
     }
-    ownerFilter
-  }
-
-  /**
-    * Helper function to retrieve the project filter.
-    * Applies a filter based on the specified project IDs.
-    *
-    * @param projectIds The list of owner names to filter by.
-    * @param fieldToFilterOn the field for applying the project ids.
-    * @return The projectId filter.
-    */
-  def getProjectFilter(
-      projectIds: java.util.List[UInteger],
-      fieldToFilterOn: TableField[_, UInteger]
-  ): Condition = {
-    var projectIdFilter: Condition = noCondition()
-    val projectIdSet: mutable.Set[UInteger] = mutable.Set()
-    if (projectIds != null && projectIds.nonEmpty) {
-      for (projectId <- projectIds) {
-        if (!projectIdSet(projectId)) {
-          projectIdSet += projectId
-          projectIdFilter = projectIdFilter.or(fieldToFilterOn.eq(projectId))
-        }
-      }
-    }
-    projectIdFilter
-  }
-
-  /**
-    * Helper function to retrieve the workflowID filter.
-    * Applies a filter based on the specified workflow IDs.
-    *
-    * @param workflowIDs The list of workflow IDs to filter by.
-    * @return The workflowID filter.
-    */
-  def getWorkflowIdFilter(workflowIDs: java.util.List[UInteger]): Condition = {
-    var workflowIdFilter: Condition = noCondition()
-    val workflowIdSet: mutable.Set[UInteger] = mutable.Set()
-    if (workflowIDs != null && !workflowIDs.isEmpty) {
-      for (workflowID <- workflowIDs) {
-        if (!workflowIdSet(workflowID)) {
-          workflowIdSet += workflowID
-          workflowIdFilter = workflowIdFilter.or(WORKFLOW.WID.eq(workflowID))
-
-        }
-      }
-    }
-    workflowIdFilter
-  }
-
-  /**
-    * Returns a date filter condition for the specified date range and date type.
-    *
-    * @param startDate A string representing the start date of the filter range in "yyyy-MM-dd" format.
-    *                  If empty, the default value "1970-01-01" will be used.
-    * @param endDate   A string representing the end date of the filter range in "yyyy-MM-dd" format.
-    *                  If empty, the default value "9999-12-31" will be used.
-    * @param fieldToFilterOn the field for applying the start and end dates.
-    * @return A Condition object that can be used to filter workflows based on the date range and type.
-    */
-  def getDateFilter(
-      startDate: String,
-      endDate: String,
-      fieldToFilterOn: TableField[_, Timestamp]
-  ): Condition = {
-    var dateFilter: Condition = noCondition()
-
-    if (startDate.nonEmpty || endDate.nonEmpty) {
-      val start = if (startDate.nonEmpty) startDate else "1970-01-01"
-      val end = if (endDate.nonEmpty) endDate else "9999-12-31"
-      val dateFormat = new SimpleDateFormat("yyyy-MM-dd")
-      try {
-        val startTimestamp = new Timestamp(dateFormat.parse(start).getTime)
-        val endTimestamp =
-          if (end == "9999-12-31")
-            new Timestamp(
-              dateFormat.parse(end).getTime
-            )
-          else
-            new Timestamp(
-              dateFormat.parse(end).getTime + TimeUnit.DAYS.toMillis(1) - 1
-            )
-        dateFilter = fieldToFilterOn.between(startTimestamp, endTimestamp)
-      } catch {
-        case ex: ParseException =>
-          println("Invalid date format. Please follow this date format: yyyy-MM-dd")
-          throw ex
-      }
-    }
-    dateFilter
-  }
-
-  /**
-    * Helper function to retrieve the operators filter.
-    * Applies a filter based on the specified operators.
-    *
-    * @param operators The list of operators to filter by.
-    * @return The operators filter.
-    */
-  def getOperatorsFilter(operators: java.util.List[String]): Condition = {
-    var operatorsFilter: Condition = noCondition()
-    if (operators != null && operators.nonEmpty) {
-      for (operator <- operators) {
-        val quotes = "\""
-        val searchKey =
-          "%" + quotes + "operatorType" + quotes + ":" + quotes + s"$operator" + quotes + "%"
-        operatorsFilter = operatorsFilter.or(
-          WORKFLOW.CONTENT
-            .likeIgnoreCase(
-              searchKey
-            )
-        )
-      }
-    }
-    operatorsFilter
   }
 
 }
 @Produces(Array(MediaType.APPLICATION_JSON))
 @RolesAllowed(Array("REGULAR", "ADMIN"))
 @Path("/workflow")
-class WorkflowResource {
+class WorkflowResource extends LazyLogging {
 
   /**
     * This method returns all workflow IDs that the user has access to
@@ -310,7 +183,7 @@ class WorkflowResource {
     val user = sessionUser.getUser
     val quotes = "\""
     val operatorArray =
-      operator.replaceAllLiterally(" ", "").stripPrefix("[").stripSuffix("]").split(',')
+      operator.replace(" ", "").stripPrefix("[").stripSuffix("]").split(',')
     var orCondition: Condition = noCondition()
     for (i <- operatorArray.indices) {
       val operatorName = operatorArray(i)
@@ -343,6 +216,7 @@ class WorkflowResource {
       .map(workflowRecord => {
         workflowRecord.into(WORKFLOW).getWid.intValue().toString
       })
+      .asScala
       .toList
   }
 
@@ -394,9 +268,11 @@ class WorkflowResource {
           workflowRecord.into(WORKFLOW).into(classOf[Workflow]),
           if (workflowRecord.component9() == null) List[UInteger]()
           else
-            workflowRecord.component9().split(',').map(number => UInteger.valueOf(number)).toList
+            workflowRecord.component9().split(',').map(number => UInteger.valueOf(number)).toList,
+          workflowRecord.into(WORKFLOW_OF_USER).getUid
         )
       )
+      .asScala
       .toList
   }
 
@@ -423,6 +299,7 @@ class WorkflowResource {
         workflow.getContent,
         workflow.getCreationTime,
         workflow.getLastModifiedTime,
+        workflow.getIsPublished,
         !WorkflowAccessResource.hasWriteAccess(wid, user.getUid)
       )
     } else {
@@ -444,18 +321,20 @@ class WorkflowResource {
   @Path("/persist")
   def persistWorkflow(workflow: Workflow, @Auth sessionUser: SessionUser): Workflow = {
     val user = sessionUser.getUser
+    if (user == edu.uci.ics.texera.web.auth.GuestAuthFilter.GUEST) {
+      throw new ForbiddenException("Guest user does not have access to db.")
+    }
 
     if (workflowOfUserExists(workflow.getWid, user.getUid)) {
-      WorkflowVersionResource.insertVersion(workflow, insertNewFlag = false)
-      // current user reading
+      WorkflowVersionResource.insertVersion(workflow, insertingNewWorkflow = false)
       workflowDao.update(workflow)
     } else {
       if (!WorkflowAccessResource.hasReadAccess(workflow.getWid, user.getUid)) {
-        // not owner and not access record --> new record
+        // not owner and no access record --> new record
         insertWorkflow(workflow, user)
-        WorkflowVersionResource.insertVersion(workflow, insertNewFlag = true)
+        WorkflowVersionResource.insertVersion(workflow, insertingNewWorkflow = true)
       } else if (WorkflowAccessResource.hasWriteAccess(workflow.getWid, user.getUid)) {
-        WorkflowVersionResource.insertVersion(workflow, insertNewFlag = false)
+        WorkflowVersionResource.insertVersion(workflow, insertingNewWorkflow = false)
         // not owner but has write access
         workflowDao.update(workflow)
       } else {
@@ -463,8 +342,9 @@ class WorkflowResource {
         throw new ForbiddenException("No sufficient access privilege.")
       }
     }
-    workflowDao.fetchOneByWid(workflow.getWid)
 
+    val wid = workflow.getWid
+    workflowDao.fetchOneByWid(wid)
   }
 
   /**
@@ -490,10 +370,10 @@ class WorkflowResource {
     }
 
     val resultWorkflows: ListBuffer[DashboardWorkflow] = ListBuffer()
-    val addToProject = workflowIDs.pid.nonEmpty;
+    val addToProject = workflowIDs.pid.nonEmpty
     // then start a transaction and do the duplication
     try {
-      context.transaction { _ =>
+      context.transaction { txConfig =>
         for (wid <- workflowIDs.wids) {
           val workflow: Workflow = workflowDao.fetchOneByWid(wid)
           workflow.getContent
@@ -505,7 +385,8 @@ class WorkflowResource {
               null,
               workflow.getContent,
               null,
-              null
+              null,
+              0.toByte
             ),
             sessionUser
           )
@@ -522,7 +403,6 @@ class WorkflowResource {
               throw new BadRequestException("Workflow already exists in the project")
             }
           }
-
           resultWorkflows += newWorkflow
         }
       }
@@ -532,6 +412,49 @@ class WorkflowResource {
         throw new WebApplicationException(exception)
     }
     resultWorkflows.toList
+  }
+
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Path("/clone/{wid}")
+  def cloneWorkflow(
+      @PathParam("wid") wid: UInteger,
+      @Auth sessionUser: SessionUser,
+      @Context request: HttpServletRequest
+  ): UInteger = {
+    val workflow: Workflow = workflowDao.fetchOneByWid(wid)
+    val newWorkflow: DashboardWorkflow = createWorkflow(
+      new Workflow(
+        workflow.getName + "_clone",
+        workflow.getDescription,
+        null,
+        workflow.getContent,
+        null,
+        null,
+        0.toByte
+      ),
+      sessionUser
+    )
+
+    recordUserActivity(request, sessionUser.getUid, wid, "clone")
+
+    val existingCloneRecord = context
+      .selectFrom(WORKFLOW_USER_CLONES)
+      .where(WORKFLOW_USER_CLONES.UID.eq(sessionUser.getUid))
+      .and(WORKFLOW_USER_CLONES.WID.eq(wid))
+      .fetchOne()
+
+    if (existingCloneRecord == null) {
+      context
+        .insertInto(WORKFLOW_USER_CLONES)
+        .set(WORKFLOW_USER_CLONES.UID, sessionUser.getUid)
+        .set(WORKFLOW_USER_CLONES.WID, wid)
+        .execute()
+    }
+
+    //TODO: copy the environment as well
+    newWorkflow.workflow.getWid
   }
 
   /**
@@ -550,13 +473,14 @@ class WorkflowResource {
       throw new BadRequestException("Cannot create a new workflow with a provided id.")
     } else {
       insertWorkflow(workflow, user)
-      WorkflowVersionResource.insertVersion(workflow, insertNewFlag = true)
+      WorkflowVersionResource.insertVersion(workflow, insertingNewWorkflow = true)
       DashboardWorkflow(
         isOwner = true,
         WorkflowUserAccessPrivilege.WRITE.toString,
         user.getName,
         workflowDao.fetchOneByWid(workflow.getWid),
-        List[UInteger]()
+        List[UInteger](),
+        user.getUid
       )
     }
 
@@ -588,11 +512,6 @@ class WorkflowResource {
     }
   }
 
-  /**
-    * This method updates the name of a given workflow
-    *
-    * @return Response
-    */
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
@@ -601,150 +520,45 @@ class WorkflowResource {
       workflow: Workflow,
       @Auth sessionUser: SessionUser
   ): Unit = {
-    val wid = workflow.getWid
-    val name = workflow.getName
-    val user = sessionUser.getUser
-    if (!WorkflowAccessResource.hasWriteAccess(wid, user.getUid)) {
-      throw new ForbiddenException("No sufficient access privilege.")
-    } else if (!workflowOfUserExists(wid, user.getUid)) {
-      throw new BadRequestException("The workflow does not exist.")
-    } else {
-      val userWorkflow = workflowDao.fetchOneByWid(wid)
-      userWorkflow.setName(name)
-      workflowDao.update(userWorkflow)
-    }
+    updateWorkflowField(workflow, sessionUser, _.setName(workflow.getName))
   }
 
-  /**
-    * This method performs a full-text search in the content column of the
-    * workflow table for workflows that match the specified keywords.
-    *
-    * This method utilizes MySQL Boolean Full-Text Searches
-    * reference: https://dev.mysql.com/doc/refman/8.0/en/fulltext-boolean.html
-    *
-    * @param sessionUser The authenticated user.
-    * @param keywords    The search keywords.
-    * @return A list of workflows that match the search term.
-    */
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Path("/update/description")
+  def updateWorkflowDescription(
+      workflow: Workflow,
+      @Auth sessionUser: SessionUser
+  ): Unit = {
+    updateWorkflowField(workflow, sessionUser, _.setDescription(workflow.getDescription))
+  }
+
+  @PUT
+  @Path("/public/{wid}")
+  def makePublic(@PathParam("wid") wid: UInteger, @Auth user: SessionUser): Unit = {
+    println(wid + " is public now")
+    val workflow: Workflow = workflowDao.fetchOneByWid(wid)
+    workflow.setIsPublished(1.toByte)
+    workflowDao.update(workflow)
+  }
+
+  @PUT
+  @Path("/private/{wid}")
+  def makePrivate(@PathParam("wid") wid: UInteger): Unit = {
+    println(wid + " is private now")
+    val workflow: Workflow = workflowDao.fetchOneByWid(wid)
+    workflow.setIsPublished(0.toByte)
+    workflowDao.update(workflow)
+  }
+
   @GET
-  @Path("/search")
-  def searchWorkflows(
-      @Auth sessionUser: SessionUser,
-      @QueryParam("query") keywords: java.util.List[String],
-      @QueryParam("createDateStart") @DefaultValue("") creationStartDate: String = "",
-      @QueryParam("createDateEnd") @DefaultValue("") creationEndDate: String = "",
-      @QueryParam("modifiedDateStart") @DefaultValue("") modifiedStartDate: String = "",
-      @QueryParam("modifiedDateEnd") @DefaultValue("") modifiedEndDate: String = "",
-      @QueryParam("owner") owners: java.util.List[String] = new java.util.ArrayList[String](),
-      @QueryParam("id") workflowIDs: java.util.List[UInteger] = new java.util.ArrayList[UInteger](),
-      @QueryParam("operator") operators: java.util.List[String] = new java.util.ArrayList[String](),
-      @QueryParam("projectId") projectIds: java.util.List[UInteger] =
-        new java.util.ArrayList[UInteger]()
-  ): List[DashboardWorkflow] = {
-    val user = sessionUser.getUser
-
-    // make sure keywords don't contain "+-()<>~*\"", these are reserved for SQL full-text boolean operator
-    val splitKeywords = keywords.flatMap(word => word.split("[+\\-()<>~*@\"]+"))
-    var matchQuery: Condition = noCondition()
-    for (key: String <- splitKeywords) {
-      if (key != "") {
-        val words = key.split("\\s+")
-
-        def getSearchQuery(subStringSearchEnabled: Boolean): String =
-          "(MATCH(texera_db.workflow.name, texera_db.workflow.description, texera_db.workflow.content) AGAINST(+{0}" +
-            (if (subStringSearchEnabled) "'*'" else "") + " IN BOOLEAN mode) OR " +
-            "MATCH(texera_db.user.name) AGAINST (+{0}" +
-            (if (subStringSearchEnabled) "'*'" else "") + " IN BOOLEAN mode) " +
-            "OR MATCH(texera_db.project.name, texera_db.project.description) AGAINST (+{0}" +
-            (if (subStringSearchEnabled) "'*'" else "") + " IN BOOLEAN mode))"
-
-        if (words.length == 1) {
-          // Use "*" to enable sub-string search.
-          matchQuery = matchQuery.and(getSearchQuery(true), key)
-        } else {
-          // When the search query contains multiple words, sub-string search is not supported by MySQL.
-          matchQuery = matchQuery.and(getSearchQuery(false), '"' + key + '"')
-        }
-      }
-    }
-
-    // combine all filters with AND
-    val optionalFilters: Condition = createWorkflowFilterCondition(
-      creationStartDate,
-      creationEndDate,
-      modifiedStartDate,
-      modifiedEndDate,
-      workflowIDs,
-      owners,
-      operators,
-      projectIds
-    )
-
-    try {
-      val workflowEntries = context
-        .select(
-          WORKFLOW.WID,
-          WORKFLOW.NAME,
-          WORKFLOW.DESCRIPTION,
-          WORKFLOW.CREATION_TIME,
-          WORKFLOW.LAST_MODIFIED_TIME,
-          WORKFLOW_USER_ACCESS.PRIVILEGE,
-          WORKFLOW_OF_USER.UID,
-          USER.NAME,
-          groupConcatDistinct(PROJECT.PID).as("projects")
-        )
-        .from(WORKFLOW)
-        .leftJoin(WORKFLOW_USER_ACCESS)
-        .on(WORKFLOW_USER_ACCESS.WID.eq(WORKFLOW.WID))
-        .leftJoin(WORKFLOW_OF_USER)
-        .on(WORKFLOW_OF_USER.WID.eq(WORKFLOW.WID))
-        .join(USER)
-        .on(USER.UID.eq(WORKFLOW_OF_USER.UID))
-        .leftJoin(WORKFLOW_OF_PROJECT)
-        .on(WORKFLOW.WID.eq(WORKFLOW_OF_PROJECT.WID))
-        .leftJoin(PROJECT)
-        .on(PROJECT.PID.eq(WORKFLOW_OF_PROJECT.PID))
-        .where(matchQuery)
-        .and(optionalFilters)
-        .and(WORKFLOW_USER_ACCESS.UID.eq(user.getUid))
-        .groupBy(
-          WORKFLOW.WID,
-          WORKFLOW.NAME,
-          WORKFLOW.DESCRIPTION,
-          WORKFLOW.CREATION_TIME,
-          WORKFLOW.LAST_MODIFIED_TIME,
-          WORKFLOW_USER_ACCESS.PRIVILEGE,
-          WORKFLOW_OF_USER.UID,
-          USER.NAME
-        )
-        .fetch()
-
-      workflowEntries
-        .map(workflowRecord =>
-          DashboardWorkflow(
-            workflowRecord.into(WORKFLOW_OF_USER).getUid.eq(user.getUid),
-            workflowRecord
-              .into(WORKFLOW_USER_ACCESS)
-              .into(classOf[WorkflowUserAccess])
-              .getPrivilege
-              .toString,
-            workflowRecord.into(USER).getName,
-            workflowRecord.into(WORKFLOW).into(classOf[Workflow]),
-            if (workflowRecord.component9() == null) List[UInteger]()
-            else
-              workflowRecord.component9().split(',').map(number => UInteger.valueOf(number)).toList
-          )
-        )
-        .toList
-
-    } catch {
-      case e: Exception =>
-        println(
-          "Exception: Fulltext index is missing, have you run the script at core/scripts/sql/update/fulltext_indexes.sql?"
-        )
-        // return a empty list
-        List[DashboardWorkflow]()
-    }
+  @Path("/type/{wid}")
+  def getWorkflowType(@PathParam("wid") wid: UInteger): String = {
+    val workflow: Workflow = workflowDao.fetchOneByWid(wid)
+    if (workflow.getIsPublished() == 1.toByte)
+      "Public"
+    else
+      "Private"
   }
-
 }

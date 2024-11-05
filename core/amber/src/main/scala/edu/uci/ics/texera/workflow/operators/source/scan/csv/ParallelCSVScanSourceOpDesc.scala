@@ -4,19 +4,16 @@ import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.github.tototoshi.csv.{CSVReader, DefaultCSVFormat}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeTypeUtils.inferSchemaFromRows
-import edu.uci.ics.texera.workflow.common.tuple.schema.{
-  Attribute,
-  AttributeType,
-  OperatorSchemaInfo,
-  Schema
-}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
+import edu.uci.ics.amber.engine.common.model.{PhysicalOp, SchemaPropagationFunc}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
+import edu.uci.ics.amber.engine.common.model.tuple.AttributeTypeUtils.inferSchemaFromRows
+import edu.uci.ics.amber.engine.common.model.tuple.{Attribute, AttributeType, Schema}
+import edu.uci.ics.amber.engine.common.storage.DocumentFactory
 import edu.uci.ics.texera.workflow.operators.source.scan.ScanSourceOpDesc
 
-import java.io.{File, IOException}
-import scala.jdk.CollectionConverters.asJavaIterableConverter
+import java.io.IOException
+import java.net.URI
 
 class ParallelCSVScanSourceOpDesc extends ScanSourceOpDesc {
 
@@ -34,37 +31,46 @@ class ParallelCSVScanSourceOpDesc extends ScanSourceOpDesc {
   fileTypeName = Option("CSV")
 
   @throws[IOException]
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
+  override def getPhysicalOp(
+      workflowId: WorkflowIdentity,
+      executionId: ExecutionIdentity
+  ): PhysicalOp = {
     // fill in default values
     if (customDelimiter.get.isEmpty)
       customDelimiter = Option(",")
 
-    filePath match {
-      case Some(path) =>
-        val totalBytes: Long = new File(path).length()
-        val numWorkers: Int = Constants.currentWorkerNum
+    // here, the stream requires to be seekable, so datasetFileDesc creates a temp file here
+    // TODO: consider a better way
+    val file = DocumentFactory.newReadonlyDocument(new URI(fileUri.get)).asFile()
+    val totalBytes: Long = file.length()
 
-        OpExecConfig.oneToOneLayer(
-          operatorIdentifier,
-          p => {
-            val i = p._1
-            // TODO: add support for limit
-            // TODO: add support for offset
-            val startOffset: Long = totalBytes / numWorkers * i
-            val endOffset: Long =
-              if (i != numWorkers - 1) totalBytes / numWorkers * (i + 1) else totalBytes
-            new ParallelCSVScanSourceOpExec(
-              this,
-              startOffset,
-              endOffset
-            )
-          }
-        )
-
-      case None =>
-        throw new RuntimeException("File path is not provided.")
-    }
-
+    PhysicalOp
+      .sourcePhysicalOp(
+        workflowId,
+        executionId,
+        operatorIdentifier,
+        OpExecInitInfo((idx, workerCount) => {
+          // TODO: add support for limit
+          // TODO: add support for offset
+          val startOffset: Long = totalBytes / workerCount * idx
+          val endOffset: Long =
+            if (idx != workerCount - 1) totalBytes / workerCount * (idx + 1) else totalBytes
+          new ParallelCSVScanSourceOpExec(
+            file,
+            customDelimiter,
+            hasHeader,
+            startOffset,
+            endOffset,
+            schemaFunc = () => sourceSchema()
+          )
+        })
+      )
+      .withInputPorts(operatorInfo.inputPorts)
+      .withOutputPorts(operatorInfo.outputPorts)
+      .withParallelizable(true)
+      .withPropagateSchema(
+        SchemaPropagationFunc(_ => Map(operatorInfo.outputPorts.head.id -> inferSchema()))
+      )
   }
 
   /**
@@ -73,22 +79,20 @@ class ParallelCSVScanSourceOpDesc extends ScanSourceOpDesc {
     */
   @Override
   def inferSchema(): Schema = {
-    if (customDelimiter.isEmpty) {
+    if (customDelimiter.isEmpty || fileUri.isEmpty) {
       return null
     }
-    if (filePath.isEmpty) {
-      return null
-    }
+    val file = DocumentFactory.newReadonlyDocument(new URI(fileUri.get)).asFile()
     implicit object CustomFormat extends DefaultCSVFormat {
       override val delimiter: Char = customDelimiter.get.charAt(0)
 
     }
-    var reader: CSVReader = CSVReader.open(filePath.get)(CustomFormat)
+    var reader: CSVReader = CSVReader.open(file)(CustomFormat)
     val firstRow: Array[String] = reader.iterator.next().toArray
     reader.close()
 
     // reopen the file to read from the beginning
-    reader = CSVReader.open(filePath.get)(CustomFormat)
+    reader = CSVReader.open(file.toPath.toString)(CustomFormat)
     if (hasHeader)
       reader.readNext()
 
@@ -101,7 +105,8 @@ class ParallelCSVScanSourceOpDesc extends ScanSourceOpDesc {
     reader.close()
 
     // build schema based on inferred AttributeTypes
-    Schema.newBuilder
+    Schema
+      .builder()
       .add(
         firstRow.indices
           .map((i: Int) =>
@@ -110,9 +115,8 @@ class ParallelCSVScanSourceOpDesc extends ScanSourceOpDesc {
               attributeTypeList.apply(i)
             )
           )
-          .asJava
       )
-      .build
+      .build()
   }
 
 }

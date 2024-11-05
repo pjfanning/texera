@@ -3,16 +3,14 @@ package edu.uci.ics.texera.workflow.operators.sortPartitions
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
+import edu.uci.ics.amber.engine.common.model.PhysicalOp
+import edu.uci.ics.amber.engine.common.model.tuple.Schema
+import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
+import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
-import edu.uci.ics.texera.workflow.common.metadata.{
-  InputPort,
-  OperatorGroupConstants,
-  OperatorInfo,
-  OutputPort
-}
-import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
-import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
+import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
+import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.workflow.RangePartition
 
 @JsonSchemaInject(json = """
@@ -24,7 +22,7 @@ import edu.uci.ics.texera.workflow.common.workflow.RangePartition
   }
 }
 """)
-class SortPartitionsOpDesc extends OperatorDescriptor {
+class SortPartitionsOpDesc extends LogicalOp {
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Attribute")
@@ -42,42 +40,39 @@ class SortPartitionsOpDesc extends OperatorDescriptor {
   @JsonPropertyDescription("Maximum value of the domain of the attribute.")
   var domainMax: Long = _
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
-    val partitionRequirement = List(
-      Option(
-        RangePartition(
-          List(operatorSchemaInfo.inputSchemas(0).getIndex(sortAttributeName)),
-          domainMin,
-          domainMax
+  override def getPhysicalOp(
+      workflowId: WorkflowIdentity,
+      executionId: ExecutionIdentity
+  ): PhysicalOp =
+    PhysicalOp
+      .oneToOnePhysicalOp(
+        workflowId,
+        executionId,
+        operatorIdentifier,
+        OpExecInitInfo(opExecFunc =
+          (idx, workerCount) =>
+            new SortPartitionOpExec(
+              sortAttributeName,
+              idx,
+              domainMin,
+              domainMax,
+              workerCount
+            )
         )
       )
-    )
-
-    OpExecConfig
-      .oneToOneLayer(
-        operatorIdentifier,
-        p =>
-          new SortPartitionOpExec(
-            sortAttributeName,
-            operatorSchemaInfo,
-            p._1,
-            domainMin,
-            domainMax,
-            p._2.numWorkers
-          )
+      .withInputPorts(operatorInfo.inputPorts)
+      .withOutputPorts(operatorInfo.outputPorts)
+      .withPartitionRequirement(
+        List(Option(RangePartition(List(sortAttributeName), domainMin, domainMax)))
       )
-      .copy(
-        partitionRequirement = partitionRequirement
-      )
-  }
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
       "Sort Partitions",
       "Sort Partitions",
-      OperatorGroupConstants.UTILITY_GROUP,
-      inputPorts = List(InputPort("")),
-      outputPorts = List(OutputPort())
+      OperatorGroupConstants.SORT_GROUP,
+      inputPorts = List(InputPort()),
+      outputPorts = List(OutputPort(blocking = true))
     )
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {

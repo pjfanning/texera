@@ -1,46 +1,62 @@
 package edu.uci.ics.texera.workflow.operators.source.scan.csvOld
 
 import com.github.tototoshi.csv.{CSVReader, DefaultCSVFormat}
-import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorExecutor
-import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeTypeUtils, Schema}
+import edu.uci.ics.amber.engine.common.executor.SourceOperatorExecutor
+import edu.uci.ics.amber.engine.common.model.tuple.{
+  Attribute,
+  AttributeTypeUtils,
+  Schema,
+  TupleLike
+}
+import edu.uci.ics.amber.engine.common.storage.DocumentFactory
+import edu.uci.ics.texera.workflow.operators.source.scan.FileDecodingMethod
 
-import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
+import java.net.URI
+import scala.collection.compat.immutable.ArraySeq
 
-class CSVOldScanSourceOpExec private[csvOld] (val desc: CSVOldScanSourceOpDesc)
-    extends SourceOperatorExecutor {
-  val schema: Schema = desc.inferSchema()
+class CSVOldScanSourceOpExec private[csvOld] (
+    fileUri: String,
+    fileEncoding: FileDecodingMethod,
+    limit: Option[Int],
+    offset: Option[Int],
+    customDelimiter: Option[String],
+    hasHeader: Boolean,
+    schemaFunc: () => Schema
+) extends SourceOperatorExecutor {
+  var schema: Schema = _
   var reader: CSVReader = _
   var rows: Iterator[Seq[String]] = _
-  override def produceTexeraTuple(): Iterator[Tuple] = {
+  override def produceTuple(): Iterator[TupleLike] = {
 
     var tuples = rows
       .map(fields =>
         try {
-          val parsedFields: Array[Object] = AttributeTypeUtils.parseFields(
-            fields.toArray.asInstanceOf[Array[Object]],
+          val parsedFields: Array[Any] = AttributeTypeUtils.parseFields(
+            fields.toArray,
             schema.getAttributes
               .map((attr: Attribute) => attr.getType)
               .toArray
           )
-          Tuple.newBuilder(schema).addSequentially(parsedFields).build
+          TupleLike(ArraySeq.unsafeWrapArray(parsedFields): _*)
         } catch {
           case _: Throwable => null
         }
       )
       .filter(tuple => tuple != null)
 
-    if (desc.limit.isDefined) tuples = tuples.take(desc.limit.get)
+    if (limit.isDefined) tuples = tuples.take(limit.get)
     tuples
   }
 
   override def open(): Unit = {
+    schema = schemaFunc()
     implicit object CustomFormat extends DefaultCSVFormat {
-      override val delimiter: Char = desc.customDelimiter.get.charAt(0)
+      override val delimiter: Char = customDelimiter.get.charAt(0)
     }
-    reader = CSVReader.open(desc.filePath.get, desc.fileEncoding.getCharset.name())(CustomFormat)
+    val filePath = DocumentFactory.newReadonlyDocument(new URI(fileUri)).asFile().toPath
+    reader = CSVReader.open(filePath.toString, fileEncoding.getCharset.name())(CustomFormat)
     // skip line if this worker reads the start of a file, and the file has a header line
-    val startOffset = desc.offset.getOrElse(0) + (if (desc.hasHeader) 1 else 0)
+    val startOffset = offset.getOrElse(0) + (if (hasHeader) 1 else 0)
 
     rows = reader.iterator.drop(startOffset)
   }

@@ -1,9 +1,10 @@
 package edu.uci.ics.amber.engine.e2e
 
+import edu.uci.ics.texera.workflow.common.storage.FileResolver
 import edu.uci.ics.texera.workflow.operators.aggregate.{
+  AggregateOpDesc,
   AggregationFunction,
-  AggregationOperation,
-  SpecializedAggregateOpDesc
+  AggregationOperation
 }
 import edu.uci.ics.texera.workflow.operators.hashJoin.HashJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
@@ -12,7 +13,7 @@ import edu.uci.ics.texera.workflow.operators.source.scan.csv.CSVScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.json.JSONLScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.sql.asterixdb.AsterixDBSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.sql.mysql.MySQLSourceOpDesc
-import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOpDesc
+import edu.uci.ics.texera.workflow.operators.udf.python.PythonUDFOpDescV2
 
 object TestOperators {
 
@@ -48,13 +49,16 @@ object TestOperators {
     csvHeaderlessOp.fileName = Some(fileName)
     csvHeaderlessOp.customDelimiter = Some(",")
     csvHeaderlessOp.hasHeader = header
+    csvHeaderlessOp.setFileUri(FileResolver.resolve(fileName))
     csvHeaderlessOp
+
   }
 
   def getJSONLScanOpDesc(fileName: String, flatten: Boolean = false): JSONLScanSourceOpDesc = {
     val jsonlOp = new JSONLScanSourceOpDesc
     jsonlOp.fileName = Some(fileName)
     jsonlOp.flatten = flatten
+    jsonlOp.setFileUri(FileResolver.resolve(fileName))
     jsonlOp
   }
 
@@ -80,8 +84,8 @@ object TestOperators {
       attributeToAggregate: String,
       aggFunction: AggregationFunction,
       groupByAttributes: List[String]
-  ): SpecializedAggregateOpDesc = {
-    val aggOp = new SpecializedAggregateOpDesc()
+  ): AggregateOpDesc = {
+    val aggOp = new AggregateOpDesc()
     val aggFunc = new AggregationOperation()
     aggFunc.aggFunction = aggFunction
     aggFunc.attribute = attributeToAggregate
@@ -125,10 +129,17 @@ object TestOperators {
     new ProgressiveSinkOpDesc()
   }
 
-  def wordCloudOpDesc(textColumn: String, topN: Integer = null): WordCloudOpDesc = {
-    val wordCountOpDesc = new WordCloudOpDesc()
-    wordCountOpDesc.textColumn = textColumn
-    wordCountOpDesc.topN = topN
-    wordCountOpDesc
+  def pythonOpDesc(): PythonUDFOpDescV2 = {
+    val udf = new PythonUDFOpDescV2()
+    udf.workers = 1
+    udf.code = """
+        |from pytexera import *
+        |
+        |class ProcessTupleOperator(UDFOperatorV2):
+        |    @overrides
+        |    def process_tuple(self, tuple_: Tuple, port: int) -> Iterator[Optional[TupleLike]]:
+        |        yield tuple_
+        |""".stripMargin
+    udf
   }
 }

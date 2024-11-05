@@ -1,7 +1,7 @@
 <h1 align="center">Texera - Collaborative Data Analytics Using Workflows.</h1>
 
 <p align="center">
-  <img src="core/new-gui/src/assets/logos/full_logo_small.png" alt="texera-logo" width="192px" height="109px"/>
+  <img src="core/gui/src/assets/logos/full_logo_small.png" alt="texera-logo" width="192px" height="109px"/>
   <br>
   <i>Texera supports scalable computation and enables advanced AI/ML techniques.</i>
   <br>
@@ -18,6 +18,15 @@
   </h4>
   
 </p>
+</p>
+<p align="center">
+  <img alt="Static Badge" src="https://img.shields.io/badge/Users-332-blue">
+  <img alt="Static Badge" src="https://img.shields.io/badge/Projects-86-blue">
+  <img alt="Static Badge" src="https://img.shields.io/badge/Workflows-2,481-blue">
+  <img alt="Static Badge" src="https://img.shields.io/badge/Executions-51K-blue">
+  <img alt="Static Badge" src="https://img.shields.io/badge/Workflow_Versions-357K-blue">
+  <img alt="Static Badge" src="https://img.shields.io/badge/Deployments-7-blue">
+  <img alt="Static Badge" src="https://img.shields.io/badge/Largest_Deployment-100_nodes,_400_cores-green">
 </p>
 
 <!---
@@ -46,23 +55,27 @@ Texera is a system to support collaborative, ML-centric data analytics as a clou
 * Allow users to interact with the execution of a job;
 * Support huge volumes of data efficiently.
 
-## Sample Workflow
+## Workflow GUI
+The Texera interface supports real-time collaboration on data science projects, allowing seamless sharing of data and workflows with easy access to AI/ML techniques and efficient management of public and private resources. 
+The workflow in the use case shown below includes data cleaning, ML model training, and validation.
+![texera-screenshot](https://github.com/user-attachments/assets/4384b8f5-3a9a-4bbc-a804-1dadd156ebb3)
 
-The following is a workflow formulated using the Texera GUI in a Web browser, which consists of operators such as regex search, sentiment analysis, user-defined function (UDF) in Python, and visualization.
 
-![Sample Texera Workflow](https://user-images.githubusercontent.com/12926365/171459157-1792971d-a31f-49e7-ab98-6f3b9ead9f5b.png)
 
 ## Publications (Computer Science):
-* (8/2023) Building a Collaborative Data Analytics System: Opportunities and Challenges, Zuozhi Wang, Chen Li, in VLDB 2023 tutorial [PDF](https://www.vldb.org/pvldb/vol16/p3898-wang.pdf), [Slides](https://chenli.ics.uci.edu/files/vldb2023-texera-tutorial.pdf).
-* (8/2023) Udon: Efficient Debugging of User-Defined Functions in Big Data Systems with Line-by-Line Control, Yicong Huang, Zuozhi Wang, and Chen Li, to appear in SIGMOD 2024.
+* (8/2024) Pasta: A Cost-Based Optimizer for Generating Pipelining Schedules for Dataflow DAGs, Xiaozhen Liu, Yicong Huang, Xinyuan Lin, Avinash Kumar, Sadeem Alsudais, and Chen Li, to appear in SIGMOD 2025.
+* (7/2024) Texera: A System for Collaborative and Interactive Data Analytics Using Workflows, Zuozhi Wang, Yicong Huang, Shengquan Ni, Avinash Kumar, Sadeem Alsudais, Xiaozhen Liu, Xinyuan Lin, Yunyan Ding and Chen Li, to appear in VLDB 2024, Scalable Data Science track [PDF](https://www.vldb.org/pvldb/vol17/p3580-wang.pdf), [Slides](https://chenli.ics.uci.edu/files/vldb2024-texera-presentation.pdf).
+* (3/2024) Demonstration of Udon: Line-by-line Debugging of User-Defined Functions in Data Workflows, Yicong Huang, Zuozhi Wang, and Chen Li, in SIGMOD 2024, **Best Demo Runner Up Award🏆**, [PDF](https://dl.acm.org/doi/10.1145/3626246.3654756). 
+* (2/2024) Data Science Tasks Implemented with Scripts versus GUI-Based Workflows: The Good, the Bad, and the Ugly, Alexander K Taylor, Yicong Huang, Junheng Hao, Xinyuan Lin, Xiusi Chen, Wei Wang, and Chen Li, in DataPlat Workshop at ICDE 2024 [PDF](https://ieeexplore.ieee.org/abstract/document/10555112), [Slides](https://chenli.ics.uci.edu/files/icde2024-dataplat-workshop.pdf). 
+* (8/2023) Building a Collaborative Data Analytics System: Opportunities and Challenges, Zuozhi Wang, Chen Li, in Tutorial at VLDB 2023 [PDF](https://www.vldb.org/pvldb/vol16/p3898-wang.pdf), [Slides](https://chenli.ics.uci.edu/files/vldb2023-texera-tutorial.pdf).
+* (8/2023) Udon: Efficient Debugging of User-Defined Functions in Big Data Systems with Line-by-Line Control, Yicong Huang, Zuozhi Wang, and Chen Li, in SIGMOD 2024 [PDF](https://dl.acm.org/doi/10.1145/3626712), [Slides](https://chenli.ics.uci.edu/files/sigmod2024-udon-presentation.pdf).
 * (8/2023) Improving Iterative Analytics in GUI-Based Data-Processing Systems with Visualization,
   Version Control, and Result Reuse, Sadeem Alsudais, Ph.D. Thesis [PDF](https://sadeemsaleh.github.io/Sadeem_phd_thesis.pdf).
 * (7/2023) Using Texera to Characterize Climate Change Discussions on Twitter During Wildfires, Shengquan Ni, Yicong Huang, Jessie W. Y. Ko, Alexander Taylor, Xiusi Chen, Avinash Kumar, Sadeem Alsudais, Zuozhi Wang, Xiaozhen Liu, Wei Wang, Suellen Hopfer, and Chen Li, in Data Science Day at KDD 2023.
 * (7/2023) Raven: Accelerating Execution of Iterative Data Analytics by Reusing Results of Previous Equivalent Versions, Sadeem Alsudais, Avinash Kumar, and Chen Li, in HILDA Workshop at SIGMOD 2023 [PDF](https://dl.acm.org/doi/10.1145/3597465.3605219).
 * (6/2023) Texera: A System for Collaborative and Interactive Data Analytics Using Workflows, Zuozhi Wang, Ph.D. Thesis [PDF](https://zuozhiw.github.io/Zuozhi_Wang_UCI_PhD_Thesis.pdf).
-* (5/2023) Building a Collaborative Data Analytics System: Opportunities and Challenges, Zuozhi Wang and Chen Li, in Tutorial at VLDB 2023 [PDF](https://www.vldb.org/pvldb/vol16/p3898-wang.pdf).
 * (12/2022) Towards Interactive, Adaptive and Result-aware Big Data Analytics, Avinash Kumar, Ph.D. Thesis [PDF](https://arxiv.org/abs/2212.07096).
-* (9/2022) Fries: Fast and Consistent Runtime Reconfiguration in Dataflow Systems with Transactional Guarantees, Zuozhi Wang, Shengquan Ni, Avinash Kumar, and Chen Li, in VLDB 2023 [PDF](https://www.vldb.org/pvldb/vol16/p256-wang.pdf).
+* (9/2022) Fries: Fast and Consistent Runtime Reconfiguration in Dataflow Systems with Transactional Guarantees, Zuozhi Wang, Shengquan Ni, Avinash Kumar, and Chen Li, in VLDB 2023 [PDF](https://www.vldb.org/pvldb/vol16/p256-wang.pdf), [Slides](https://chenli.ics.uci.edu/files/vldb2023-fries.pdf).
 * (7/2022) Drove: Tracking Execution Results of Workflows on Large Datasets, Sadeem Alsudais, in the Ph.D. Workshop at VLDB 2022 [PDF](http://ceur-ws.org/Vol-3186/paper_10.pdf).
 * (6/2022) Demonstration of Accelerating Machine Learning Inference Queries with Correlative Proxy Models, Zhihui Yang, Yicong Huang, Zuozhi Wang, Feng Gao, Yao Lu, Chen Li, and X. Sean Wang, in VLDB 2022 [PDF](https://www.vldb.org/pvldb/vol15/p3734-yang.pdf).
 * (6/2022) Demonstration of Collaborative and Interactive Workflow-Based Data Analytics in Texera, Xiaozhen Liu, Zuozhi Wang, Shengquan Ni, Sadeem Alsudais, Yicong Huang, Avinash Kumar, and Chen Li, in VLDB 2022 [PDF](https://www.vldb.org/pvldb/vol15/p3738-liu.pdf), [Demo Video](https://youtu.be/2gfPUZNsoBs).
@@ -73,15 +86,23 @@ The following is a workflow formulated using the Texera GUI in a Web browser, wh
 
 
 ## Publications (Interdisciplinary):
-
-
+* (2/2025) DS4ALL: Teaching High-School Students Data Science and AI/ML Using the Texera Workflow Platform as a Service, Jiadong Bai, Xiaozhen Liu, Anthony Cuturrufo, Alexander Kundu Taylor, Jeehyun Hwang, Mingyu Derek Ma, Xinyuan Lin, Yanqiao Zhu, Yicong Huang, Yunyan Ding, Wei Wang and Chen Li, to appear in [Data Science Education K-12: Research to Practice Annual Conference 2025](https://web.cvent.com/event/d641bd9f-6c99-4cbc-951b-33b1ca05d4ed/summary), San Antonio, Texas.
+* (7/2024) Brain image data processing using collaborative data workflows on Texera, Yunyan Ding, Yicong Huang, Pan Gao, Andy Thai, Atchuth Naveen Chilaparasetti, M. Gopi, Xiangmin Xu, and Chen Li, in Frontiers Neural Circuits [PDF](https://doi.org/10.3389/fncir.2024.1398884).
+* (1/2024) Wording Matters: the Effect of Linguistic Characteristics and Political Ideology on Resharing of COVID-19 Vaccine Tweets, Judith Borghouts, Yicong Huang, Suellen Hopfer, Chen Li, and Gloria Mark, in TOCHI 2024 [PDF](https://dl.acm.org/doi/pdf/10.1145/3637876).
+* (1/2024) How the experience of California wildfires shape Twitter climate change framings, Jessie W. Y. Ko, Shengquan Ni, Alexander Taylor, Xiusi Chen, Yicong Huang, Avinash Kumar, Sadeem Alsudais, Zuozhi Wang, Xiaozhen Liu, Wei Wang, Chen Li, and Suellen Hopfer, in Climatic Change 2024 [PDF](https://link.springer.com/content/pdf/10.1007/s10584-023-03668-0.pdf).
+* (11/2023) The Marketing and Perceptions of Non-Tobacco Blunt Wraps on Twitter, Joshua U. Rhee, Yicong Huang, Aurash J. Soroosh, Sadeem Alsudais, Shengquan Ni, Avinash Kumar, Jacob Paredes, Chen Li, and David S. Timberlake, in Substance Use & Misuse 2023 [PDF](https://www.tandfonline.com/doi/epdf/10.1080/10826084.2023.2280572?needAccess=true).
 * (3/2023) Understanding underlying moral values and language use of COVID-19 vaccine attitudes on twitter, Judith Borghouts, Yicong Huang, Sydney Gibbs, Suellen Hopfer, Chen Li, and Gloria Mark, in PNAS Nexus 2023 [PDF](https://academic.oup.com/pnasnexus/article-pdf/2/3/pgad013/49435858/pgad013.pdf).
 * (10/2022) Public Opinions toward COVID-19 Vaccine Mandates: A Machine Learning-based Analysis of U.S. Tweets, Yawen Guo, Jun Zhu, Yicong Huang, Lu He, Changyang He, Chen Li, and Kai Zheng, in AMIA 2022 [PDF](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10148373/pdf/1066.pdf).
 * (9/2021) The Social Amplification and Attenuation of COVID-19 Risk Perception Shaping Mask Wearing Behavior: A Longitudinal Twitter Analysis, Suellen Hopfer, Emilia J. Fields, Yuwen Lu, Ganesh Ramakrishnan, Ted Grover, Quishi Bai, Yicong Huang, Chen Li, and Gloria Mark, in PLOS ONE 2021 [PDF](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0257428).
 * (4/2021) Why Do People Oppose Mask Wearing? A Comprehensive Analysis of US Tweets During the COVID-19 Pandemic, Lu He, Changyang He, Tera Leigh Reynolds, Qiushi Bai, Yicong Huang, Chen Li, Kai Zheng, and Yunan Chen, in JAMIA 2021 [PDF](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7989302/pdf/ocab047.pdf).
 
-## Videos
+## Education
 
+* [Data Science for All](https://ds4all.ics.uci.edu/) (an NSF-funded summer program to teach high-school students data science and AI/ML)
+* [ICS 80](https://canvas.eee.uci.edu/courses/63639/pages/syllabus) (a Spring 2024 course at UCI, teaching 42 undergraduates, most of whom are not computer science majors, to learn data science and AI/ML)
+
+## Videos
+* [dkNET Webinar "Texera: A Scalable Cloud Computing Platform for Sharing Data & Workflow-based Analysis" 04/26/2024](https://www.youtube.com/watch?v=B81iMFS5fPc)
 * [Texera demo in VLDB 2020](https://www.youtube.com/watch?v=SP-XiDADbw0)
 * [Amber engine presentation in VLDB 2020](https://www.youtube.com/watch?v=T5ShFRfHmgI)
 * See [Texera in action](https://www.youtube.com/watch?v=NXfynBUwdVg). 
@@ -99,6 +120,37 @@ To try our collaborative data analytics in _Demonstration of Collaborative and I
 
 ## Acknowledgements
 
-This project is supported by the <a href="http://www.nsf.gov">National Science Foundation</a> under the awards [III 1745673](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1745673), [III 2107150](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2107150), AWS Research Credits, and Google Cloud Platform Education Programs.
+This project is supported by the <a href="http://www.nsf.gov">National Science Foundation</a> under the awards [IIS-1745673](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1745673), [IIS-2107150](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2107150), AWS Research Credits, and Google Cloud Platform Education Programs.
 
-* <a href="http://www.yourkit.com"><img src="https://www.yourkit.com/images/yklogo.png" alt="Yourkit" height="30"/></a>  [Yourkit](https://www.yourkit.com/) has given an open source license to use their profiler in this project. 
+* <a href="https://www.niddk.nih.gov/"><img src="https://github.com/Texera/texera/assets/17627829/d279897a-3efb-41c1-b2d3-8fd20c800ad7" alt="NIH NIDDK" height="30"/></a> This project is supported by an <a href="https://reporter.nih.gov/project-details/10818244">NIH NIDDK</a> award.
+
+
+* <a href="http://www.yourkit.com"><img src="https://www.yourkit.com/images/yklogo.png" alt="Yourkit" height="30"/></a>  [Yourkit](https://www.yourkit.com/) has given an open source license to use their profiler in this project.
+
+## Citation
+Please cite Texera as 
+```
+
+@article{DBLP:journals/pvldb/WangHNKALLDL24,
+  author       = {Zuozhi Wang and
+                  Yicong Huang and
+                  Shengquan Ni and
+                  Avinash Kumar and
+                  Sadeem Alsudais and
+                  Xiaozhen Liu and
+                  Xinyuan Lin and
+                  Yunyan Ding and
+                  Chen Li},
+  title        = {Texera: {A} System for Collaborative and Interactive Data Analytics
+                  Using Workflows},
+  journal      = {Proc. {VLDB} Endow.},
+  volume       = {17},
+  number       = {11},
+  pages        = {3580--3588},
+  year         = {2024},
+  url          = {https://www.vldb.org/pvldb/vol17/p3580-wang.pdf},
+  timestamp    = {Thu, 19 Sep 2024 13:09:37 +0200},
+  biburl       = {https://dblp.org/rec/journals/pvldb/WangHNKALLDL24.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}
+```

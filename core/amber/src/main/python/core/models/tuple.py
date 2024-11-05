@@ -3,7 +3,6 @@ import struct
 import typing
 from collections import OrderedDict
 from copy import deepcopy
-from dataclasses import dataclass
 from typing import Any, List, Iterator, Callable
 
 from typing_extensions import Protocol, runtime_checkable
@@ -20,16 +19,9 @@ from .schema.schema import Schema
 
 @runtime_checkable
 class TupleLike(Protocol):
-    def __getitem__(self, item: typing.Union[str, int]) -> Field:
-        ...
+    def __getitem__(self, item: typing.Union[str, int]) -> Field: ...
 
-    def __setitem__(self, key: typing.Union[str, int], value: Field) -> None:
-        ...
-
-
-@dataclass
-class InputExhausted:
-    pass
+    def __setitem__(self, key: typing.Union[str, int], value: Field) -> None: ...
 
 
 class ArrowTableTupleProvider:
@@ -57,6 +49,9 @@ class ArrowTableTupleProvider:
         Provide the field accessor of the next tuple.
         If current chunk is exhausted, move to the first tuple of the next chunk.
         """
+        if self._table.num_columns == 0:
+            # empty table
+            raise StopIteration
         if self._current_idx >= len(self._table.column(0).chunks[self._current_chunk]):
             self._current_idx = 0
             self._current_chunk += 1
@@ -168,8 +163,6 @@ class Tuple:
         else:
             self._field_data = OrderedDict(tuple_like) if tuple_like else OrderedDict()
         self._schema: typing.Optional[Schema] = schema
-        if self._schema:
-            self.finalize(schema)
 
     def __getitem__(self, item: typing.Union[int, str]) -> Field:
         """
@@ -247,6 +240,7 @@ class Tuple:
         :param schema: target Schema to finalize the Tuple.
         :return:
         """
+        assert self._schema is None
         self.cast_to_schema(schema)
         self.validate_schema(schema)
         self._schema = schema
@@ -320,19 +314,20 @@ class Tuple:
                     f"got {field_value} ({type(field_value)}) instead."
                 )
 
-    def get_partial_tuple(self, indices: List[int]) -> "Tuple":
+    def get_partial_tuple(self, attribute_names: List[str]) -> "Tuple":
         """
-        Create a partial Tuple with fields specified by the indices.
-        :param indices: A list of index values.
-        :return: A new Tuple with the selected fields, with the same order specified
-        by the indices.
+        Creates a partial Tuple with fields specified by the attribute names.
+
+        :param attribute_names: A list of attribute names for which to create the
+                                partial tuple.
+        :return: A new Tuple instance containing only the specified fields,
+                preserving the order specified by the attribute names.
         """
         assert self._schema is not None
-        schema = self._schema.get_partial_schema(indices)
+        schema = self._schema.get_partial_schema(attribute_names)
         new_raw_tuple = OrderedDict()
-        for index, (key, value) in enumerate(self.as_key_value_pairs(), 0):
-            if index in indices:
-                new_raw_tuple[key] = value
+        for name in attribute_names:
+            new_raw_tuple[name] = self[name]
         return Tuple(new_raw_tuple, schema=schema)
 
     def __iter__(self) -> Iterator[Field]:

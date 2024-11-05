@@ -1,8 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.pythonworker
 
-import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeTypeUtils.AttributeTypeException
-import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, Schema}
+import edu.uci.ics.amber.engine.common.model.tuple.AttributeTypeUtils.AttributeTypeException
+import edu.uci.ics.amber.engine.common.model.tuple.{AttributeType, Schema, Tuple}
 import org.apache.arrow.memory.{BufferAllocator, RootAllocator}
 import org.apache.arrow.vector.VectorSchemaRoot
 import org.apache.arrow.vector.types.pojo.{ArrowType, Field}
@@ -10,7 +9,7 @@ import org.apache.arrow.vector.types.{DateUnit, FloatingPointPrecision, Interval
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.sql.Timestamp
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.IterableHasAsJava
 
 class ArrowUtilsSpec extends AnyFlatSpec {
 
@@ -28,7 +27,7 @@ class ArrowUtilsSpec extends AnyFlatSpec {
   val string: ArrowType.Utf8 = ArrowType.Utf8.INSTANCE
 
   val texeraSchema: Schema = Schema
-    .newBuilder()
+    .builder()
     .add("test-1", AttributeType.INTEGER)
     .add("test-2", AttributeType.LONG)
     .add("test-3", AttributeType.BOOLEAN)
@@ -123,7 +122,7 @@ class ArrowUtilsSpec extends AnyFlatSpec {
   it should "set Arrow Fields from Texera Tuple correctly" in {
 
     val tuple = Tuple
-      .newBuilder(texeraSchema)
+      .builder(texeraSchema)
       .addSequentially(
         Array(
           Int.box(2),
@@ -142,7 +141,7 @@ class ArrowUtilsSpec extends AnyFlatSpec {
     val rowCount = vectorSchemaRoot.getRowCount
     val index = 1
 
-    // set Texera.Tuple into the Vectors
+    // set Tuple into the Vectors
     ArrowUtils.setTexeraTuple(tuple, index, vectorSchemaRoot)
 
     assert(vectorSchemaRoot.getVector(0).getObject(index).asInstanceOf[Int] == 2)
@@ -173,7 +172,7 @@ class ArrowUtilsSpec extends AnyFlatSpec {
   it should "get Texera Tuple from Arrow Fields correctly" in {
 
     val tuple = Tuple
-      .newBuilder(texeraSchema)
+      .builder(texeraSchema)
       .addSequentially(
         Array(
           Int.box(2),
@@ -189,10 +188,10 @@ class ArrowUtilsSpec extends AnyFlatSpec {
     val vectorSchemaRoot = VectorSchemaRoot.create(arrowSchema, allocator)
     vectorSchemaRoot.allocateNew()
 
-    // set Texera.Tuple into the Vectors
+    // set Tuple into the Vectors
     ArrowUtils.appendTexeraTuple(tuple, vectorSchemaRoot)
 
-    // get the Texera.Tuple from the Vectors
+    // get the Tuple from the Vectors
     assert(ArrowUtils.getTexeraTuple(0, vectorSchemaRoot) == tuple)
 
   }
@@ -200,7 +199,7 @@ class ArrowUtilsSpec extends AnyFlatSpec {
   it should "get Texera Tuple from Arrow Fields with null values correctly" in {
 
     val tuple = Tuple
-      .newBuilder(texeraSchema)
+      .builder(texeraSchema)
       .addSequentially(
         Array(
           Int.box(2),
@@ -216,10 +215,10 @@ class ArrowUtilsSpec extends AnyFlatSpec {
     val vectorSchemaRoot = VectorSchemaRoot.create(arrowSchema, allocator)
     vectorSchemaRoot.allocateNew()
 
-    // set Texera.Tuple into the Vectors
+    // set Tuple into the Vectors
     ArrowUtils.appendTexeraTuple(tuple, vectorSchemaRoot)
 
-    // get the Texera.Tuple from the Vectors
+    // get the Tuple from the Vectors
     assert(ArrowUtils.getTexeraTuple(0, vectorSchemaRoot) == tuple)
 
   }

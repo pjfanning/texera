@@ -1,18 +1,37 @@
 package edu.uci.ics.amber.engine.common.rpc
 
 import com.twitter.util.{Future, Promise}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
-import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlException
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
+import edu.uci.ics.amber.engine.architecture.controller.ClientEvent
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputGateway
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  ChannelIdentity,
+  ChannelMarkerIdentity
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
+import io.grpc.MethodDescriptor
+import edu.uci.ics.amber.engine.architecture.rpc.controlcommands.{
+  AsyncRPCContext,
+  ChannelMarkerPayload,
+  ChannelMarkerType,
+  ControlInvocation,
+  ControlRequest
+}
+import edu.uci.ics.amber.engine.architecture.rpc.controllerservice.ControllerServiceFs2Grpc
+import edu.uci.ics.amber.engine.architecture.rpc.controlreturns.{
+  ControlError,
+  ControlReturn,
+  ReturnInvocation,
+  WorkerMetricsResponse
+}
+import edu.uci.ics.amber.engine.architecture.rpc.workerservice.WorkerServiceFs2Grpc
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.createProxy
+import edu.uci.ics.amber.error.ErrorUtils.reconstructThrowable
 
+import java.lang.reflect.{InvocationHandler, Method, Proxy}
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 /** Motivation of having a separate module to handle control messages as RPCs:
   * In the old design, every control message and its response are handled by
@@ -37,81 +56,144 @@ object AsyncRPCClient {
   final val IgnoreReply = -1
   final val IgnoreReplyAndDoNotLog = -2
 
-  def noReplyNeeded(id: Long): Boolean = id < 0
+  object ControlInvocation {
+    def apply(
+        method: MethodDescriptor[_, _],
+        payload: ControlRequest,
+        context: AsyncRPCContext,
+        commandID: Long
+    ): ControlInvocation = {
+      new ControlInvocation(method.getBareMethodName, payload, context, commandID)
+    }
 
-  /** The invocation of a control command
-    * @param commandID
-    * @param command
-    */
-  case class ControlInvocation(commandID: Long, command: ControlCommand[_]) extends ControlPayload
+    def apply(
+        methodName: String,
+        payload: ControlRequest,
+        context: AsyncRPCContext,
+        commandID: Long
+    ): ControlInvocation = {
+      new ControlInvocation(methodName, payload, context, commandID)
+    }
+  }
 
-  /** The invocation of a return to a promise.
-    * @param originalCommandID
-    * @param controlReturn
+  /**
+    * Creates a dynamic proxy for the specified type `T`, which intercepts method calls
+    * and sends them as ControlInvocation messages via the provided output gateway.
     */
-  case class ReturnInvocation(originalCommandID: Long, controlReturn: Any) extends ControlPayload
+  def createProxy[T](
+      createPromise: () => (Promise[ControlReturn], Long),
+      outputGateway: NetworkOutputGateway
+  )(implicit ct: ClassTag[T]): T = {
+    val handler = new InvocationHandler {
+
+      override def invoke(proxy: Any, method: Method, args: Array[AnyRef]): AnyRef = {
+        val (p, pid) = createPromise()
+        val context = args(1).asInstanceOf[AsyncRPCContext]
+        val msg = args(0).asInstanceOf[ControlRequest]
+        outputGateway.sendTo(context.receiver, ControlInvocation(method.getName, msg, context, pid))
+        p
+      }
+    }
+
+    Proxy
+      .newProxyInstance(
+        getClassLoader(ct.runtimeClass),
+        Array(ct.runtimeClass),
+        handler
+      )
+      .asInstanceOf[T]
+  }
+
+  // Helper to get the correct class loader
+  private def getClassLoader(cls: Class[_]): ClassLoader = {
+    Option(cls.getClassLoader).getOrElse(ClassLoader.getSystemClassLoader)
+  }
 
 }
 
 class AsyncRPCClient(
-    controlOutputEndpoint: NetworkOutputPort[ControlPayload],
+    outputGateway: NetworkOutputGateway,
     val actorId: ActorVirtualIdentity
 ) extends AmberLogging {
 
-  private val unfulfilledPromises = mutable.LongMap[WorkflowPromise[_]]()
+  private val unfulfilledPromises = mutable.HashMap[Long, Promise[ControlReturn]]()
   private var promiseID = 0L
+  @transient lazy val controllerInterface: ControllerServiceFs2Grpc[Future, AsyncRPCContext] =
+    createProxy[ControllerServiceFs2Grpc[Future, AsyncRPCContext]](createPromise, outputGateway)
+  @transient lazy val workerInterface: WorkerServiceFs2Grpc[Future, AsyncRPCContext] =
+    createProxy[WorkerServiceFs2Grpc[Future, AsyncRPCContext]](createPromise, outputGateway)
 
-  def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity): Future[T] = {
-    val (p, id) = createPromise[T]()
-    logger.info(
-      s"send request: ${cmd} to $to (controlID: ${id})"
-    )
-    controlOutputEndpoint.sendTo(to, ControlInvocation(id, cmd))
-    p
-  }
+  def mkContext(to: ActorVirtualIdentity): AsyncRPCContext = AsyncRPCContext(actorId, to)
 
-  def sendToClient(cmd: ControlCommand[_]): Unit = {
-    controlOutputEndpoint.sendTo(CLIENT, ControlInvocation(0, cmd))
-  }
-
-  private def createPromise[T](): (Promise[T], Long) = {
+  protected def createPromise(): (Promise[ControlReturn], Long) = {
     promiseID += 1
-    val promise = new WorkflowPromise[T]()
+    val promise = new Promise[ControlReturn]()
     unfulfilledPromises(promiseID) = promise
     (promise, promiseID)
   }
 
+  def createInvocation(
+      methodName: String,
+      message: ControlRequest,
+      context: AsyncRPCContext
+  ): (ControlInvocation, Future[ControlReturn]) = {
+    val (p, pid) = createPromise()
+    (ControlInvocation(methodName, message, context, pid), p)
+  }
+
+  def sendChannelMarker(
+      markerId: ChannelMarkerIdentity,
+      markerType: ChannelMarkerType,
+      scope: Set[ChannelIdentity],
+      cmdMapping: Map[String, ControlInvocation],
+      channelId: ChannelIdentity
+  ): Unit = {
+    logger.debug(s"send marker: $markerId to $channelId")
+    outputGateway.sendTo(
+      channelId,
+      ChannelMarkerPayload(markerId, markerType, scope.toSeq, cmdMapping)
+    )
+  }
+
+  def sendToClient(clientEvent: ClientEvent): Unit = {
+    outputGateway.sendTo(
+      ChannelIdentity(actorId, CLIENT, isControl = true),
+      clientEvent
+    )
+  }
+
   def fulfillPromise(ret: ReturnInvocation): Unit = {
-    if (unfulfilledPromises.contains(ret.originalCommandID)) {
-      val p = unfulfilledPromises(ret.originalCommandID)
-
-      ret.controlReturn match {
-        case error: Throwable =>
-          p.setException(error)
-        case ControlException(msg) =>
-          p.setException(new WorkflowRuntimeException(msg))
-        case _ =>
-          p.setValue(ret.controlReturn.asInstanceOf[p.returnType])
+    if (unfulfilledPromises.contains(ret.commandId)) {
+      val p = unfulfilledPromises(ret.commandId)
+      ret.returnValue match {
+        case err: ControlError =>
+          p.raise(reconstructThrowable(err))
+        case other =>
+          p.setValue(other)
       }
-
-      unfulfilledPromises.remove(ret.originalCommandID)
+      unfulfilledPromises.remove(ret.commandId)
     }
   }
 
-  def logControlReply(ret: ReturnInvocation, sender: ActorVirtualIdentity): Unit = {
-    if (ret.originalCommandID == AsyncRPCClient.IgnoreReplyAndDoNotLog) {
+  def logControlReply(ret: ReturnInvocation, channelId: ChannelIdentity): Unit = {
+    if (ret.commandId == AsyncRPCClient.IgnoreReplyAndDoNotLog) {
       return
     }
-    if (ret.controlReturn != null) {
-      if (ret.controlReturn.isInstanceOf[WorkerStatistics]) {
+    if (ret.returnValue != null) {
+      if (ret.returnValue.isInstanceOf[WorkerMetricsResponse]) {
         return
       }
-      logger.info(
-        s"receive reply: ${ret.controlReturn.getClass.getSimpleName} from $sender (controlID: ${ret.originalCommandID})"
+      logger.debug(
+        s"receive reply: ${ret.returnValue.getClass.getSimpleName} from $channelId (controlID: ${ret.commandId})"
       )
+      ret.returnValue match {
+        case err: ControlError =>
+          logger.error(s"received error from $channelId", err)
+        case _ =>
+      }
     } else {
       logger.info(
-        s"receive reply: null from $sender (controlID: ${ret.originalCommandID})"
+        s"receive reply: null from $channelId (controlID: ${ret.commandId})"
       )
     }
   }

@@ -2,20 +2,11 @@ package edu.uci.ics.texera.workflow.operators.visualization.ganttChart
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
+import edu.uci.ics.amber.engine.common.model.tuple.{Attribute, AttributeType, Schema}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
-import edu.uci.ics.texera.workflow.common.metadata.{
-  InputPort,
-  OperatorGroupConstants,
-  OperatorInfo,
-  OutputPort
-}
+import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
-import edu.uci.ics.texera.workflow.common.tuple.schema.{
-  Attribute,
-  AttributeType,
-  OperatorSchemaInfo,
-  Schema
-}
+import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.operators.visualization.{
   VisualizationConstants,
   VisualizationOperator
@@ -57,10 +48,16 @@ class GanttChartOpDesc extends VisualizationOperator with PythonOperatorDescript
   @JsonSchemaTitle("Color Column")
   @JsonPropertyDescription("column to color tasks")
   @AutofillAttributeName
-  var color: String = _
+  var color: String = ""
+
+  @JsonProperty(required = false)
+  @JsonSchemaTitle("Pattern")
+  @JsonPropertyDescription("Add texture to the chart based on an attribute")
+  @AutofillAttributeName
+  var pattern: String = ""
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
-    Schema.newBuilder.add(new Attribute("html-content", AttributeType.STRING)).build
+    Schema.builder().add(new Attribute("html-content", AttributeType.STRING)).build()
   }
 
   override def operatorInfo: OperatorInfo =
@@ -79,19 +76,19 @@ class GanttChartOpDesc extends VisualizationOperator with PythonOperatorDescript
        |""".stripMargin
   }
 
-  override def numWorkers() = 1
-
   def createPlotlyFigure(): String = {
     val colorSetting = if (color.nonEmpty) s", color='$color'" else ""
+    val patternParam = if (pattern.nonEmpty) s", pattern_shape='$pattern'" else ""
 
     s"""
-        |        fig = px.timeline(table, x_start='$start', x_end='$finish', y='$task' $colorSetting)
+        |        fig = px.timeline(table, x_start='$start', x_end='$finish', y='$task' $colorSetting $patternParam)
         |        fig.update_yaxes(autorange='reversed')
+        |        fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
         |""".stripMargin
 
   }
 
-  override def generatePythonCode(operatorSchemaInfo: OperatorSchemaInfo): String = {
+  override def generatePythonCode(): String = {
     val finalCode = s"""
                         |from pytexera import *
                         |

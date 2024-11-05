@@ -1,211 +1,312 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import akka.actor.{ActorRef, ActorSystem, Props}
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
+import akka.serialization.SerializationExtension
+import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
+import com.google.protobuf.ByteString
+import com.google.protobuf.any.{Any => ProtoAny}
 import edu.uci.ics.amber.clustering.SingleNodeListener
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  GetActorRef,
-  NetworkAck,
-  NetworkMessage,
-  NetworkSenderActorRef,
-  RegisterActorRef
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkMessage
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
+import edu.uci.ics.amber.engine.architecture.rpc.controlcommands.{
+  AddInputChannelRequest,
+  AddPartitioningRequest,
+  AssignPortRequest,
+  AsyncRPCContext,
+  ControlInvocation,
+  EmptyRequest,
+  InitializeExecutorRequest
 }
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkOutputPort, OutputManager}
+import edu.uci.ics.amber.engine.architecture.rpc.workerservice.WorkerServiceGrpc.{
+  METHOD_ADD_INPUT_CHANNEL,
+  METHOD_ADD_PARTITIONING,
+  METHOD_ASSIGN_PORT,
+  METHOD_FLUSH_NETWORK_BUFFER,
+  METHOD_INITIALIZE_EXECUTOR
+}
+import edu.uci.ics.amber.engine.architecture.scheduling.config.WorkerConfig
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.OneToOnePartitioning
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddPartitioningHandler.AddPartitioning
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.MonitoringHandler.QuerySelfWorkloadMetrics
-import edu.uci.ics.amber.engine.architecture.worker.workloadmetrics.SelfWorkloadMetrics
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, WorkflowControlMessage}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  MainThreadDelegateMessage,
+  WorkerReplayInitialization
+}
+import edu.uci.ics.amber.engine.common.AmberRuntime
+import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, DataPayload, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.executor.OperatorExecutor
+import edu.uci.ics.amber.engine.common.model.tuple.{
+  Attribute,
+  AttributeType,
+  Schema,
+  Tuple,
+  TupleLike
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
-  LinkIdentity,
-  OperatorIdentity
+  ChannelIdentity,
+  OperatorIdentity,
+  PhysicalOpIdentity
 }
-import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor, InputExhausted}
+import edu.uci.ics.amber.engine.common.workflow.{PhysicalLink, PortIdentity}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 
-import scala.concurrent.duration._
+import java.util.concurrent.CompletableFuture
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.duration.MILLISECONDS
+import scala.util.Random
+
+class DummyOperatorExecutor extends OperatorExecutor {
+  override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] = {
+    Iterator(tuple)
+  }
+}
 
 class WorkerSpec
-    extends TestKit(ActorSystem("WorkerSpec"))
+    extends TestKit(ActorSystem("WorkerSpec", AmberRuntime.akkaConfig))
     with ImplicitSender
     with AnyFlatSpecLike
     with BeforeAndAfterAll
     with MockFactory {
 
-  override def beforeAll: Unit = {
-    system.actorOf(Props[SingleNodeListener], "cluster-info")
+  def mkSchema(fields: Any*): Schema = {
+    val schemaBuilder = Schema.builder()
+    fields.indices.foreach { i =>
+      schemaBuilder.add(new Attribute("field" + i, AttributeType.ANY))
+    }
+    schemaBuilder.build()
   }
-  override def afterAll: Unit = {
+  def mkTuple(fields: Any*): Tuple = {
+    Tuple.builder(mkSchema(fields: _*)).addSequentially(fields.toArray).build()
+  }
+
+  override def beforeAll(): Unit = {
+    system.actorOf(Props[SingleNodeListener](), "cluster-info")
+    AmberRuntime.serde = SerializationExtension(system)
+  }
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
   }
+  private val identifier1 = ActorVirtualIdentity("Worker:WF1-E1-op-layer-1")
+  private val identifier2 = ActorVirtualIdentity("Worker:WF1-E1-op-layer-2")
 
-  "Worker" should "process AddDateSendingPolicy message correctly" in {
-    val mockHandler =
-      mock[(ActorVirtualIdentity, ActorVirtualIdentity, Long, ControlPayload) => Unit]
-    val identifier = ActorVirtualIdentity("worker mock")
-    val mockControlOutputPort: NetworkOutputPort[ControlPayload] =
-      new NetworkOutputPort[ControlPayload](identifier, mockHandler)
-    val mockOutputManager = mock[OutputManager]
-    val identifier1 = ActorVirtualIdentity("worker-1")
-    val identifier2 = ActorVirtualIdentity("worker-2")
-    val mockOpExecutor = new IOperatorExecutor {
-      override def open(): Unit = println("opened!")
+  private val operatorIdentity = OperatorIdentity("testOperator")
 
-      override def close(): Unit = println("closed!")
-
-      override def processTuple(
-          tuple: Either[ITuple, InputExhausted],
-          input: Int,
-          pauseManager: PauseManager,
-          asyncRPCClient: AsyncRPCClient
-      ): Iterator[(ITuple, Option[Int])] = ???
-    }
-
-    val mockTag = LinkIdentity(null, null)
-
-    val operatorIdentity = OperatorIdentity("testWorkflow", "testOperator")
-    val workerIndex = 0
-    val opExecConfig = OpExecConfig
-      .oneToOneLayer(operatorIdentity, _ => mockOpExecutor)
-      .copy(inputToOrdinalMapping = Map(mockTag -> 0))
-
-    val mockPolicy = OneToOnePartitioning(10, Array(identifier2))
-
-    val worker =
-      TestActorRef(
-        new WorkflowWorker(
-          identifier1,
-          workerIndex,
-          opExecConfig,
-          NetworkSenderActorRef(null),
-          false
-        ) {
-          override lazy val outputManager: OutputManager = mockOutputManager
-          override lazy val controlOutputPort: NetworkOutputPort[ControlPayload] =
-            mockControlOutputPort
-        }
-      )
-    (mockOutputManager.addPartitionerWithPartitioning _).expects(mockTag, mockPolicy).once()
-    (mockHandler.apply _).expects(*, *, *, *).once()
-    val invocation = ControlInvocation(0, AddPartitioning(mockTag, mockPolicy))
-    worker ! NetworkMessage(
-      0,
-      WorkflowControlMessage(CONTROLLER, 0, invocation)
+  private val mockPortId = PortIdentity()
+  private val mockLink =
+    PhysicalLink(
+      PhysicalOpIdentity(operatorIdentity, "1st-physical-op"),
+      mockPortId,
+      PhysicalOpIdentity(operatorIdentity, "2nd-physical-op"),
+      mockPortId
     )
 
-    //wait test to finish
-    Thread.sleep(3000)
+  private val mockPolicy =
+    OneToOnePartitioning(10, Seq(ChannelIdentity(identifier1, identifier2, isControl = false)))
+
+  def sendControlToWorker(
+      worker: ActorRef,
+      controls: Array[ControlInvocation],
+      beginSeqNum: Long = 0
+  ): Unit = {
+    var seq = beginSeqNum
+    controls.foreach { ctrl =>
+      worker ! NetworkMessage(
+        seq,
+        WorkflowFIFOMessage(ChannelIdentity(CONTROLLER, identifier1, isControl = true), seq, ctrl)
+      )
+      seq += 1
+    }
   }
 
-  "Worker" should "process monitoring message correctly" in {
-    val probe = TestProbe()
-    val idMap = mutable.HashMap[ActorVirtualIdentity, ActorRef]()
-    val identifier1 = ActorVirtualIdentity("worker-1")
-    val mockOpExecutor = new IOperatorExecutor {
-      override def open(): Unit = println("opened!")
-
-      override def close(): Unit = println("closed!")
-
-      override def processTuple(
-          tuple: Either[ITuple, InputExhausted],
-          input: Int,
-          pauseManager: PauseManager,
-          asyncRPCClient: AsyncRPCClient
-      ): Iterator[(ITuple, Option[Int])] = { return Iterator() }
+  def mkWorker(expectedOutput: Iterable[TupleLike]): (ActorRef, CompletableFuture[Boolean]) = {
+    val expected = mutable.Queue.from(expectedOutput)
+    val completeStatus = new CompletableFuture[Boolean]()
+    val mockHandler: Either[MainThreadDelegateMessage, WorkflowFIFOMessage] => Unit = {
+      case Left(value) => ???
+      case Right(value) =>
+        value match {
+          case WorkflowFIFOMessage(_, _, payload) =>
+            payload match {
+              case payload: DataPayload =>
+                payload.asInstanceOf[DataFrame].frame.foreach { item =>
+                  val expectedOutput = expected.dequeue()
+                  if (expectedOutput != item) {
+                    completeStatus.complete(false)
+                  } else {
+                    if (expected.isEmpty) {
+                      completeStatus.complete(true)
+                    }
+                  }
+                }
+              case _ => //skip
+            }
+        }
     }
-
-    val operatorIdentity = OperatorIdentity("testWorkflow", "testOperator")
-    val workerIndex = 0
-    val opExecConfig = OpExecConfig.oneToOneLayer(operatorIdentity, _ => mockOpExecutor)
-
     val worker = TestActorRef(
       new WorkflowWorker(
-        identifier1,
-        workerIndex,
-        opExecConfig,
-        NetworkSenderActorRef(probe.ref),
-        false
-      )
-    )
-
-    idMap(identifier1) = worker
-    idMap(CONTROLLER) = probe.ref
-
-    probe.send(
-      worker,
-      NetworkMessage(
-        0,
-        WorkflowControlMessage(
-          CONTROLLER,
-          0,
-          ControlInvocation(0, QuerySelfWorkloadMetrics())
+        WorkerConfig(identifier1),
+        WorkerReplayInitialization(restoreConfOpt = None, faultToleranceConfOpt = None)
+      ) {
+        this.dp = new DataProcessor(identifier1, mockHandler)
+        this.dp.initTimerService(timerService)
+        dpThread = new DPThread(
+          actorId,
+          dp,
+          logManager,
+          inputQueue
         )
+      }
+    )
+    val invocation = AsyncRPCClient.ControlInvocation(
+      METHOD_ADD_PARTITIONING,
+      AddPartitioningRequest(mockLink, mockPolicy),
+      AsyncRPCContext(CONTROLLER, identifier1),
+      0
+    )
+    val addPort1 = AsyncRPCClient.ControlInvocation(
+      METHOD_ASSIGN_PORT,
+      AssignPortRequest(mockPortId, input = true, mkSchema(1).toRawSchema),
+      AsyncRPCContext(CONTROLLER, identifier1),
+      1
+    )
+    val addPort2 = AsyncRPCClient.ControlInvocation(
+      METHOD_ASSIGN_PORT,
+      AssignPortRequest(mockPortId, input = false, mkSchema(1).toRawSchema),
+      AsyncRPCContext(CONTROLLER, identifier1),
+      2
+    )
+    val addInputChannel = AsyncRPCClient.ControlInvocation(
+      METHOD_ADD_INPUT_CHANNEL,
+      AddInputChannelRequest(
+        ChannelIdentity(identifier2, identifier1, isControl = false),
+        mockLink.toPortId
+      ),
+      AsyncRPCContext(CONTROLLER, identifier1),
+      3
+    )
+    val opInit = OpExecInitInfo((_, _) => {
+      new DummyOperatorExecutor()
+    })
+    val bytes = AmberRuntime.serde.serialize(opInit).get
+    val protoAny = ProtoAny.of(
+      "edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo",
+      ByteString.copyFrom(bytes)
+    )
+    val initializeOperatorLogic = AsyncRPCClient.ControlInvocation(
+      METHOD_INITIALIZE_EXECUTOR,
+      InitializeExecutorRequest(1, protoAny, isSource = false, "scala"),
+      AsyncRPCContext(CONTROLLER, identifier1),
+      4
+    )
+    sendControlToWorker(
+      worker,
+      Array(invocation, addPort1, addPort2, addInputChannel, initializeOperatorLogic)
+    )
+    (worker, completeStatus)
+  }
+
+  "Worker" should "process data messages correctly" in {
+    val (worker, future) = mkWorker(Array(mkTuple(1)))
+    worker ! NetworkMessage(
+      0,
+      WorkflowFIFOMessage(
+        ChannelIdentity(identifier2, identifier1, isControl = false),
+        0,
+        DataFrame(Array(mkTuple(1)))
       )
     )
+    worker ! AsyncRPCClient.ControlInvocation(
+      METHOD_FLUSH_NETWORK_BUFFER,
+      EmptyRequest(),
+      AsyncRPCContext(CONTROLLER, identifier1),
+      1
+    )
+    //wait test to finish
+    assert(future.get(3000, MILLISECONDS))
+  }
 
-    probe.receiveWhile(1.minutes, 5.seconds) {
-      case GetActorRef(id, replyTo) =>
-        replyTo.foreach { actor =>
-          actor ! RegisterActorRef(id, idMap(id))
-        }
-      case NetworkMessage(
-            msgID,
-            WorkflowControlMessage(_, _, ReturnInvocation(id, returnValue))
-          ) =>
-        probe.sender() ! NetworkAck(msgID, Some(Constants.unprocessedBatchesSizeLimitPerSender))
-        returnValue match {
-          case e: Throwable => throw e
-          case _ =>
-            assert(
-              returnValue
-                .asInstanceOf[Tuple2[
-                  SelfWorkloadMetrics,
-                  mutable.HashMap[ActorVirtualIdentity, ArrayBuffer[Long]]
-                ]]
-                ._1
-                .unprocessedDataInputQueueSize == 0
-            )
-            assert(
-              returnValue
-                .asInstanceOf[Tuple2[
-                  SelfWorkloadMetrics,
-                  mutable.HashMap[ActorVirtualIdentity, ArrayBuffer[Long]]
-                ]]
-                ._1
-                .unprocessedControlInputQueueSize == 0
-            )
-            assert(
-              returnValue
-                .asInstanceOf[Tuple2[
-                  SelfWorkloadMetrics,
-                  mutable.HashMap[ActorVirtualIdentity, ArrayBuffer[Long]]
-                ]]
-                ._1
-                .stashedDataInputQueueSize == 0
-            )
-            assert(
-              returnValue
-                .asInstanceOf[Tuple2[
-                  SelfWorkloadMetrics,
-                  mutable.HashMap[ActorVirtualIdentity, ArrayBuffer[Long]]
-                ]]
-                ._1
-                .stashedControlInputQueueSize == 0
-            )
-        }
-      case other =>
-      //skip
+  "Worker" should "process batches correctly" in {
+    ignoreMsg {
+      case a => println(a); true
     }
+
+    def mkBatch(start: Int, end: Int): Array[Tuple] = {
+      (start until end).map { x =>
+        mkTuple(x)
+      }.toArray
+    }
+    val batch1 = mkBatch(0, 400)
+    val batch2 = mkBatch(400, 500)
+    val batch3 = mkBatch(500, 800)
+    val (worker, future) = mkWorker(mkBatch(0, 800))
+    worker ! NetworkMessage(
+      3,
+      WorkflowFIFOMessage(
+        ChannelIdentity(identifier2, identifier1, isControl = false),
+        0,
+        DataFrame(batch1)
+      )
+    )
+    worker ! NetworkMessage(
+      2,
+      WorkflowFIFOMessage(
+        ChannelIdentity(identifier2, identifier1, isControl = false),
+        1,
+        DataFrame(batch2)
+      )
+    )
+    Thread.sleep(1000)
+    worker ! NetworkMessage(
+      4,
+      WorkflowFIFOMessage(
+        ChannelIdentity(identifier2, identifier1, isControl = false),
+        2,
+        DataFrame(batch3)
+      )
+    )
+    //wait test to finish
+    assert(future.get(3000, MILLISECONDS))
+  }
+
+  "Worker" should "accept messages in fifo order" in {
+    ignoreMsg {
+      case a => println(a); true
+    }
+    val (worker, future) = mkWorker((0 until 100).map(mkTuple(_)))
+    Random
+      .shuffle((0 until 50).map { i =>
+        NetworkMessage(
+          i + 2,
+          WorkflowFIFOMessage(
+            ChannelIdentity(identifier2, identifier1, isControl = false),
+            i,
+            DataFrame(Array(mkTuple(i)))
+          )
+        )
+      })
+      .foreach { x =>
+        worker ! x
+      }
+    Thread.sleep(1000)
+    Random
+      .shuffle((50 until 100).map { i =>
+        NetworkMessage(
+          i + 2,
+          WorkflowFIFOMessage(
+            ChannelIdentity(identifier2, identifier1, isControl = false),
+            i,
+            DataFrame(Array(mkTuple(i)))
+          )
+        )
+      })
+      .foreach { x =>
+        worker ! x
+      }
+    //wait test to finish
+    assert(future.get(3000, MILLISECONDS))
   }
 
 }

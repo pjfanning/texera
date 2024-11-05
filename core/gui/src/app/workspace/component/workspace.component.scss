@@ -1,0 +1,46 @@
+#result {
+  position: absolute;
+  bottom: 0;
+}
+
+#git-commit-id {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  font-size: 0.4em;
+  color: gray;
+  z-index: 5;
+}
+
+texera-menu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 100%;
+  background-color: white;
+}
+
+texera-mini-map {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  z-index: 3;
+  user-select: none;
+}
+
+texera-workflow-editor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #f6f6f6;
+}
+
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}

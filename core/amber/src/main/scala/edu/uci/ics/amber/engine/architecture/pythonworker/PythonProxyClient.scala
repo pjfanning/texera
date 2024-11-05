@@ -1,26 +1,43 @@
 package edu.uci.ics.amber.engine.architecture.pythonworker
 
+import com.google.protobuf.ByteString
+import com.google.protobuf.any.Any
 import com.twitter.util.{Await, Promise}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{
+  OpExecInitInfo,
+  OpExecInitInfoWithCode
+}
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.{
+  ActorCommandElement,
   ControlElement,
-  ControlElementV2,
   DataElement
 }
-import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.InvocationConvertUtils.{
-  controlInvocationToV2,
-  returnInvocationToV2
+import edu.uci.ics.amber.engine.architecture.rpc.controlcommands.{
+  ControlInvocation,
+  InitializeExecutorRequest
 }
-import edu.uci.ics.amber.engine.common.ambermessage.{PythonControlMessage, _}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
+import edu.uci.ics.amber.engine.architecture.rpc.controlreturns.ReturnInvocation
+import edu.uci.ics.amber.engine.common.{AmberLogging, AmberRuntime}
+import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, PythonActorMessage}
+import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ControlPayload,
+  ControlPayloadV2,
+  DataFrame,
+  DataPayload,
+  MarkerFrame,
+  PythonControlMessage,
+  PythonDataHeader
+}
+import edu.uci.ics.amber.engine.common.model.State
+import edu.uci.ics.amber.engine.common.model.tuple.{Schema, Tuple}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import org.apache.arrow.flight._
-import org.apache.arrow.memory.{BufferAllocator, RootAllocator}
+import org.apache.arrow.memory.{ArrowBuf, BufferAllocator, RootAllocator}
 import org.apache.arrow.vector.VectorSchemaRoot
 
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable
 
 class PythonProxyClient(portNumberPromise: Promise[Int], val actorId: ActorVirtualIdentity)
@@ -42,12 +59,18 @@ class PythonProxyClient(portNumberPromise: Promise[Int], val actorId: ActorVirtu
   private var flightClient: FlightClient = _
   private var running: Boolean = true
 
+  private val pythonQueueInMemSize: AtomicLong = new AtomicLong(0)
+
+  def getQueuedCredit: Long = {
+    pythonQueueInMemSize.get()
+  }
+
   override def run(): Unit = {
     establishConnection()
     mainLoop()
   }
 
-  def establishConnection(): Unit = {
+  private def establishConnection(): Unit = {
     var connected = false
     var tryCount = 0
     while (!connected && tryCount <= MAX_TRY_COUNT) {
@@ -76,35 +99,69 @@ class PythonProxyClient(portNumberPromise: Promise[Int], val actorId: ActorVirtu
   def mainLoop(): Unit = {
     while (running) {
       getElement match {
-        case DataElement(dataPayload, from) =>
-          sendData(dataPayload, from)
-        case ControlElement(cmd, from) =>
-          sendControlV1(from, cmd)
-        case ControlElementV2(cmd, from) =>
-          sendControlV2(from, cmd)
+        case DataElement(dataPayload, channel) =>
+          sendData(dataPayload, channel.fromWorkerId)
+        case ControlElement(cmd, channel) =>
+          sendControl(channel.fromWorkerId, cmd)
+        case ActorCommandElement(cmd) =>
+          sendActorCommand(cmd)
+
       }
     }
   }
 
   def sendData(dataPayload: DataPayload, from: ActorVirtualIdentity): Unit = {
     dataPayload match {
-      case DataFrame(frame) =>
-        val tuples: mutable.Queue[Tuple] =
-          mutable.Queue(frame.map(_.asInstanceOf[Tuple]): _*)
-        writeArrowStream(tuples, from, isEnd = false)
-      case EndOfUpstream() =>
-        writeArrowStream(mutable.Queue(), from, isEnd = true)
+      case DataFrame(frame) => writeArrowStream(mutable.Queue(frame: _*), from, "Data")
+      case MarkerFrame(marker) =>
+        marker match {
+          case state: State =>
+            writeArrowStream(mutable.Queue(state.toTuple), from, marker.getClass.getSimpleName)
+          case _ => writeArrowStream(mutable.Queue.empty, from, marker.getClass.getSimpleName)
+        }
     }
   }
 
-  def sendControlV2(
+  def sendControl(
       from: ActorVirtualIdentity,
-      payload: ControlPayloadV2
+      payload: ControlPayload
   ): Result = {
-    val controlMessage = PythonControlMessage(from, payload)
+    var payloadV2 = ControlPayloadV2.defaultInstance
+    payloadV2 = payload match {
+      case c: ControlInvocation =>
+        val req = c.command match {
+          case InitializeExecutorRequest(worker, info, isSource, language) =>
+            val bytes = info.value.toByteArray
+            val opExecInitInfo: OpExecInitInfo =
+              AmberRuntime.serde.deserialize(bytes, classOf[OpExecInitInfo]).get
+            val (code, language) = opExecInitInfo.asInstanceOf[OpExecInitInfoWithCode].codeGen(0, 0)
+            InitializeExecutorRequest(
+              worker,
+              Any.of("", ByteString.copyFrom(code, "UTF-8")),
+              isSource,
+              language
+            )
+          case other => other
+        }
+        payloadV2.withControlInvocation(c.withCommand(req))
+      case r: ReturnInvocation =>
+        payloadV2.withReturnInvocation(r)
+      case _ => ???
+    }
+    val controlMessage = PythonControlMessage(from, payloadV2)
     val action: Action = new Action("control", controlMessage.toByteArray)
+    sendCreditedAction(action)
+  }
 
-    logger.debug(s"sending control $controlMessage")
+  def sendActorCommand(
+      command: ActorCommand
+  ): Result = {
+    val action: Action = new Action("actor", PythonActorMessage(command).toByteArray)
+    sendCreditedAction(action)
+  }
+
+  private def sendCreditedAction(action: Action) = {
+    logger.debug(s"sending ${action.getType} message")
     // Arrow allows multiple results from the Action call return as a stream (interator).
     // In Arrow 11, it alerts if the results are not consumed fully.
     val results = flightClient.doAction(action)
@@ -112,33 +169,26 @@ class PythonProxyClient(portNumberPromise: Promise[Int], val actorId: ActorVirtu
     // In the future, this results can include credits for flow control purpose.
     val result = results.next()
 
+    // extract info needed to calculate sender credits from ack
+    // ackResult contains number of batches inside Python worker internal queue
+    pythonQueueInMemSize.set(new String(result.getBody).toLong)
+    logger.debug(s"action ${action.getType} updated queue size $pythonQueueInMemSize")
     // However, we will only expect exactly one result for now.
     assert(!results.hasNext)
 
     result
   }
 
-  def sendControlV1(from: ActorVirtualIdentity, payload: ControlPayload): Unit = {
-    payload match {
-      case controlInvocation: ControlInvocation =>
-        val controlInvocationV2: ControlInvocationV2 = controlInvocationToV2(controlInvocation)
-        sendControlV2(from, controlInvocationV2)
-      case returnInvocation: ReturnInvocation =>
-        val returnInvocationV2: ReturnInvocationV2 = returnInvocationToV2(returnInvocation)
-        sendControlV2(from, returnInvocationV2)
-    }
-  }
-
   private def writeArrowStream(
       tuples: mutable.Queue[Tuple],
       from: ActorVirtualIdentity,
-      isEnd: Boolean
+      payloadType: String
   ): Unit = {
 
     val schema = if (tuples.isEmpty) new Schema() else tuples.front.getSchema
-    val descriptor = FlightDescriptor.command(PythonDataHeader(from, isEnd).toByteArray)
-    logger.info(
-      s"sending data with descriptor ${PythonDataHeader(from, isEnd)}, schema $schema, size of batch ${tuples.size}"
+    val descriptor = FlightDescriptor.command(PythonDataHeader(from, payloadType).toByteArray)
+    logger.debug(
+      s"sending data with descriptor ${PythonDataHeader(from, payloadType)}, schema $schema, size of batch ${tuples.size}"
     )
     val flightListener = new SyncPutListener
     val schemaRoot = VectorSchemaRoot.create(ArrowUtils.fromTexeraSchema(schema), allocator)
@@ -150,7 +200,13 @@ class PythonProxyClient(portNumberPromise: Promise[Int], val actorId: ActorVirtu
     writer.putNext()
     schemaRoot.clear()
     writer.completed()
-    flightListener.getResult()
+
+    // for calculating sender credits - get back number of batches in Python worker queue
+    val ackMsgBuf: ArrowBuf = flightListener.poll(5, TimeUnit.SECONDS).getApplicationMetadata
+    pythonQueueInMemSize.set(ackMsgBuf.getLong(0))
+    logger.debug(s"data channel updated queue size $pythonQueueInMemSize")
+    ackMsgBuf.close()
+
     flightListener.close()
 
   }

@@ -5,10 +5,9 @@ from typing import Iterator, List, Mapping, Optional, Union, MutableMapping
 import overrides
 import pandas
 
-from deprecated import deprecated
 
-from . import InputExhausted, Table, TableLike, Tuple, TupleLike, Batch, BatchLike
-from core.models.schema.schema import Schema
+from . import Table, TableLike, Tuple, TupleLike, Batch, BatchLike
+from .marker import State
 from .table import all_output_to_tuple
 
 
@@ -18,13 +17,12 @@ class Operator(ABC):
     """
 
     __internal_is_source: bool = False
-    __internal_output_schema: Optional[Schema] = None
 
     @property
     @overrides.final
     def is_source(self) -> bool:
         """
-        Whether the operator is a source operator. Source operators generates output
+        Whether the operator is a source operator. Source operators generate output
         Tuples without having input Tuples.
 
         :return:
@@ -36,23 +34,6 @@ class Operator(ABC):
     def is_source(self, value: bool) -> None:
         self.__internal_is_source = value
 
-    @property
-    @overrides.final
-    def output_schema(self) -> Schema:
-        assert self.__internal_output_schema is not None
-        return self.__internal_output_schema
-
-    @output_schema.setter
-    @overrides.final
-    def output_schema(
-        self, raw_output_schema: Union[Schema, Mapping[str, str]]
-    ) -> None:
-        self.__internal_output_schema = (
-            raw_output_schema
-            if isinstance(raw_output_schema, Schema)
-            else Schema(raw_schema=raw_output_schema)
-        )
-
     def open(self) -> None:
         """
         Open a context of the operator. Usually can be used for loading/initiating some
@@ -63,6 +44,36 @@ class Operator(ABC):
     def close(self) -> None:
         """
         Close the context of the operator.
+        """
+        pass
+
+    def process_state(self, state: State, port: int) -> Optional[State]:
+        """
+        Process an input State from the given link.
+        The default implementation is to pass the State to all downstream operators
+        if the State has pass_to_all_downstream set to True.
+        :param state: State, a State from an input port to be processed.
+        :param port: int, input port index of the current exhausted port.
+        :return: State, producing one State object
+        """
+        if state.passToAllDownstream:
+            return state
+
+    def produce_state_on_start(self, port: int) -> State:
+        """
+        Produce a State when the given link started.
+
+        :param port: int, input port index of the current initialized port.
+        :return: State, producing one State object
+        """
+        pass
+
+    def produce_state_on_finish(self, port: int) -> State:
+        """
+        Produce a State after the input port is exhausted.
+
+        :param port: int, input port index of the current exhausted port.
+        :return: State, producing one State object
         """
         pass
 
@@ -224,33 +235,3 @@ class TableOperator(TupleOperatorV2):
             time, or None.
         """
         yield
-
-
-@deprecated(reason="Use TupleOperatorV2 instead")
-class TupleOperator(Operator):
-    """
-    Base class for tuple-oriented operators. A concrete implementation must
-    be provided upon using.
-    """
-
-    @abstractmethod
-    def process_tuple(
-        self, tuple_: Union[Tuple, InputExhausted], input_: int
-    ) -> Iterator[Optional[TupleLike]]:
-        """
-        Process an input Tuple from the given link.
-
-        :param tuple_: Union[Tuple, InputExhausted], either
-                        1. a Tuple from a link to be processed;
-                        2. an InputExhausted indicating no more data from this link.
-        :param input_: int, input index of the current Tuple.
-        :return: Iterator[Optional[TupleLike]], producing one TupleLike object at a
-            time, or None.
-        """
-        yield
-
-    def on_finish(self, port: int) -> Iterator[Optional[TupleLike]]:
-        """
-        For backward compatibility.
-        """
-        yield from self.process_tuple(InputExhausted(), input_=port)

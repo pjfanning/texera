@@ -1,18 +1,34 @@
 package edu.uci.ics.texera.web.service
 
-import java.util.concurrent.ConcurrentHashMap
+import com.google.protobuf.timestamp.Timestamp
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.common.AmberUtils
-
-import scala.collection.JavaConverters._
-import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent}
-import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput, WorkflowLifecycleManager}
-import edu.uci.ics.texera.web.model.websocket.request.{WorkflowExecuteRequest, WorkflowKillRequest}
-import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource
+import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
+import edu.uci.ics.amber.engine.architecture.rpc.controlreturns.WorkflowAggregatedState.{
+  COMPLETED,
+  FAILED
+}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  FaultToleranceConfig,
+  StateRestoreConfig
+}
+import edu.uci.ics.amber.engine.common.AmberConfig
+import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
+import edu.uci.ics.amber.engine.common.model.WorkflowContext
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ChannelMarkerIdentity,
+  ExecutionIdentity,
+  WorkflowIdentity
+}
+import edu.uci.ics.amber.error.ErrorUtils.{getOperatorFromActorIdOpt, getStackTraceWithAllCauses}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
+import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
+import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
-import edu.uci.ics.texera.web.storage.WorkflowStateStore
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.COMPLETED
-import edu.uci.ics.texera.workflow.common.WorkflowContext
+import edu.uci.ics.texera.web.storage.ExecutionStateStore.updateWorkflowState
+import edu.uci.ics.texera.web.storage.{ExecutionStateStore, WorkflowStateStore}
+import edu.uci.ics.amber.engine.common.workflowruntimestate.FatalErrorType.EXECUTION_FAILURE
+import edu.uci.ics.amber.engine.common.workflowruntimestate.WorkflowFatalError
+import edu.uci.ics.texera.web.{SubscriptionManager, WorkflowLifecycleManager}
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.LogicalPlan
 import io.reactivex.rxjava3.disposables.{CompositeDisposable, Disposable}
@@ -20,26 +36,29 @@ import io.reactivex.rxjava3.subjects.BehaviorSubject
 import org.jooq.types.UInteger
 import play.api.libs.json.Json
 
+import java.util.concurrent.ConcurrentHashMap
+import java.net.URI
+import java.time.Instant
+import scala.jdk.CollectionConverters.IterableHasAsScala
+
 object WorkflowService {
-  private val wIdToWorkflowState = new ConcurrentHashMap[String, WorkflowService]()
-  final val userSystemEnabled: Boolean = AmberUtils.amberConfig.getBoolean("user-sys.enabled")
-  val cleanUpDeadlineInSeconds: Int =
-    AmberUtils.amberConfig.getInt("web-server.workflow-state-cleanup-in-seconds")
+  private val workflowServiceMapping = new ConcurrentHashMap[String, WorkflowService]()
+  val cleanUpDeadlineInSeconds: Int = AmberConfig.executionStateCleanUpInSecs
 
-  def getAllWorkflowService: Iterable[WorkflowService] = wIdToWorkflowState.values().asScala
+  def getAllWorkflowServices: Iterable[WorkflowService] = workflowServiceMapping.values().asScala
 
-  def mkWorkflowStateId(wId: Int): String = {
-    wId.toString
+  def mkWorkflowStateId(workflowId: WorkflowIdentity): String = {
+    workflowId.toString
   }
   def getOrCreate(
-      wId: Int,
+      workflowId: WorkflowIdentity,
       cleanupTimeout: Int = cleanUpDeadlineInSeconds
   ): WorkflowService = {
-    wIdToWorkflowState.compute(
-      mkWorkflowStateId(wId),
+    workflowServiceMapping.compute(
+      mkWorkflowStateId(workflowId),
       (_, v) => {
         if (v == null) {
-          new WorkflowService(wId, cleanupTimeout)
+          new WorkflowService(workflowId, cleanupTimeout)
         } else {
           v
         }
@@ -49,60 +68,49 @@ object WorkflowService {
 }
 
 class WorkflowService(
-    wId: Int,
+    val workflowId: WorkflowIdentity,
     cleanUpTimeout: Int
 ) extends SubscriptionManager
     with LazyLogging {
   // state across execution:
   var opResultStorage: OpResultStorage = new OpResultStorage()
   private val errorSubject = BehaviorSubject.create[TexeraWebSocketEvent]().toSerialized
-  val errorHandler: Throwable => Unit = { t =>
-    {
-      t.printStackTrace()
-      errorSubject.onNext(
-        WorkflowErrorEvent(generalErrors =
-          Map("error" -> (t.getMessage + "\n" + t.getStackTrace.mkString("\n")))
-        )
-      )
-    }
-  }
-  val wsInput = new WebsocketInput(errorHandler)
   val stateStore = new WorkflowStateStore()
-  var jobService: BehaviorSubject[WorkflowJobService] = BehaviorSubject.create()
+  var executionService: BehaviorSubject[WorkflowExecutionService] = BehaviorSubject.create()
 
-  val resultService: JobResultService =
-    new JobResultService(opResultStorage, stateStore)
+  val resultService: ExecutionResultService =
+    new ExecutionResultService(opResultStorage, stateStore)
   val exportService: ResultExportService =
-    new ResultExportService(opResultStorage, UInteger.valueOf(wId))
+    new ResultExportService(opResultStorage, UInteger.valueOf(workflowId.id))
   val lifeCycleManager: WorkflowLifecycleManager = new WorkflowLifecycleManager(
-    s"wid=$wId",
+    s"workflowId=$workflowId",
     cleanUpTimeout,
     () => {
       opResultStorage.close()
-      WorkflowService.wIdToWorkflowState.remove(mkWorkflowStateId(wId))
-      wsInput.onNext(WorkflowKillRequest(), None)
+      WorkflowService.workflowServiceMapping.remove(mkWorkflowStateId(workflowId))
+      if (executionService.getValue != null) {
+        // shutdown client
+        executionService.getValue.client.shutdown()
+      }
       unsubscribeAll()
     }
   )
 
   var lastCompletedLogicalPlan: Option[LogicalPlan] = Option.empty
 
-  jobService.subscribe { job: WorkflowJobService =>
+  executionService.subscribe { executionService: WorkflowExecutionService =>
     {
-      job.stateStore.jobMetadataStore.registerDiffHandler { (oldState, newState) =>
-        {
-          if (oldState.state != COMPLETED && newState.state == COMPLETED) {
-            lastCompletedLogicalPlan = Option.apply(job.workflowCompiler.logicalPlan)
+      executionService.executionStateStore.metadataStore.registerDiffHandler {
+        (oldState, newState) =>
+          {
+            if (oldState.state != COMPLETED && newState.state == COMPLETED) {
+              lastCompletedLogicalPlan = Option.apply(executionService.workflow.logicalPlan)
+            }
+            Iterable.empty
           }
-          Iterable.empty
-        }
       }
     }
   }
-
-  addSubscription(
-    wsInput.subscribe((evt: WorkflowExecuteRequest, uidOpt) => initJobService(evt, uidOpt))
-  )
 
   def connect(onNext: TexeraWebSocketEvent => Unit): Disposable = {
     lifeCycleManager.increaseUserCount()
@@ -116,14 +124,14 @@ class WorkflowService(
     new CompositeDisposable(subscriptions :+ errorSubscription: _*)
   }
 
-  def connectToJob(onNext: TexeraWebSocketEvent => Unit): Disposable = {
+  def connectToExecution(onNext: TexeraWebSocketEvent => Unit): Disposable = {
     var localDisposable = Disposable.empty()
-    jobService.subscribe { job: WorkflowJobService =>
+    executionService.subscribe { executionService: WorkflowExecutionService =>
       localDisposable.dispose()
-      val subscriptions = job.stateStore.getAllStores
+      val subscriptions = executionService.executionStateStore.getAllStores
         .map(_.getWebsocketEventObservable)
         .map(evtPub =>
-          evtPub.subscribe { evts: Iterable[TexeraWebSocketEvent] => evts.foreach(onNext) }
+          evtPub.subscribe { events: Iterable[TexeraWebSocketEvent] => events.foreach(onNext) }
         )
         .toSeq
       localDisposable = new CompositeDisposable(subscriptions: _*)
@@ -132,47 +140,114 @@ class WorkflowService(
 
   def disconnect(): Unit = {
     lifeCycleManager.decreaseUserCount(
-      Option(jobService.getValue).map(_.stateStore.jobMetadataStore.getState.state)
+      Option(executionService.getValue).map(_.executionStateStore.metadataStore.getState.state)
     )
   }
 
-  private[this] def createWorkflowContext(
-      uidOpt: Option[UInteger]
-  ): WorkflowContext = {
-    val jobID: String = String.valueOf(WorkflowWebsocketResource.nextExecutionID.incrementAndGet)
-    new WorkflowContext(jobID, uidOpt, UInteger.valueOf(wId))
+  private[this] def createWorkflowContext(): WorkflowContext = {
+    new WorkflowContext(workflowId)
   }
 
-  def initJobService(req: WorkflowExecuteRequest, uidOpt: Option[UInteger]): Unit = {
-    if (jobService.getValue != null) {
-      //unsubscribe all
-      jobService.getValue.unsubscribeAll()
-    }
-    val workflowContext: WorkflowContext = createWorkflowContext(uidOpt)
+  def initExecutionService(
+      req: WorkflowExecuteRequest,
+      userOpt: Option[User],
+      sessionUri: URI
+  ): Unit = {
+    val (uidOpt, userEmailOpt) = userOpt.map(user => (user.getUid, user.getEmail)).unzip
 
-    if (WorkflowService.userSystemEnabled) {
-      workflowContext.executionID = -1 // for every new execution,
-      // reset it so that the value doesn't carry over across executions
-      workflowContext.executionID = ExecutionsMetadataPersistService.insertNewExecution(
-        workflowContext.wId,
-        workflowContext.userId,
-        req.executionName,
-        convertToJson(req.engineVersion)
+    val workflowContext: WorkflowContext = createWorkflowContext()
+    var controllerConf = ControllerConfig.default
+
+    workflowContext.executionId = ExecutionsMetadataPersistService.insertNewExecution(
+      workflowContext.workflowId,
+      uidOpt,
+      req.executionName,
+      convertToJson(req.engineVersion)
+    )
+
+    if (AmberConfig.isUserSystemEnabled) {
+      // enable only if we have mysql
+      if (AmberConfig.faultToleranceLogRootFolder.isDefined) {
+        val writeLocation = AmberConfig.faultToleranceLogRootFolder.get.resolve(
+          s"${workflowContext.workflowId}/${workflowContext.executionId}/"
+        )
+        ExecutionsMetadataPersistService.tryUpdateExistingExecution(workflowContext.executionId) {
+          execution => execution.setLogLocation(writeLocation.toString)
+        }
+        controllerConf = controllerConf.copy(faultToleranceConfOpt =
+          Some(FaultToleranceConfig(writeTo = writeLocation))
+        )
+      }
+      if (req.replayFromExecution.isDefined) {
+        val replayInfo = req.replayFromExecution.get
+        ExecutionsMetadataPersistService
+          .tryGetExistingExecution(ExecutionIdentity(replayInfo.eid))
+          .foreach { execution =>
+            val readLocation = new URI(execution.getLogLocation)
+            controllerConf = controllerConf.copy(stateRestoreConfOpt =
+              Some(
+                StateRestoreConfig(
+                  readFrom = readLocation,
+                  replayDestination = ChannelMarkerIdentity(replayInfo.interaction)
+                )
+              )
+            )
+          }
+      }
+    }
+
+    val executionStateStore = new ExecutionStateStore()
+    // assign execution id to find the execution from DB in case the constructor fails.
+    executionStateStore.metadataStore.updateState(state =>
+      state.withExecutionId(workflowContext.executionId)
+    )
+    val errorHandler: Throwable => Unit = { t =>
+      {
+        val fromActorOpt = t match {
+          case ex: WorkflowRuntimeException =>
+            ex.relatedWorkerId
+          case other =>
+            None
+        }
+        val (operatorId, workerId) = getOperatorFromActorIdOpt(fromActorOpt)
+        logger.error("error during execution", t)
+        executionStateStore.statsStore.updateState(stats =>
+          stats.withEndTimeStamp(System.currentTimeMillis())
+        )
+        executionStateStore.metadataStore.updateState { metadataStore =>
+          updateWorkflowState(FAILED, metadataStore).addFatalErrors(
+            WorkflowFatalError(
+              EXECUTION_FAILURE,
+              Timestamp(Instant.now),
+              t.toString,
+              getStackTraceWithAllCauses(t),
+              operatorId,
+              workerId
+            )
+          )
+        }
+      }
+    }
+
+    try {
+      val execution = new WorkflowExecutionService(
+        controllerConf,
+        workflowContext,
+        resultService,
+        req,
+        executionStateStore,
+        errorHandler,
+        lastCompletedLogicalPlan,
+        userEmailOpt,
+        sessionUri
       )
+      lifeCycleManager.registerCleanUpOnStateChange(executionStateStore)
+      executionService.onNext(execution)
+      execution.executeWorkflow()
+    } catch {
+      case e: Throwable => errorHandler(e)
     }
 
-    val job = new WorkflowJobService(
-      createWorkflowContext(uidOpt),
-      wsInput,
-      resultService,
-      req,
-      errorHandler,
-      lastCompletedLogicalPlan
-    )
-
-    lifeCycleManager.registerCleanUpOnStateChange(job.stateStore)
-    jobService.onNext(job)
-    job.startWorkflow()
   }
 
   def convertToJson(frontendVersion: String): String = {
@@ -184,7 +259,7 @@ class WorkflowService(
 
   override def unsubscribeAll(): Unit = {
     super.unsubscribeAll()
-    Option(jobService.getValue).foreach(_.unsubscribeAll())
+    Option(executionService.getValue).foreach(_.unsubscribeAll())
     resultService.unsubscribeAll()
   }
 

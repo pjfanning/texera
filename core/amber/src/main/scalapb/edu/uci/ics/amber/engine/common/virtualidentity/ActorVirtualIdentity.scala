@@ -5,15 +5,13 @@
 
 package edu.uci.ics.amber.engine.common.virtualidentity
 
-/** final case class ActorVirtualIdentity
-  */
 @SerialVersionUID(0L)
 final case class ActorVirtualIdentity(
     name: _root_.scala.Predef.String
     ) extends scalapb.GeneratedMessage with scalapb.lenses.Updatable[ActorVirtualIdentity] {
     @transient
-    private[this] var __serializedSizeCachedValue: _root_.scala.Int = 0
-    private[this] def __computeSerializedValue(): _root_.scala.Int = {
+    private[this] var __serializedSizeMemoized: _root_.scala.Int = 0
+    private[this] def __computeSerializedSize(): _root_.scala.Int = {
       var __size = 0
       
       {
@@ -25,12 +23,13 @@ final case class ActorVirtualIdentity(
       __size
     }
     override def serializedSize: _root_.scala.Int = {
-      var read = __serializedSizeCachedValue
-      if (read == 0) {
-        read = __computeSerializedValue()
-        __serializedSizeCachedValue = read
+      var __size = __serializedSizeMemoized
+      if (__size == 0) {
+        __size = __computeSerializedSize() + 1
+        __serializedSizeMemoized = __size
       }
-      read
+      __size - 1
+      
     }
     def writeTo(`_output__`: _root_.com.google.protobuf.CodedOutputStream): _root_.scala.Unit = {
       {
@@ -56,7 +55,7 @@ final case class ActorVirtualIdentity(
       }
     }
     def toProtoString: _root_.scala.Predef.String = _root_.scalapb.TextFormat.printToSingleLineUnicodeString(this)
-    def companion = edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+    def companion: edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.type = edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
     // @@protoc_insertion_point(GeneratedMessage[edu.uci.ics.amber.engine.common.ActorVirtualIdentity])
 }
 
@@ -86,8 +85,8 @@ object ActorVirtualIdentity extends scalapb.GeneratedMessageCompanion[edu.uci.ic
       )
     case _ => throw new RuntimeException("Expected PMessage")
   }
-  def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = VirtualidentityProto.javaDescriptor.getMessageTypes().get(0)
-  def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = VirtualidentityProto.scalaDescriptor.messages(0)
+  def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = VirtualidentityProto.javaDescriptor.getMessageTypes().get(2)
+  def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = VirtualidentityProto.scalaDescriptor.messages(2)
   def messageCompanionForFieldNumber(__number: _root_.scala.Int): _root_.scalapb.GeneratedMessageCompanion[_] = throw new MatchError(__number)
   lazy val nestedMessagesCompanions: Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]] = Seq.empty
   def enumCompanionForFieldNumber(__fieldNumber: _root_.scala.Int): _root_.scalapb.GeneratedEnumCompanion[_] = throw new MatchError(__fieldNumber)

@@ -10,6 +10,14 @@ import java.util
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs._
 import javax.ws.rs.core.MediaType
+import edu.uci.ics.texera.web.resource.dashboard.user.quota.UserQuotaResource.{
+  Workflow,
+  getUserCreatedWorkflow,
+  getUserAccessedWorkflow,
+  getUserMongoDBSize,
+  deleteMongoCollection,
+  MongoStorage
+}
 
 object AdminUserResource {
   final private lazy val context = SqlServer.createDSLContext()
@@ -52,4 +60,32 @@ class AdminUserResource {
     newUser.setRole(UserRole.INACTIVE)
     userDao.insert(newUser)
   }
+
+  @GET
+  @Path("/created_workflows")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getCreatedWorkflow(@QueryParam("user_id") user_id: UInteger): List[Workflow] = {
+    getUserCreatedWorkflow(user_id)
+  }
+
+  @GET
+  @Path("/access_workflows")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getAccessedWorkflow(@QueryParam("user_id") user_id: UInteger): util.List[UInteger] = {
+    getUserAccessedWorkflow(user_id)
+  }
+
+  @GET
+  @Path("/mongodb_size")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def mongoDBSize(@QueryParam("user_id") user_id: UInteger): Array[MongoStorage] = {
+    getUserMongoDBSize(user_id)
+  }
+
+  @DELETE
+  @Path("/deleteCollection/{collectionName}")
+  def deleteCollection(@PathParam("collectionName") collectionName: String): Unit = {
+    deleteMongoCollection(collectionName)
+  }
+
 }

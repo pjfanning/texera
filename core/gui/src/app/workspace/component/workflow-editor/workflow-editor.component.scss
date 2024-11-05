@@ -1,0 +1,20 @@
+#workflow-editor-wrapper {
+  height: 100%;
+}
+
+#workflow-editor {
+  height: 100%;
+}
+
+::ng-deep #workflow-editor .connection-wrap {
+  stroke-width: 0;
+}
+
+::ng-deep #workflow-editor .link-tools .tool-remove path {
+  fill: #d8656a;
+  transform: translate(-12px, -12px);
+}
+
+::ng-deep #workflow-editor .link-tools .tool-remove circle {
+  fill-opacity: 0;
+}

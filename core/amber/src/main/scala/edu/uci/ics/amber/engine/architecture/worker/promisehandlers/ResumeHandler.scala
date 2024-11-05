@@ -1,25 +1,24 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.worker.{UserPause, WorkerAsyncRPCHandlerInitializer}
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
+import com.twitter.util.Future
+import edu.uci.ics.amber.engine.architecture.rpc.controlcommands.{EmptyRequest, AsyncRPCContext}
+import edu.uci.ics.amber.engine.architecture.rpc.controlreturns.WorkerStateResponse
+import edu.uci.ics.amber.engine.architecture.worker.{DataProcessorRPCHandlerInitializer, UserPause}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{PAUSED, RUNNING}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-
-object ResumeHandler {
-  final case class ResumeWorker() extends ControlCommand[WorkerState]
-}
 
 trait ResumeHandler {
-  this: WorkerAsyncRPCHandlerInitializer =>
+  this: DataProcessorRPCHandlerInitializer =>
 
-  registerHandler { (msg: ResumeWorker, sender) =>
-    if (stateManager.getCurrentState == PAUSED) {
-      pauseManager.resume(UserPause)
-      stateManager.transitTo(RUNNING)
-      outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(actorContext)
+  override def resumeWorker(
+      request: EmptyRequest,
+      ctx: AsyncRPCContext
+  ): Future[WorkerStateResponse] = {
+    if (dp.stateManager.getCurrentState == PAUSED) {
+      dp.pauseManager.resume(UserPause)
+      dp.stateManager.transitTo(RUNNING)
+      dp.adaptiveBatchingMonitor.resumeAdaptiveBatching()
     }
-    stateManager.getCurrentState
+    WorkerStateResponse(dp.stateManager.getCurrentState)
   }
 
 }

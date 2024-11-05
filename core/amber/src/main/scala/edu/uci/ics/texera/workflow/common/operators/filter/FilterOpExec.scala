@@ -1,33 +1,16 @@
 package edu.uci.ics.texera.workflow.common.operators.filter
 
-import edu.uci.ics.amber.engine.architecture.worker.PauseManager
-import edu.uci.ics.amber.engine.common.InputExhausted
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
-import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
-import edu.uci.ics.texera.workflow.common.tuple.Tuple
+import edu.uci.ics.amber.engine.common.executor.OperatorExecutor
+import edu.uci.ics.amber.engine.common.model.tuple.{Tuple, TupleLike}
 
-abstract class FilterOpExec() extends OperatorExecutor with Serializable {
+abstract class FilterOpExec extends OperatorExecutor with Serializable {
 
-  var filterFunc: Tuple => java.lang.Boolean = _
+  var filterFunc: Tuple => Boolean = _
 
-  def setFilterFunc(func: Tuple => java.lang.Boolean): Unit = {
-    this.filterFunc = func
-  }
+  def setFilterFunc(func: Tuple => java.lang.Boolean): Unit =
+    filterFunc = (tuple: Tuple) => func.apply(tuple).booleanValue()
 
-  override def open(): Unit = {}
-
-  override def close(): Unit = {}
-
-  override def processTexeraTuple(
-      tuple: Either[Tuple, InputExhausted],
-      input: Int,
-      pauseManager: PauseManager,
-      asyncRPCClient: AsyncRPCClient
-  ): Iterator[Tuple] = {
-    tuple match {
-      case Left(t)  => if (filterFunc(t)) Iterator(t) else Iterator()
-      case Right(_) => Iterator()
-    }
-  }
+  override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] =
+    if (filterFunc(tuple)) Iterator.single(tuple) else Iterator.empty
 
 }
