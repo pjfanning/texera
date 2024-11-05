@@ -195,8 +195,7 @@
 
 .type-icon-div {
   text-align: center;
-  font-size: 38px;
-  margin-left: 30px;
+  font-size: clamp(12px, 3vw, 38px);
 }
 
 .custom-row {
@@ -213,9 +212,10 @@
 }
 
 .resource-id {
-  font-size: 17px;
+  font-size: clamp(10px, 2vw, 17px);;
   font-weight: 600;
   margin-left: 5px;
+  text-align: center;
 }
 
 .clickable-area {

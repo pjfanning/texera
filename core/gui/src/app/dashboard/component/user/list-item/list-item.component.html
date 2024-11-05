@@ -3,25 +3,30 @@
   class="list-item-card"
   [class.selected]="entry.checked"
   [class.has-button-group]="isPrivateSearch">
-  <div
-    class="checkbox-container"
-    [class.always-show-checkbox]="entry.checked"
-    (click)="$event.stopPropagation()"
-    *ngIf="isPrivateSearch && entry.type==='workflow'">
-    <label class="clickable-area">
-      <input
-        type="checkbox"
-        class="large-checkbox"
-        [checked]="entry.checked"
-        (change)="onCheckboxChange(entry)" />
-    </label>
-  </div>
 
   <div
     [routerLink]="entryLink"
     nz-row
     nzAlign="middle"
     class="custom-row">
+    <div
+      nz-col
+      nzSpan = "1">
+      <div
+      class="checkbox-container"
+      [class.always-show-checkbox]="entry.checked"
+      (click)="$event.stopPropagation()"
+      *ngIf="isPrivateSearch && entry.type==='workflow'">
+      <label class="clickable-area">
+        <input
+          type="checkbox"
+          class="large-checkbox"
+          [checked]="entry.checked"
+          (change)="onCheckboxChange(entry)" />
+      </label>
+    </div>
+    </div>
+
     <div
       nz-col
       nzSpan="1">
@@ -35,7 +40,7 @@
     <!-- ID Column -->
     <div
       nz-col
-      nzSpan="1">
+      nzSpan="2">
       <div class="resource-id">
         <em>#{{ entry.id }}</em>
       </div>
@@ -54,8 +59,7 @@
             nzType="text"
             class="edit-name-button"
             title="Rename"
-            (click)="onEditName()"
-            (click)="$event.stopPropagation()">
+            (click)="onEditName(); $event.stopPropagation()">
             <i
               nz-icon
               nzTheme="outline"
@@ -81,7 +85,7 @@
       </div>
 
       <!-- Description -->
-      <div cladd="description-container">
+      <div class="description-container">
         <!-- Edit Description Buttons -->
         <div
           class="edit-button-group"
@@ -91,8 +95,7 @@
             nzType="text"
             class="edit-description-button"
             title="Edit Description"
-            (click)="onEditDescription()"
-            (click)="$event.stopPropagation()">
+            (click)="onEditDescription(); $event.stopPropagation()">
             <i
               nz-icon
               nzTheme="outline"
@@ -118,7 +121,7 @@
 
     <div
       nz-col
-      [nzSpan]="12">
+      [nzSpan]="10">
       <div class="edit-info">
         <div class="resource-owner">
           <texera-user-avatar
