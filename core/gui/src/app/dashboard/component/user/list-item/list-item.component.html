@@ -3,7 +3,6 @@
   class="list-item-card"
   [class.selected]="entry.checked"
   [class.has-button-group]="isPrivateSearch">
-
   <div
     [routerLink]="entryLink"
     nz-row
@@ -11,20 +10,20 @@
     class="custom-row">
     <div
       nz-col
-      nzSpan = "1">
+      nzSpan="1">
       <div
-      class="checkbox-container"
-      [class.always-show-checkbox]="entry.checked"
-      (click)="$event.stopPropagation()"
-      *ngIf="isPrivateSearch && entry.type==='workflow'">
-      <label class="clickable-area">
-        <input
-          type="checkbox"
-          class="large-checkbox"
-          [checked]="entry.checked"
-          (change)="onCheckboxChange(entry)" />
-      </label>
-    </div>
+        class="checkbox-container"
+        [class.always-show-checkbox]="entry.checked"
+        (click)="$event.stopPropagation()"
+        *ngIf="isPrivateSearch && entry.type==='workflow'">
+        <label class="clickable-area">
+          <input
+            type="checkbox"
+            class="large-checkbox"
+            [checked]="entry.checked"
+            (change)="onCheckboxChange(entry)" />
+        </label>
+      </div>
     </div>
 
     <div
