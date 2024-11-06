@@ -1,22 +1,22 @@
 import {
+  ChangeDetectorRef,
   Component,
+  ElementRef,
   EventEmitter,
   Input,
-  Output,
-  OnInit,
   OnChanges,
+  OnInit,
+  Output,
   SimpleChanges,
   ViewChild,
-  ElementRef,
-  ChangeDetectorRef,
 } from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { NzModalService } from "ng-zorro-antd/modal";
 import { DashboardEntry } from "src/app/dashboard/type/dashboard-entry";
 import { ShareAccessComponent } from "../share-access/share-access.component";
 import {
-  WorkflowPersistService,
   DEFAULT_WORKFLOW_NAME,
+  WorkflowPersistService,
 } from "src/app/common/service/workflow-persist/workflow-persist.service";
 import { firstValueFrom } from "rxjs";
 import { SearchService } from "../../../service/user/search.service";
@@ -65,6 +65,7 @@ export class ListItemComponent implements OnInit, OnChanges {
     this._entry = value;
   }
 
+  @Output() checkboxChanged = new EventEmitter<void>();
   @Output() deleted = new EventEmitter<void>();
   @Output() duplicated = new EventEmitter<void>();
   @Output()
@@ -146,6 +147,12 @@ export class ListItemComponent implements OnInit, OnChanges {
           this.isLiked = isLiked;
         });
     }
+  }
+
+  onCheckboxChange(entry: DashboardEntry): void {
+    entry.checked = !entry.checked;
+    this.cdr.markForCheck();
+    this.checkboxChanged.emit();
   }
 
   public async onClickOpenShareAccess(): Promise<void> {
@@ -301,6 +308,9 @@ export class ListItemComponent implements OnInit, OnChanges {
     const modalRef = this.modal.create({
       nzTitle: "Workflow Detail",
       nzContent: HubWorkflowDetailComponent,
+      nzData: {
+        wid: wid ?? 0,
+      },
       nzFooter: null,
       nzStyle: { width: "60%" },
       nzBodyStyle: { maxHeight: "70vh", overflow: "auto" },
@@ -309,16 +319,12 @@ export class ListItemComponent implements OnInit, OnChanges {
     const instance = modalRef.componentInstance;
     if (instance) {
       if (wid !== undefined) {
-        instance.wid = wid;
         this.hubWorkflowService
           .getViewCount(wid)
           .pipe(untilDestroyed(this))
           .subscribe(count => {
             this.viewCount = count + 1; // hacky fix to display view correctly
           });
-      } else {
-        console.warn("wid is undefined, default handling can be added here");
-        instance.wid = 0;
       }
     }
   }
@@ -341,9 +347,6 @@ export class ListItemComponent implements OnInit, OnChanges {
               .subscribe((count: number) => {
                 this.likeCount = count;
               });
-            console.log("Successfully unliked the workflow");
-          } else {
-            console.error("Error unliking the workflow");
           }
         });
     } else {
@@ -359,9 +362,6 @@ export class ListItemComponent implements OnInit, OnChanges {
               .subscribe((count: number) => {
                 this.likeCount = count;
               });
-            console.log("Successfully liked the workflow");
-          } else {
-            console.error("Error liking the workflow");
           }
         });
     }
