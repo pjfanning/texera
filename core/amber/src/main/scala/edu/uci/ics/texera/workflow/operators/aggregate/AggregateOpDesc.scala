@@ -5,7 +5,11 @@ import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.common.model.{PhysicalOp, PhysicalPlan, SchemaPropagationFunc}
 import edu.uci.ics.amber.engine.common.model.tuple.Schema
-import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, PhysicalOpIdentity, WorkflowIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ExecutionIdentity,
+  PhysicalOpIdentity,
+  WorkflowIdentity
+}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PhysicalLink, PortIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeNameList
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
@@ -28,9 +32,9 @@ class AggregateOpDesc extends LogicalOp {
   var groupByKeys: List[String] = List()
 
   override def getPhysicalPlan(
-                                workflowId: WorkflowIdentity,
-                                executionId: ExecutionIdentity
-                              ): PhysicalPlan = {
+      workflowId: WorkflowIdentity,
+      executionId: ExecutionIdentity
+  ): PhysicalPlan = {
     //    if (aggregations.isEmpty) {
     ////      throw new UnsupportedOperationException("Aggregation Functions Cannot be Empty")
     //      throw new RuntimeException("11222")
