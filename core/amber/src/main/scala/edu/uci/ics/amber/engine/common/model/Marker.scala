@@ -24,6 +24,8 @@ final case class State(tuple: Option[Tuple] = None, passToAllDownstream: Boolean
 
   def get(key: String): Any = data(key)._2
 
+  def get(index: Int): Any = data.values.toArray.toSeq(index)._2
+
   def isPassToAllDownstream: Boolean = get("passToAllDownstream").asInstanceOf[Boolean]
 
   def apply(key: String): Any = get(key)

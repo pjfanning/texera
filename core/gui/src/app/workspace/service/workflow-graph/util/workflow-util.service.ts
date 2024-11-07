@@ -160,7 +160,6 @@ export class WorkflowUtilService {
   }
 
   private static inputPortToPortDescription(portID: string, inputPortInfo: InputPortInfo): PortDescription {
-    console.log(inputPortInfo)
     return {
       portID,
       displayName: inputPortInfo.displayName ?? "",
