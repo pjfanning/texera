@@ -1,50 +1,58 @@
-            - name: Pull Request Stats
-  # You may pin to the exact commit or the version.
-  # uses: flowwer-dev/pull-request-stats@b069f4c2377dae8e6214a78d5abb20fa5a0aaedd
-  uses: flowwer-dev/pull-request-stats@v2.15.0
-  with:
-    # An optional Personal Access Token with enough permissions to fetch all required pull requests to calculate the stats.
-    token: # optional
-    # The default GitHub Token (secrets.GITHUB_TOKEN), used to publish comments as a bot. No need to assign a value for this input.
-    githubToken: # default is ${{ github.token }}
-    # A comma separated list of github repositories to calculate the stats.
-    repositories: # optional
-    # An organization name to use all of its repositories to calculate the stats.
-    organization: # optional
-    # The length of the period used to calculate the stats, expressed in days
-    period: # optional, default is 30
-    # The maximum number of rows to display in the table. A value of `0` means unlimited.
-    limit: # optional, default is 0
-    # Whether to add charts to the stats or not. Possible values: "true" or "false"
-    charts: # optional, default is false
-    # The column used to sort the data. Possible values: "REVIEWS", "TIME" or "COMMENTS"
-    sortBy: # optional, default is REVIEWS
-    # Where to publish the results. Possible values: "COMMENT", "DESCRIPTION" or "NONE"
-    publishAs: # optional, default is COMMENT
-    # A list or regular expression to exclude users from the stats
-    exclude: # optional
-    # Prevents from adding any external links in the stats
-    disableLinks: # optional
-    # Indicates if the action is allowed to send monitoring data to the developer.
-    telemetry: # optional, default is true
-    # A Slack webhook URL to post resulting stats.
-    slackWebhook: # optional
-    # The Slack channel where stats will be posted. Required when a Slack webhook is configured.
-    slackChannel: # optional
-    # A Microsoft Teams webhook URL to post resulting stats.
-    teamsWebhook: # optional
-    # A webhook URL to post resulting stats.
-    webhook: # optional
-    # Used for retro compatibility. Use "sortBy" input instead.
-    sort-by: # optional
-    # Used for retro compatibility. Use "publishAs" input instead.
-    publish-as: # optional
-    # Used for retro compatibility. Use "disableLinks" input instead.
-    disable-links: # optional
-    # Used for retro compatibility. Use "slackWebhook" input instead.
-    slack-webhook: # optional
-    # Used for retro compatibility. Use "slackChannel" input instead.
-    slack-channel: # optional
-    # Used for retro compatibility. Use "teamsWebhook" input instead.
-    teams-webhook: # optional
+name: Pull Request Stats
+
+on:
+  push:
+    branches:
+      - 'xinyuan-stats'
+jobs:
+  stats:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run pull request stats
+        uses: flowwer-dev/pull-request-stats@master
+              with:
+                # An optional Personal Access Token with enough permissions to fetch all required pull requests to calculate the stats.
+                token: # optional
+                # The default GitHub Token (secrets.GITHUB_TOKEN), used to publish comments as a bot. No need to assign a value for this input.
+                githubToken: # default is ${{ github.token }}
+                # A comma separated list of github repositories to calculate the stats.
+                repositories: # optional
+                # An organization name to use all of its repositories to calculate the stats.
+                organization: # optional
+                # The length of the period used to calculate the stats, expressed in days
+                period: # optional, default is 30
+                # The maximum number of rows to display in the table. A value of `0` means unlimited.
+                limit: # optional, default is 0
+                # Whether to add charts to the stats or not. Possible values: "true" or "false"
+                charts: # optional, default is false
+                # The column used to sort the data. Possible values: "REVIEWS", "TIME" or "COMMENTS"
+                sortBy: # optional, default is REVIEWS
+                # Where to publish the results. Possible values: "COMMENT", "DESCRIPTION" or "NONE"
+                publishAs: # optional, default is COMMENT
+                # A list or regular expression to exclude users from the stats
+                exclude: # optional
+                # Prevents from adding any external links in the stats
+                disableLinks: # optional
+                # Indicates if the action is allowed to send monitoring data to the developer.
+                telemetry: # optional, default is true
+                # A Slack webhook URL to post resulting stats.
+                slackWebhook: # optional
+                # The Slack channel where stats will be posted. Required when a Slack webhook is configured.
+                slackChannel: # optional
+                # A Microsoft Teams webhook URL to post resulting stats.
+                teamsWebhook: # optional
+                # A webhook URL to post resulting stats.
+                webhook: # optional
+                # Used for retro compatibility. Use "sortBy" input instead.
+                sort-by: # optional
+                # Used for retro compatibility. Use "publishAs" input instead.
+                publish-as: # optional
+                # Used for retro compatibility. Use "disableLinks" input instead.
+                disable-links: # optional
+                # Used for retro compatibility. Use "slackWebhook" input instead.
+                slack-webhook: # optional
+                # Used for retro compatibility. Use "slackChannel" input instead.
+                slack-channel: # optional
+                # Used for retro compatibility. Use "teamsWebhook" input instead.
+                teams-webhook: # optional
           
