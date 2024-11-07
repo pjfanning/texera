@@ -1,5 +1,5 @@
 
-## Pull reviewers stats
+## Repo stats
 Stats of the last 365 days for [texera](https://github.com/Texera/texera):
 |                                                                                                                                                                          | User                 | Reviews   | Commits   |  Issues   | Issues/Reviews | Issues/Commits |  Issues/(Reviews+Commits)  |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------- | --------- | --------- | --------- | -------------- | --------------  |     --------------         |
