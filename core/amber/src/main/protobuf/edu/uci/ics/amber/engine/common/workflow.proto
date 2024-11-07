@@ -21,6 +21,7 @@ message InputPort {
   string displayName = 2;
   bool allowMultiLinks = 3;
   repeated PortIdentity dependencies = 4;
+  bool isStatePort = 5;
 }
 
 message OutputPort {

@@ -14,6 +14,7 @@ export interface InputPortInfo
     displayName?: string;
     allowMultiLinks?: boolean;
     dependencies?: { id: number; internal: boolean }[];
+    isStatePort?: boolean;
   }> {}
 
 export interface OutputPortInfo
