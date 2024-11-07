@@ -13,4 +13,5 @@ jobs:
         with:
           period: 700
           charts: true
+          disableLinks: true
   
