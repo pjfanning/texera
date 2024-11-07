@@ -12,5 +12,5 @@ jobs:
         uses: flowwer-dev/pull-request-stats@master
         with:
           period: 700
-          charts: "REVIEWS"
+          charts: true
   
