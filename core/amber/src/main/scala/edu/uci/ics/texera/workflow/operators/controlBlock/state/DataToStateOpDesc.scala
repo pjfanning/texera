@@ -41,7 +41,7 @@ class DataToStateOpDesc extends LogicalOp {
       "Convert Data to State",
       OperatorGroupConstants.CONTROL_GROUP,
       inputPorts = List(InputPort(displayName = "Data")),
-      outputPorts = List(OutputPort(displayName = "State"))
+      outputPorts = List(OutputPort(displayName = "State", isStatePort = true))
     )
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = schemas(0)
