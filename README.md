@@ -1,156 +1,19 @@
-<h1 align="center">Texera - Collaborative Data Analytics Using Workflows.</h1>
 
-<p align="center">
-  <img src="core/gui/src/assets/logos/full_logo_small.png" alt="texera-logo" width="192px" height="109px"/>
-  <br>
-  <i>Texera supports scalable computation and enables advanced AI/ML techniques.</i>
-  <br>
-  <i>"Collaboration" is a key focus, and we enable an experience similar to Google Docs, but for data analytics. </i>
-  <br>
-  
-  <h4 align="center">
-    <a href="https://youtu.be/2gfPUZNsoBs">Demo Video</a>
-    |
-    <a href="https://texera.github.io/blog/">Blogs</a>
-    |
-    <a href="https://github.com/Texera/texera/wiki/Getting-Started">Getting Started</a>
-    <br>
-  </h4>
-  
-</p>
-</p>
-<p align="center">
-  <img alt="Static Badge" src="https://img.shields.io/badge/Users-332-blue">
-  <img alt="Static Badge" src="https://img.shields.io/badge/Projects-86-blue">
-  <img alt="Static Badge" src="https://img.shields.io/badge/Workflows-2,481-blue">
-  <img alt="Static Badge" src="https://img.shields.io/badge/Executions-51K-blue">
-  <img alt="Static Badge" src="https://img.shields.io/badge/Workflow_Versions-357K-blue">
-  <img alt="Static Badge" src="https://img.shields.io/badge/Deployments-7-blue">
-  <img alt="Static Badge" src="https://img.shields.io/badge/Largest_Deployment-100_nodes,_400_cores-green">
-</p>
+## Pull reviewers stats
+Stats of the last 365 days for [texera](https://github.com/Texera/texera):
+|                                                                                                                                                                          | User                 | Total reviews   | Time to review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a href="https://github.com/Yicong-Huang"><img src="https://avatars.githubusercontent.com/u/17627829?u=823e1af8e1c9e9dcfa8c76710289be0076650d90&v=4" width="32"></a>     | Yicong-Huang<br/>🥇  | **199**<br/>▀▀▀ | [18h 6m](https://app.flowwer.dev/charts/review-time/~(u~(i~'17627829~n~'Yicong-Huang)~p~365~r~(~)))<br/>▀                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| <a href="https://github.com/aglinxinyuan"><img src="https://avatars.githubusercontent.com/u/11544314?u=08bd523824df5b02fd9c3b55f7fc9f6e19679f38&v=4" width="32"></a>     | aglinxinyuan<br/>🥈  | 163<br/>▀▀      | [12h 3m](https://app.flowwer.dev/charts/review-time/~(u~(i~'11544314~n~'aglinxinyuan)~p~365~r~(~(d~'sm2fmm~t~'1mj)~(d~'sm3050~t~'qjot)~(d~'sm3066~t~'tfz6)~(d~'smaliu~t~'1k)~(d~'smbkys~t~'32l)~(d~'smgxiy~t~'1du)~(d~'smi21i~t~'1868)~(d~'smicgw~t~'1092)~(d~'smicli~t~'10do)~(d~'smif5f~t~'12xl)~(d~'smif97~t~'131d)~(d~'smifa7~t~'132d)~(d~'smih0z~t~'1kcd)~(d~'smihr1~t~'8m))))<br/>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| <a href="https://github.com/shengquan-ni"><img src="https://avatars.githubusercontent.com/u/13672781?u=a1c50d25b8913d811f391bef3f67f2c60b3cb2ef&v=4" width="32"></a>     | shengquan-ni<br/>🥉  | 113<br/>▀▀      | [16h 46m](https://app.flowwer.dev/charts/review-time/~(u~(i~'13672781~n~'shengquan-ni)~p~365~r~(~(d~'sefsdt~t~'3xxw)~(d~'sekz7h~t~'94rk)~(d~'seoloz~t~'19v)~(d~'siyv4b~t~'diml)~(d~'siyv6g~t~'dioq)~(d~'sl3pid~t~'1fbl)~(d~'sl3pjw~t~'1fd4)~(d~'sldoj1~t~'1ip)~(d~'slf09a~t~'25f)~(d~'sls0k3~t~'59mp)~(d~'sls0ve~t~'59y0)~(d~'sly5pj~t~'1jht)~(d~'sm7053~t~'49ys)~(d~'sm7065~t~'49zu)~(d~'sm7087~t~'4a1w)~(d~'sm7pm5~t~'4zfu)~(d~'sm9cje~t~'1vd)~(d~'smgoe0~t~'6da)~(d~'smieji~t~'2x1))))<br/>▀                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| <a href="https://github.com/bobbai00"><img src="https://avatars.githubusercontent.com/u/43344272?u=71254b4ecea9dbfd9d38fd7570d0e86bea77907d&v=4" width="32"></a>         | bobbai00<br/>        | 52<br/>▀        | [1d 7h 2m](https://app.flowwer.dev/charts/review-time/~(u~(i~'43344272~n~'bobbai00)~p~365~r~(~(d~'sk0imf~t~'887)~(d~'sk0k5n~t~'9rf)~(d~'sk4beo~t~'pb4)~(d~'skpppa~t~'1km)~(d~'skuslg~t~'20kc)~(d~'sl09jj~t~'1scrv)~(d~'sl1w53~t~'943z)~(d~'sl1ya7~t~'1r2)~(d~'sl3k09~t~'1vn8l)~(d~'sl3vnx~t~'q77)~(d~'sl3w2k~t~'1vzaw)~(d~'sl40bx~t~'42n)~(d~'sl43e1~t~'74r)~(d~'sl4al8~t~'eby)~(d~'sl59wp~t~'1dnf)~(d~'sl5a3i~t~'1xdbu)~(d~'sl5e1a~t~'1hs0)~(d~'sl5z13~t~'4q0)~(d~'sl63lj~t~'2y4t)~(d~'sl78q5~t~'y89)~(d~'sla8s9~t~'1k7s)~(d~'slaxb4~t~'28qn)~(d~'slcphr~t~'40xa)~(d~'sld34h~t~'256ct)~(d~'sldr8m~t~'nz38)~(d~'slf32a~t~'41l)~(d~'slf5c0~t~'9e)~(d~'slvi94~t~'ql)~(d~'sm2nly~t~'9zfk)~(d~'sm6dsb~t~'dplx)~(d~'smgirc~t~'1nm)~(d~'smgsgo~t~'e8)~(d~'smi5ni~t~'6ztg)~(d~'smio3y~t~'7i9w)~(d~'smio4a~t~'7ia8)~(d~'smio4g~t~'7iae)~(d~'smioh2~t~'7in0))))<br/>▀                                                                                                                                                                                         |
+| <a href="https://github.com/Xiao-zhen-Liu"><img src="https://avatars.githubusercontent.com/u/36582710?u=d4d9a07379f63a885a0de7b7fb1348db5d56b0de&v=4" width="32"></a>    | Xiao-zhen-Liu<br/>   | 49<br/>▀        | [2d 2h 39m](https://app.flowwer.dev/charts/review-time/~(u~(i~'36582710~n~'Xiao-zhen-Liu)~p~365~r~(~(d~'s969n6~t~'b4k4)~(d~'s9a4xc~t~'mbzl)~(d~'s9e995~t~'532)~(d~'s9hj1m~t~'3sa8)~(d~'s9hj5n~t~'o1ot)~(d~'s9hmcb~t~'mh99)~(d~'s9hmtp~t~'4tyf)~(d~'s9hnj7~t~'6e)~(d~'s9hr9l~t~'7p)~(d~'s9hraz~t~'gz)~(d~'s9href~t~'ps)~(d~'s9j4qe~t~'nznc)~(d~'s9jloz~t~'13k3)~(d~'s9kxvy~t~'pssw)~(d~'s9l41q~t~'pyyo)~(d~'s9on54~t~'1a0b3)~(d~'s9x1p3~t~'1l)~(d~'sad07y~t~'ft)~(d~'sak22s~t~'11ms)~(d~'salu2i~t~'2so1)~(d~'sanup3~t~'ovj3)~(d~'sanvak~t~'nsyo)~(d~'sao6on~t~'55a6)~(d~'sarucy~t~'ow)~(d~'sb2y3w~t~'s4)~(d~'sb4pu9~t~'1cze)~(d~'sba3ml~t~'2rub)~(d~'sbad8x~t~'3rzq)~(d~'sbcdi3~t~'4rm)~(d~'sbgj3c~t~'37)~(d~'sbhj48~t~'1qku)~(d~'scf1n9~t~'1dcx)~(d~'scgxh8~t~'19tk)~(d~'scijwh~t~'2w8t)~(d~'sd2o2t~t~'ba9)~(d~'sd38ow~t~'iem)~(d~'sdltn8~t~'133ad)~(d~'sdluby~t~'bxo)~(d~'sdm8yc~t~'13ilh)~(d~'sdvecw~t~'dn2)~(d~'smidgx~t~'1193))))<br/>▀▀                                                                                                         |
+| <a href="https://github.com/chenlica"><img src="https://avatars.githubusercontent.com/u/12926365?u=818d18f88f77a00c578a4578b6f23b2e6214af78&v=4" width="32"></a>         | chenlica<br/>        | 31<br/>         | [1d 10h 19m](https://app.flowwer.dev/charts/review-time/~(u~(i~'12926365~n~'chenlica)~p~365~r~(~(d~'s4fnaw~t~'3k)~(d~'s5l0t2~t~'rp)~(d~'s96kqp~t~'8jix)~(d~'s9rgj9~t~'8c29)~(d~'s9v3ex~t~'8r)~(d~'sajy0u~t~'1hsf)~(d~'sck2p7~t~'1p)~(d~'sck8lc~t~'25)~(d~'sckwom~t~'2a)~(d~'sckwyx~t~'cl)~(d~'sdcyrs~t~'2ncf)~(d~'sfiker~t~'6m)~(d~'sfikjf~t~'ba)~(d~'sflr9u~t~'cu)~(d~'sflrl0~t~'o0)~(d~'sfo33r~t~'27)~(d~'sgxryq~t~'4m6o)~(d~'sh9kqh~t~'14z)~(d~'si4i8b~t~'5gz2)~(d~'si4zuk~t~'5ylb)~(d~'si51p9~t~'60g0)~(d~'si54l8~t~'63bz)~(d~'siuna1~t~'5f)~(d~'siva18~t~'daef)~(d~'sj0cl2~t~'f03c)~(d~'sj3fjj~t~'6zfg)~(d~'sj3i5u~t~'721r)~(d~'sj5jxq~t~'6ml1)~(d~'sj72av~t~'84y6)~(d~'sj73oo~t~'lr6y)~(d~'sj808s~t~'oc0u)~(d~'sj80nm~t~'7ylx)~(d~'sj81of~t~'odgh)~(d~'sj9v9n~t~'4er)~(d~'sjj843~t~'2vwe)~(d~'sk0n7p~t~'cth)~(d~'sk1gf0~t~'2oz0)~(d~'sk3hpg~t~'4q9g)~(d~'sk3l8n~t~'6k)~(d~'sk6rbg~t~'54)~(d~'slf23v~t~'275c7)~(d~'sm76c0~t~'qk8)~(d~'sm76m0~t~'qu8))))<br/>▀                                                                                   |
+| <a href="https://github.com/yunyad"><img src="https://avatars.githubusercontent.com/u/114192306?v=4" width="32"></a>                                                     | yunyad<br/>          | 23<br/>         | [2d 5h 9m](https://app.flowwer.dev/charts/review-time/~(u~(i~'114192306~n~'yunyad)~p~365~r~(~(d~'sft3lr~t~'1gzi3)~(d~'sft3tu~t~'qj)~(d~'sfte5s~t~'3r)~(d~'sftebx~t~'15)~(d~'sg19uv~t~'4i2o)~(d~'sg19wt~t~'4i4m)~(d~'sg1a2k~t~'4iad)~(d~'sg1a57~t~'4fd1)~(d~'sg23hk~t~'58pe)~(d~'sg24hh~t~'59pb)~(d~'sg4vl7~t~'80t1)~(d~'sga5ds~t~'ddll)~(d~'sgimyl~t~'1axa)~(d~'sgj63i~t~'2jr)~(d~'sgos5n~t~'5njd)~(d~'sgosc8~t~'1b)~(d~'simt64~t~'uq6)~(d~'simtp4~t~'35h6)~(d~'sinrgn~t~'1t0p)~(d~'sinri3~t~'1t25)~(d~'sinrjj~t~'43bl)~(d~'sinrkv~t~'43cx)~(d~'sinrtm~t~'1tdo)~(d~'sins3w~t~'43vy)~(d~'sip3x6~t~'5fp8)~(d~'sip47x~t~'5fzz)~(d~'sip4ck~t~'35wm)~(d~'sip513~t~'5gt5)~(d~'sip80c~t~'39ke)~(d~'sip8iq~t~'5kas)~(d~'sipjn5~t~'3l77)~(d~'sizrft~t~'eey3)~(d~'sj2d3h~t~'3fqs)~(d~'sj2d4y~t~'3fs9)~(d~'sj2d5j~t~'3fsu)~(d~'sj2da3~t~'3fxe)~(d~'sj2db2~t~'3fyd)~(d~'sj2dcp~t~'3g00)~(d~'sj4fvh~t~'5iis)~(d~'sj4gxk~t~'5jkv)~(d~'sj4gyd~t~'5jlo)~(d~'sj4gyv~t~'5jm6)~(d~'sj59co~t~'6bzz)~(d~'sj7o7u~t~'7m65)~(d~'sl23ac~t~'4en)~(d~'sl5h7e~t~'3kjo))))<br/>▀▀ |
+| <a href="https://github.com/kunwp1"><img src="https://avatars.githubusercontent.com/u/143021053?v=4" width="32"></a>                                                     | kunwp1<br/>          | 21<br/>         | [22h 12m](https://app.flowwer.dev/charts/review-time/~(u~(i~'143021053~n~'kunwp1)~p~365~r~(~(d~'s8s9xl~t~'7xbx)~(d~'s8sabz~t~'7xqb)~(d~'sbn9zp~t~'y5e)~(d~'sbnadl~t~'6j2)~(d~'sg2l3n~t~'4g88)~(d~'sg2y6n~t~'4tb8)~(d~'sg35fy~t~'5ho4)~(d~'sg590r~t~'7l8x)~(d~'sjlxw2~t~'33c7)~(d~'sjm072~t~'35n7)~(d~'sk11gc~t~'42j)~(d~'sk12ys~t~'5kz)~(d~'sk1308~t~'5mf)~(d~'sk346q~t~'o3)~(d~'sk4wsm~t~'1t9z)~(d~'sk9050~t~'1pnx)~(d~'skck04~t~'qx)~(d~'skeixo~t~'98g)~(d~'skmt96~t~'4lsn)~(d~'skqm7c~t~'d9v)~(d~'skqwtf~t~'8pcw)~(d~'skqxw2~t~'8qfj)~(d~'sky7tj~t~'3nx0)~(d~'sld3da~t~'809)~(d~'sld85x~t~'u0)~(d~'slf8xn~t~'r8)~(d~'slifkc~t~'5k7b)~(d~'sls1wz~t~'2z8)~(d~'sm201d~t~'22r)~(d~'sm2o6v~t~'q89)~(d~'sm2o7u~t~'qhd)~(d~'sm2oe6~t~'360r)~(d~'sm8fnt~t~'vkas))))<br/>▀                                                                                                                                                                                                                                                                                 |
+| <a href="https://github.com/GspikeHalo"><img src="https://avatars.githubusercontent.com/u/109092664?u=9c999644251b492d381efe444b6e9d378ff49f46&v=4" width="32"></a>      | GspikeHalo<br/>      | 2<br/>          | [20h 59m](https://app.flowwer.dev/charts/review-time/~(u~(i~'109092664~n~'GspikeHalo)~p~365~r~(~(d~'sl6aw9~t~'35fj)~(d~'smi7ht~t~'33u))))<br/>▀                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| <a href="https://github.com/mengw15"><img src="https://avatars.githubusercontent.com/u/125719918?v=4" width="32"></a>                                                    | mengw15<br/>         | 2<br/>          | [**59m**](https://app.flowwer.dev/charts/review-time/~(u~(i~'125719918~n~'mengw15)~p~365~r~(~(d~'slhlnv~t~'16f)~(d~'sm22vw~t~'4b9))))<br/>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| <a href="https://github.com/IamtherealBrian"><img src="https://avatars.githubusercontent.com/u/143851082?u=80e82e361a67639d8a560ca477e0c9419b5fe7a0&v=4" width="32"></a> | IamtherealBrian<br/> | 2<br/>          | [2d 1h 19m](https://app.flowwer.dev/charts/review-time/~(u~(i~'143851082~n~'IamtherealBrian)~p~365~r~(~(d~'sg6dg1~t~'7gf6)~(d~'sj9weo~t~'5js))))<br/>▀▀                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| <a href="https://github.com/sixsage"><img src="https://avatars.githubusercontent.com/u/80994706?v=4" width="32"></a>                                                     | sixsage<br/>         | 1<br/>          | [6h 3m](https://app.flowwer.dev/charts/review-time/~(u~(i~'80994706~n~'sixsage)~p~365~r~(~(d~'smil6u~t~'gsv))))<br/>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | 0<br/>              |
 
-<!---
-(Orignal intro paragraph, commented out)
-## Texera
-
-Texera is a system to support collaborative, ML-centric data analytics as a cloud-based service using GUI-based workflows. It supports scalable computation with a parallel backend engine, and enables advanced AI/ML techniques. "Collaboration" is a key focus, and we want to enable an experience similar to existing services such as Google Docs, but for data analytics, especially for people with different backgrounds, including IT developers and domain scientists with limited programming background.
--->
-
-## Motivation
-
-* Many data analysts need to spend a significant amount of effort on low-level computation to do data wrangling and preparation, and want to use latest AI/ML techniques. These tasks are especially tough for non-IT users. 
-
-* Many workflow-based analysis systems are not parallel, making them not capable of dealing with big data sets. 
-
-* Cloud-based services and technologies have emerged and advanced significantly in the past decade. Emerging browser-based techniques make it possible to develop powerful browser-based interfaces, which also benefit from high-speed networks.
-
-* Existing big data systems support little interaction during the execution of a long running job, making them hard to manage once they are started.
-
-## Goals
-
-* Provide data analytics as cloud services;
-* Provide a browser-based GUI to form a workflow without writing code;
-* Allow non-IT people to do data analytics;
-* Support collaborative data analytics;
-* Allow users to interact with the execution of a job;
-* Support huge volumes of data efficiently.
-
-## Workflow GUI
-The Texera interface supports real-time collaboration on data science projects, allowing seamless sharing of data and workflows with easy access to AI/ML techniques and efficient management of public and private resources. 
-The workflow in the use case shown below includes data cleaning, ML model training, and validation.
-![texera-screenshot](https://github.com/user-attachments/assets/4384b8f5-3a9a-4bbc-a804-1dadd156ebb3)
-
-
-
-## Publications (Computer Science):
-* (8/2024) Pasta: A Cost-Based Optimizer for Generating Pipelining Schedules for Dataflow DAGs, Xiaozhen Liu, Yicong Huang, Xinyuan Lin, Avinash Kumar, Sadeem Alsudais, and Chen Li, to appear in SIGMOD 2025.
-* (7/2024) Texera: A System for Collaborative and Interactive Data Analytics Using Workflows, Zuozhi Wang, Yicong Huang, Shengquan Ni, Avinash Kumar, Sadeem Alsudais, Xiaozhen Liu, Xinyuan Lin, Yunyan Ding and Chen Li, to appear in VLDB 2024, Scalable Data Science track [PDF](https://www.vldb.org/pvldb/vol17/p3580-wang.pdf), [Slides](https://chenli.ics.uci.edu/files/vldb2024-texera-presentation.pdf).
-* (3/2024) Demonstration of Udon: Line-by-line Debugging of User-Defined Functions in Data Workflows, Yicong Huang, Zuozhi Wang, and Chen Li, in SIGMOD 2024, **Best Demo Runner Up Award🏆**, [PDF](https://dl.acm.org/doi/10.1145/3626246.3654756). 
-* (2/2024) Data Science Tasks Implemented with Scripts versus GUI-Based Workflows: The Good, the Bad, and the Ugly, Alexander K Taylor, Yicong Huang, Junheng Hao, Xinyuan Lin, Xiusi Chen, Wei Wang, and Chen Li, in DataPlat Workshop at ICDE 2024 [PDF](https://ieeexplore.ieee.org/abstract/document/10555112), [Slides](https://chenli.ics.uci.edu/files/icde2024-dataplat-workshop.pdf). 
-* (8/2023) Building a Collaborative Data Analytics System: Opportunities and Challenges, Zuozhi Wang, Chen Li, in Tutorial at VLDB 2023 [PDF](https://www.vldb.org/pvldb/vol16/p3898-wang.pdf), [Slides](https://chenli.ics.uci.edu/files/vldb2023-texera-tutorial.pdf).
-* (8/2023) Udon: Efficient Debugging of User-Defined Functions in Big Data Systems with Line-by-Line Control, Yicong Huang, Zuozhi Wang, and Chen Li, in SIGMOD 2024 [PDF](https://dl.acm.org/doi/10.1145/3626712), [Slides](https://chenli.ics.uci.edu/files/sigmod2024-udon-presentation.pdf).
-* (8/2023) Improving Iterative Analytics in GUI-Based Data-Processing Systems with Visualization,
-  Version Control, and Result Reuse, Sadeem Alsudais, Ph.D. Thesis [PDF](https://sadeemsaleh.github.io/Sadeem_phd_thesis.pdf).
-* (7/2023) Using Texera to Characterize Climate Change Discussions on Twitter During Wildfires, Shengquan Ni, Yicong Huang, Jessie W. Y. Ko, Alexander Taylor, Xiusi Chen, Avinash Kumar, Sadeem Alsudais, Zuozhi Wang, Xiaozhen Liu, Wei Wang, Suellen Hopfer, and Chen Li, in Data Science Day at KDD 2023.
-* (7/2023) Raven: Accelerating Execution of Iterative Data Analytics by Reusing Results of Previous Equivalent Versions, Sadeem Alsudais, Avinash Kumar, and Chen Li, in HILDA Workshop at SIGMOD 2023 [PDF](https://dl.acm.org/doi/10.1145/3597465.3605219).
-* (6/2023) Texera: A System for Collaborative and Interactive Data Analytics Using Workflows, Zuozhi Wang, Ph.D. Thesis [PDF](https://zuozhiw.github.io/Zuozhi_Wang_UCI_PhD_Thesis.pdf).
-* (12/2022) Towards Interactive, Adaptive and Result-aware Big Data Analytics, Avinash Kumar, Ph.D. Thesis [PDF](https://arxiv.org/abs/2212.07096).
-* (9/2022) Fries: Fast and Consistent Runtime Reconfiguration in Dataflow Systems with Transactional Guarantees, Zuozhi Wang, Shengquan Ni, Avinash Kumar, and Chen Li, in VLDB 2023 [PDF](https://www.vldb.org/pvldb/vol16/p256-wang.pdf), [Slides](https://chenli.ics.uci.edu/files/vldb2023-fries.pdf).
-* (7/2022) Drove: Tracking Execution Results of Workflows on Large Datasets, Sadeem Alsudais, in the Ph.D. Workshop at VLDB 2022 [PDF](http://ceur-ws.org/Vol-3186/paper_10.pdf).
-* (6/2022) Demonstration of Accelerating Machine Learning Inference Queries with Correlative Proxy Models, Zhihui Yang, Yicong Huang, Zuozhi Wang, Feng Gao, Yao Lu, Chen Li, and X. Sean Wang, in VLDB 2022 [PDF](https://www.vldb.org/pvldb/vol15/p3734-yang.pdf).
-* (6/2022) Demonstration of Collaborative and Interactive Workflow-Based Data Analytics in Texera, Xiaozhen Liu, Zuozhi Wang, Shengquan Ni, Sadeem Alsudais, Yicong Huang, Avinash Kumar, and Chen Li, in VLDB 2022 [PDF](https://www.vldb.org/pvldb/vol15/p3738-liu.pdf), [Demo Video](https://youtu.be/2gfPUZNsoBs).
-* (4/2022) Optimizing Machine Learning Inference Queries with Correlative Proxy Models, Zhihui Yang, Zuozhi Wang, Yicong Huang, Yao Lu, Chen Li, and X. Sean Wang, in VLDB 2022 [PDF](https://www.vldb.org/pvldb/vol15/p2032-yang.pdf).
-* (7/2020) Demonstration of Interactive Runtime Debugging of Distributed Dataflows in Texera, Zuozhi Wang, Avinash Kumar, Shengquan Ni, and Chen Li, in VLDB 2020 [PDF](http://www.vldb.org/pvldb/vol13/p2953-wang.pdf), [Video](https://www.youtube.com/watch?v=SP-XiDADbw0), [Slides](https://docs.google.com/presentation/d/14U6RPZfeb8Ho0aO2HsCSc8lRs6ul6AxEIm5gpjeVUYA/edit?usp=sharing).
-* (1/2020) Amber: A Debuggable Dataflow system based on the Actor Model, Avinash Kumar, Zuozhi Wang, Shengquan Ni, and Chen Li, VLDB 2020 [PDF](http://www.vldb.org/pvldb/vol13/p740-kumar.pdf), [Video](https://www.youtube.com/watch?v=T5ShFRfHmgI), [Slides](https://docs.google.com/presentation/d/1v8G9lDmfv4Ff2YWyrGfo_9iMQVF4N8a-4gO4H-K6rCk/edit?usp=sharing).
-* (4/2017) A Demonstration of TextDB: Declarative and Scalable Text Analytics on Large Data Sets, Zuozhi Wang, Flavio Bayer, Seungjin Lee, Kishore Narendran, Xuxi Pan, Qing Tang, Jimmy Wang, and Chen Li, [ICDE 2017](http://icde2017.sdsc.edu/), **Best Demo award**, [PDF](https://chenli.ics.uci.edu/files/icde2017-textdb-demo.pdf), [Video](https://github.com/Texera/texera/wiki/Video).
-
-
-## Publications (Interdisciplinary):
-* (2/2025) DS4ALL: Teaching High-School Students Data Science and AI/ML Using the Texera Workflow Platform as a Service, Jiadong Bai, Xiaozhen Liu, Anthony Cuturrufo, Alexander Kundu Taylor, Jeehyun Hwang, Mingyu Derek Ma, Xinyuan Lin, Yanqiao Zhu, Yicong Huang, Yunyan Ding, Wei Wang and Chen Li, to appear in [Data Science Education K-12: Research to Practice Annual Conference 2025](https://web.cvent.com/event/d641bd9f-6c99-4cbc-951b-33b1ca05d4ed/summary), San Antonio, Texas.
-* (7/2024) Brain image data processing using collaborative data workflows on Texera, Yunyan Ding, Yicong Huang, Pan Gao, Andy Thai, Atchuth Naveen Chilaparasetti, M. Gopi, Xiangmin Xu, and Chen Li, in Frontiers Neural Circuits [PDF](https://doi.org/10.3389/fncir.2024.1398884).
-* (1/2024) Wording Matters: the Effect of Linguistic Characteristics and Political Ideology on Resharing of COVID-19 Vaccine Tweets, Judith Borghouts, Yicong Huang, Suellen Hopfer, Chen Li, and Gloria Mark, in TOCHI 2024 [PDF](https://dl.acm.org/doi/pdf/10.1145/3637876).
-* (1/2024) How the experience of California wildfires shape Twitter climate change framings, Jessie W. Y. Ko, Shengquan Ni, Alexander Taylor, Xiusi Chen, Yicong Huang, Avinash Kumar, Sadeem Alsudais, Zuozhi Wang, Xiaozhen Liu, Wei Wang, Chen Li, and Suellen Hopfer, in Climatic Change 2024 [PDF](https://link.springer.com/content/pdf/10.1007/s10584-023-03668-0.pdf).
-* (11/2023) The Marketing and Perceptions of Non-Tobacco Blunt Wraps on Twitter, Joshua U. Rhee, Yicong Huang, Aurash J. Soroosh, Sadeem Alsudais, Shengquan Ni, Avinash Kumar, Jacob Paredes, Chen Li, and David S. Timberlake, in Substance Use & Misuse 2023 [PDF](https://www.tandfonline.com/doi/epdf/10.1080/10826084.2023.2280572?needAccess=true).
-* (3/2023) Understanding underlying moral values and language use of COVID-19 vaccine attitudes on twitter, Judith Borghouts, Yicong Huang, Sydney Gibbs, Suellen Hopfer, Chen Li, and Gloria Mark, in PNAS Nexus 2023 [PDF](https://academic.oup.com/pnasnexus/article-pdf/2/3/pgad013/49435858/pgad013.pdf).
-* (10/2022) Public Opinions toward COVID-19 Vaccine Mandates: A Machine Learning-based Analysis of U.S. Tweets, Yawen Guo, Jun Zhu, Yicong Huang, Lu He, Changyang He, Chen Li, and Kai Zheng, in AMIA 2022 [PDF](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10148373/pdf/1066.pdf).
-* (9/2021) The Social Amplification and Attenuation of COVID-19 Risk Perception Shaping Mask Wearing Behavior: A Longitudinal Twitter Analysis, Suellen Hopfer, Emilia J. Fields, Yuwen Lu, Ganesh Ramakrishnan, Ted Grover, Quishi Bai, Yicong Huang, Chen Li, and Gloria Mark, in PLOS ONE 2021 [PDF](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0257428).
-* (4/2021) Why Do People Oppose Mask Wearing? A Comprehensive Analysis of US Tweets During the COVID-19 Pandemic, Lu He, Changyang He, Tera Leigh Reynolds, Qiushi Bai, Yicong Huang, Chen Li, Kai Zheng, and Yunan Chen, in JAMIA 2021 [PDF](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7989302/pdf/ocab047.pdf).
-
-## Education
-
-* [Data Science for All](https://ds4all.ics.uci.edu/) (an NSF-funded summer program to teach high-school students data science and AI/ML)
-* [ICS 80](https://canvas.eee.uci.edu/courses/63639/pages/syllabus) (a Spring 2024 course at UCI, teaching 42 undergraduates, most of whom are not computer science majors, to learn data science and AI/ML)
-
-## Videos
-* [dkNET Webinar "Texera: A Scalable Cloud Computing Platform for Sharing Data & Workflow-based Analysis" 04/26/2024](https://www.youtube.com/watch?v=B81iMFS5fPc)
-* [Texera demo in VLDB 2020](https://www.youtube.com/watch?v=SP-XiDADbw0)
-* [Amber engine presentation in VLDB 2020](https://www.youtube.com/watch?v=T5ShFRfHmgI)
-* See [Texera in action](https://www.youtube.com/watch?v=NXfynBUwdVg). 
-
-## Getting Started
-
-* For users, visit [Guide to Use Texera](https://github.com/Texera/texera/wiki/Getting-Started).
-* For developers, visit [Guide to Develop Texera](https://github.com/Texera/texera/wiki/Guide-for-Developers).
-
-Texera was formally known as "TextDB" before August 28, 2017.
-
-## Instructions for VLDB 2022 Demo Paper
-
-To try our collaborative data analytics in _Demonstration of Collaborative and Interactive Workflow-Based Data Analytics in Texera_, visit [https://github.com/Texera/texera/wiki/Instructions-for-VLDB-2022-Demo](https://github.com/Texera/texera/wiki/Instructions-for-VLDB-2022-Demo).
-
-## Acknowledgements
-
-This project is supported by the <a href="http://www.nsf.gov">National Science Foundation</a> under the awards [IIS-1745673](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1745673), [IIS-2107150](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2107150), AWS Research Credits, and Google Cloud Platform Education Programs.
-
-* <a href="https://www.niddk.nih.gov/"><img src="https://github.com/Texera/texera/assets/17627829/d279897a-3efb-41c1-b2d3-8fd20c800ad7" alt="NIH NIDDK" height="30"/></a> This project is supported by an <a href="https://reporter.nih.gov/project-details/10818244">NIH NIDDK</a> award.
-
-
-* <a href="http://www.yourkit.com"><img src="https://www.yourkit.com/images/yklogo.png" alt="Yourkit" height="30"/></a>  [Yourkit](https://www.yourkit.com/) has given an open source license to use their profiler in this project.
-
-## Citation
-Please cite Texera as 
-```
-
-@article{DBLP:journals/pvldb/WangHNKALLDL24,
-  author       = {Zuozhi Wang and
-                  Yicong Huang and
-                  Shengquan Ni and
-                  Avinash Kumar and
-                  Sadeem Alsudais and
-                  Xiaozhen Liu and
-                  Xinyuan Lin and
-                  Yunyan Ding and
-                  Chen Li},
-  title        = {Texera: {A} System for Collaborative and Interactive Data Analytics
-                  Using Workflows},
-  journal      = {Proc. {VLDB} Endow.},
-  volume       = {17},
-  number       = {11},
-  pages        = {3580--3588},
-  year         = {2024},
-  url          = {https://www.vldb.org/pvldb/vol17/p3580-wang.pdf},
-  timestamp    = {Thu, 19 Sep 2024 13:09:37 +0200},
-  biburl       = {https://dblp.org/rec/journals/pvldb/WangHNKALLDL24.bib},
-  bibsource    = {dblp computer science bibliography, https://dblp.org}
-}
-```
+<sup>⚡️ [Pull request stats](https://bit.ly/pull-request-stats)</sup>
