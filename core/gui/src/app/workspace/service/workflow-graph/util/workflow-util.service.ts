@@ -176,6 +176,7 @@ export class WorkflowUtilService {
       displayName: outputPortInfo.displayName ?? "",
       allowMultiInputs: false,
       isDynamicPort: false,
+      isStatePort: outputPortInfo.isStatePort
     };
   }
 
