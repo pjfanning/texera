@@ -315,7 +315,11 @@ export class JointUIService {
         group: "out",
         id: port.portID,
         attrs: {
+          ".port-body": {
+            fill: port.isStatePort ? "red" : "#A0A0A0",
+          },
           ".port-label": {
+            fill: port.isStatePort ? "red" : "black",
             text: port.displayName ?? "",
             event: "output-port-label:pointerdown",
           },
