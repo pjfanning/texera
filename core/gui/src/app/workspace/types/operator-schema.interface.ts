@@ -20,6 +20,7 @@ export interface InputPortInfo
 export interface OutputPortInfo
   extends Readonly<{
     displayName?: string;
+    isStatePort?: boolean;
   }> {}
 
 export interface OperatorAdditionalMetadata
