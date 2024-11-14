@@ -13,6 +13,7 @@ import edu.uci.ics.texera.workflow.common.metadata.{OperatorInfo, PropertyNameCo
 import edu.uci.ics.texera.workflow.operators.aggregate.AggregateOpDesc
 import edu.uci.ics.texera.workflow.operators.cartesianProduct.CartesianProductOpDesc
 import edu.uci.ics.texera.workflow.operators.controlBlock.ifStatement.IfStatementOpDesc
+import edu.uci.ics.texera.workflow.operators.controlBlock.loop.LoopStartOpDesc
 import edu.uci.ics.texera.workflow.operators.controlBlock.state.DataToStateOpDesc
 import edu.uci.ics.texera.workflow.operators.dictionary.DictionaryMatcherOpDesc
 import edu.uci.ics.texera.workflow.operators.difference.DifferenceOpDesc
@@ -163,6 +164,7 @@ trait StateTransferFunc
     new Type(value = classOf[DictionaryMatcherOpDesc], name = "DictionaryMatcher"),
     new Type(value = classOf[IfStatementOpDesc], name = "IfStatement"),
     new Type(value = classOf[DataToStateOpDesc], name = "DataToState"),
+    new Type(value = classOf[LoopStartOpDesc], name = "LoopStart"),
     new Type(value = classOf[SortPartitionsOpDesc], name = "SortPartitions"),
     new Type(value = classOf[CSVOldScanSourceOpDesc], name = "CSVOldFileScan"),
     new Type(value = classOf[RedditSearchSourceOpDesc], name = "RedditSearch"),

@@ -3,42 +3,23 @@ package edu.uci.ics.amber.engine.architecture.worker
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.common.AmberProcessor
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  InputManager,
-  OutputManager,
-  WorkerTimerService
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{InputManager, OutputManager, WorkerTimerService}
 import edu.uci.ics.amber.engine.architecture.rpc.controlcommands.ChannelMarkerType.REQUIRE_ALIGNMENT
-import edu.uci.ics.amber.engine.architecture.rpc.controlcommands.{
-  ChannelMarkerPayload,
-  ConsoleMessageTriggeredRequest,
-  EmptyRequest,
-  PortCompletedRequest,
-  WorkerStateUpdatedRequest
-}
+import edu.uci.ics.amber.engine.architecture.rpc.controlcommands.{ChannelMarkerPayload, ConsoleMessageTriggeredRequest, EmptyRequest, PortCompletedRequest, WorkerStateUpdatedRequest}
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MainThreadDelegateMessage
 import edu.uci.ics.amber.engine.architecture.worker.managers.SerializationManager
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  READY,
-  RUNNING
-}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, READY, RUNNING}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.executor.OperatorExecutor
-import edu.uci.ics.amber.engine.common.model.{EndOfInputChannel, StartOfInputChannel, State}
-import edu.uci.ics.amber.engine.common.model.tuple.{
-  FinalizeExecutor,
-  FinalizePort,
-  SchemaEnforceable,
-  Tuple,
-  TupleLike
-}
+import edu.uci.ics.amber.engine.common.model.{EndOfInputChannel, StartOfInputChannel, StartOfIteration, State}
+import edu.uci.ics.amber.engine.common.model.tuple.{FinalizeExecutor, FinalizePort, SchemaEnforceable, Tuple, TupleLike}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
+import edu.uci.ics.texera.workflow.operators.controlBlock.loop.LoopStartOpExec
 
 class DataProcessor(
     actorId: ActorVirtualIdentity,
@@ -233,6 +214,7 @@ class DataProcessor(
         processInputTuple(inputManager.getNextTuple)
       case MarkerFrame(marker) =>
         marker match {
+
           case state: State =>
             processInputState(state, portId.id)
           case StartOfInputChannel() =>
@@ -248,7 +230,15 @@ class DataProcessor(
             }
             if (inputManager.getAllPorts.forall(portId => inputManager.isPortCompleted(portId))) {
               // assuming all the output ports finalize after all input ports are finalized.
-              outputManager.finalizeOutput()
+              executor match {
+                case loopStartExecutor: LoopStartOpExec =>
+                  //outputManager.emitMarker(executor.get)
+                  outputManager.outputIterator.setTupleOutput(
+                    loopStartExecutor.produceTupleOnIterationStart().map(t => (t, None))
+                  )
+                case _ =>
+                  outputManager.finalizeOutput()
+              }
             }
         }
     }
