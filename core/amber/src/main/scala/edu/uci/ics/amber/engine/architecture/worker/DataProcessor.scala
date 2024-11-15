@@ -232,7 +232,28 @@ class DataProcessor(
               // assuming all the output ports finalize after all input ports are finalized.
               executor match {
                 case loopStartExecutor: LoopStartOpExec =>
-                  //outputManager.emitMarker(executor.get)
+                  outputManager.emitMarker(loopStartExecutor.produceStateOnIterationStart())
+                  outputManager.outputIterator.setTupleOutput(
+                    loopStartExecutor.produceTupleOnIterationStart().map(t => (t, None))
+                  )
+                  outputManager.flush()
+
+                  outputManager.emitMarker(loopStartExecutor.produceStateOnIterationStart())
+                  outputManager.outputIterator.setTupleOutput(
+                    loopStartExecutor.produceTupleOnIterationStart().map(t => (t, None))
+                  )
+                  outputManager.flush()
+                  outputManager.emitMarker(loopStartExecutor.produceStateOnIterationStart())
+                  outputManager.outputIterator.setTupleOutput(
+                    loopStartExecutor.produceTupleOnIterationStart().map(t => (t, None))
+                  )
+                  outputManager.flush()
+                  outputManager.emitMarker(loopStartExecutor.produceStateOnIterationStart())
+                  outputManager.outputIterator.setTupleOutput(
+                    loopStartExecutor.produceTupleOnIterationStart().map(t => (t, None))
+                  )
+                  outputManager.flush()
+                  outputManager.emitMarker(loopStartExecutor.produceStateOnIterationStart())
                   outputManager.outputIterator.setTupleOutput(
                     loopStartExecutor.produceTupleOnIterationStart().map(t => (t, None))
                   )
