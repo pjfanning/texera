@@ -9,6 +9,7 @@ import { WorkflowExecutionHistoryComponent } from "../../../dashboard/component/
 import { TimeTravelComponent } from "./time-travel/time-travel.component";
 import { SettingsComponent } from "./settings/settings.component";
 import { calculateTotalTranslate3d } from "../../../common/util/panel-dock";
+import {RecommendationComponent} from "./recommendation/recommendation.component";
 import { PanelService } from "../../service/panel/panel.service";
 @UntilDestroy()
 @Component({
@@ -39,6 +40,12 @@ export class LeftPanelComponent implements OnDestroy, OnInit {
       title: "Execution History",
       icon: "history",
       enabled: environment.workflowExecutionsTrackingEnabled,
+    },
+    {
+      component: RecommendationComponent,
+      title: "Recommendation",
+      icon: "robot",
+      enabled: true,
     },
     {
       component: TimeTravelComponent,

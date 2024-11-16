@@ -140,6 +140,7 @@ import { LandingPageComponent } from "./hub/component/landing-page/landing-page.
 import { BrowseSectionComponent } from "./hub/component/browse-section/browse-section.component";
 import { BreakpointConditionInputComponent } from "./workspace/component/code-editor-dialog/breakpoint-condition-input/breakpoint-condition-input.component";
 import { CodeDebuggerComponent } from "./workspace/component/code-editor-dialog/code-debugger.component";
+import {RecommendationComponent} from "./workspace/component/left-panel/recommendation/recommendation.component";
 
 registerLocaleData(en);
 
@@ -152,6 +153,7 @@ registerLocaleData(en);
     MenuComponent,
     OperatorMenuComponent,
     SettingsComponent,
+    RecommendationComponent,
     PropertyEditorComponent,
     VersionsListComponent,
     TimeTravelComponent,
