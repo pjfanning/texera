@@ -33,4 +33,11 @@ export class UserIconComponent {
     document.cookie = "flarum_remember=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     this.router.navigate(["dashboard/home"]);
   }
+
+  handleAvatarClick(): void {
+    if (!this.user) {
+      // Redirect to /dashboard/login if user is undefined
+      this.router.navigate(["/dashboard/login"]);
+    }
+  }
 }
