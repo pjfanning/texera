@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, ViewChild } from "@angular/core";
+import {AfterViewInit, Component, ElementRef, OnDestroy, ViewChild} from "@angular/core";
 import { UserService } from "../../../../common/service/user/user.service";
 import { ActivatedRoute, Router } from "@angular/router";
 import { mergeMap } from "rxjs/operators";
@@ -10,7 +10,7 @@ import { GoogleAuthService } from "../../../../common/service/user/google-auth.s
   selector: "texera-google-login",
   template: "",
 })
-export class GoogleLoginComponent implements AfterViewInit {
+export class GoogleLoginComponent implements AfterViewInit, OnDestroy {
   @ViewChild("googleButton") googleButton!: ElementRef;
   constructor(
     private userService: UserService,
@@ -31,5 +31,9 @@ export class GoogleLoginComponent implements AfterViewInit {
         const returnUrl = this.route.snapshot.queryParams["returnUrl"];
         if (returnUrl) this.router.navigate([returnUrl]);
       });
+  }
+
+  ngOnDestroy(): void {
+    this.googleAuthService.cleanGoogle()
   }
 }

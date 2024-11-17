@@ -32,9 +32,9 @@ export class DashboardComponent implements OnInit {
     private router: Router,
     private flarumService: FlarumService,
     private cdr: ChangeDetectorRef,
-    private route: ActivatedRoute,
-    private googleAuthService: GoogleAuthService,
-    private notificationService: NotificationService
+    // private route: ActivatedRoute,
+    // private googleAuthService: GoogleAuthService,
+    // private notificationService: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -43,21 +43,21 @@ export class DashboardComponent implements OnInit {
 
     this.isCollpased = false;
 
-    if (!this.isLogin) {
-      this.googleAuthService.googleAuthInit(document.getElementById("googleButton"));
-      this.googleAuthService.googleCredentialResponse
-        .pipe(mergeMap(res => this.userService.googleLogin(res.credential)))
-        .pipe(
-          catchError((e: unknown) => {
-            this.notificationService.error((e as Error).message, { nzDuration: 10 });
-            return throwError(() => e);
-          })
-        )
-        .pipe(untilDestroyed(this))
-        .subscribe(() =>
-          this.router.navigateByUrl(this.route.snapshot.queryParams["returnUrl"] || "/dashboard/user/workflow")
-        );
-    }
+    // if (!this.isLogin) {
+    //   this.googleAuthService.googleAuthInit(document.getElementById("googleButton"));
+    //   this.googleAuthService.googleCredentialResponse
+    //     .pipe(mergeMap(res => this.userService.googleLogin(res.credential)))
+    //     .pipe(
+    //       catchError((e: unknown) => {
+    //         this.notificationService.error((e as Error).message, { nzDuration: 10 });
+    //         return throwError(() => e);
+    //       })
+    //     )
+    //     .pipe(untilDestroyed(this))
+    //     .subscribe(() =>
+    //       this.router.navigateByUrl(this.route.snapshot.queryParams["returnUrl"] || "/dashboard/user/workflow")
+    //     );
+    // }
     if (!document.cookie.includes("flarum_remember") && this.isLogin) {
       this.flarumService
         .auth()
