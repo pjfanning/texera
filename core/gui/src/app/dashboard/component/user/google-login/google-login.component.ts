@@ -29,7 +29,7 @@ export class GoogleLoginComponent implements AfterViewInit, OnDestroy {
       )
       .subscribe(() => {
         const returnUrl = this.route.snapshot.queryParams["returnUrl"];
-        if (returnUrl) this.router.navigate([returnUrl]);
+        this.router.navigateByUrl(returnUrl || "/dashboard/user/workflow");
       });
   }
 

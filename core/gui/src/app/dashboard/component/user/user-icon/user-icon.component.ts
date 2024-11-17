@@ -1,7 +1,7 @@
 import { Component } from "@angular/core";
 import { UserService } from "../../../../common/service/user/user.service";
 import { User } from "../../../../common/type/user";
-import { UntilDestroy } from "@ngneat/until-destroy";
+import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import { Router } from "@angular/router";
 
 /**
@@ -22,7 +22,12 @@ export class UserIconComponent {
     private userService: UserService,
     private router: Router
   ) {
-    this.user = this.userService.getCurrentUser();
+    this.userService
+      .userChanged()
+      .pipe(untilDestroyed(this))
+      .subscribe(() => {
+        this.user = this.userService.getCurrentUser();
+      });
   }
 
   /**

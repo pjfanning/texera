@@ -11,7 +11,7 @@
 </texera-user-avatar>
 
 <nz-dropdown-menu #menu="nzDropdownMenu">
-  <ul nz-menu *ngIf="this.user">
+  <ul nz-menu [hidden]="!this.user">
     <li
       (click)="onClickLogout()"
       nz-menu-item>
