@@ -19,8 +19,10 @@ import { WorkflowVersionService } from "../../../dashboard/service/user/workflow
 import { OperatorMenuService } from "../../service/operator-menu/operator-menu.service";
 import { NzContextMenuService } from "ng-zorro-antd/dropdown";
 import { ActivatedRoute, Router } from "@angular/router";
+import { ViewContainerRef, ComponentRef } from '@angular/core';
 import * as _ from "lodash";
 import * as joint from "jointjs";
+import {FloatingTipComponent} from "./recommendation-menu/floating-tip.component";
 
 // jointjs interactive options for enabling and disabling interactivity
 // https://resources.jointjs.com/docs/jointjs/v3.2/joint.html#dia.Paper.prototype.options.interactive
@@ -70,6 +72,7 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
   private gridOn: boolean = false;
   private _onProcessKeyboardActionObservable: Subject<void> = new Subject();
   private wrapper;
+  private floatingTipRef: ComponentRef<FloatingTipComponent> | null = null;
 
   constructor(
     private workflowActionService: WorkflowActionService,
@@ -146,6 +149,7 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
     this.handlePointerEvents();
     this.handleURLFragment();
     this.invokeResize();
+    this.handleFloatingTips();
   }
 
   ngOnDestroy(): void {
@@ -1266,5 +1270,79 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
     setTimeout(() => {
       window.dispatchEvent(resizeEvent);
     }, 175);
+  }
+
+  private handleFloatingTips(): void {
+    this.paper.on('element:change:position', (elementView: joint.dia.ElementView) => {
+      const operatorID = elementView.model.id.toString();
+      this.updateFloatingTipPosition(operatorID);
+    });
+
+    this.wrapper.getJointOperatorHighlightStream()
+      .pipe(untilDestroyed(this))
+      .subscribe(operatorIDs => {
+        operatorIDs.forEach(operatorID => {
+          const operatorElement = this.workflowActionService.getTexeraGraph().getOperator(operatorID);
+          this.showFloatingTips(operatorElement);
+        });
+      });
+
+    this.wrapper.getJointOperatorUnhighlightStream()
+      .pipe(untilDestroyed(this))
+      .subscribe(operatorIDs => {
+        operatorIDs.forEach(operatorID => {
+          this.hideFloatingTips(operatorID);
+        });
+      });
+  }
+
+  private showFloatingTips(operatorElement: any): void {
+    const tipElement = document.createElement('div');
+    tipElement.className = 'floating-tip';
+    tipElement.id = `floating-tip-${operatorElement.operatorID}`;
+    tipElement.innerHTML = `
+    <div class="tip-content">
+      <p>Sub Topic 1</p>
+      <p>Sub Topic 2</p>
+    </div>
+  `;
+
+    // Style the tip element
+    tipElement.style.position = 'absolute';
+    tipElement.style.backgroundColor = '#FFF';
+    tipElement.style.border = '1px solid #CCC';
+    tipElement.style.borderRadius = '5px';
+    tipElement.style.padding = '5px';
+    tipElement.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.1)';
+
+    // Append to the editor wrapper
+    this.editorWrapper.appendChild(tipElement);
+
+    // Position the tip next to the operator
+    this.updateFloatingTipPosition(operatorElement.operatorID);
+  }
+
+  private hideFloatingTips(operatorID: string): void {
+    const tipElement = document.getElementById(`floating-tip-${operatorID}`);
+    if (tipElement) {
+      tipElement.remove();
+    }
+  }
+  private updateFloatingTipPosition(operatorID: string): void {
+    const operatorElement = this.paper.findViewByModel(operatorID);
+    const tipElement = document.getElementById(`floating-tip-${operatorID}`);
+    if (!operatorElement || !tipElement) return;
+
+    const bbox = operatorElement.getBBox();
+    const paperOffset = this.paper.translate();
+    const scale = this.paper.scale();
+
+    // Calculate the new position below the operator
+    const left = (bbox.x + bbox.width / 2) * scale.sx + paperOffset.tx - tipElement.offsetWidth / 2;
+    const top = (bbox.y + bbox.height + 5) * scale.sy + paperOffset.ty; // 5px gap below the operator
+
+    // Update the tip element position
+    tipElement.style.left = `${left}px`;
+    tipElement.style.top = `${top}px`;
   }
 }
