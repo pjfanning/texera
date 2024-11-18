@@ -103,6 +103,17 @@ export class WorkflowVersionService {
     this.highlightOpVersionDiff(this.differentOpIDsList);
   }
 
+  public displayRecommendedWorkflowPreview(recommendedWorkflow: WorkflowContent) {
+    this.differentOpIDsList = this.getWorkflowsDifference(
+      this.workflowActionService.getWorkflowContent(),
+      recommendedWorkflow
+    );
+    let currentWorkflow = this.workflowActionService.getWorkflow();
+    currentWorkflow.content = recommendedWorkflow;
+    this.displayReadonlyWorkflow(currentWorkflow);
+    this.highlightOpVersionDiff(this.differentOpIDsList)
+  }
+
   public highlightOpVersionDiff(differentOpIDsList: DifferentOpIDsList) {
     differentOpIDsList.modified.map(id => this.highlightOpBoundary(id, "255,118,20,0.5"));
     differentOpIDsList.added.map(id => this.highlightOpBoundary(id, "0,255,0,0.5"));

@@ -153,6 +153,7 @@ export class WorkflowUtilService {
    * @param workflow
    */
   public static parseWorkflowInfo(workflow: Workflow): Workflow {
+    console.log("current workflow content !!!!:", workflow.content);
     if (workflow != null && typeof workflow.content === "string") {
       workflow.content = jsonCast<WorkflowContent>(workflow.content);
     }
