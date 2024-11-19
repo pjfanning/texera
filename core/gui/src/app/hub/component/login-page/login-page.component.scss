@@ -1,58 +1,58 @@
 :host {
   display: flex;
-  justify-content: center; /* 水平方向居中 */
-  align-items: center;    /* 垂直方向居中 */
-  height: 100vh;          /* 全屏高度 */
-  background-color: white; /* 背景颜色改为白色 */
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  background-color: white;
 }
 
 .login-container {
   display: flex;
-  flex-direction: column; /* 垂直排列子元素 */
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 20px;
   width: 380px;
-  background-color: white; /* 方框背景颜色 */
-  border: 1px solid #ccc; /* 添加边框 */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 方框阴影 */
-  border-radius: 8px; /* 圆角 */
+  background-color: white;
+  border: 1px solid #ccc;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
 }
 
 .login-container > texera-local-login {
-  width: 100%;    /* 子元素宽度填满父容器 */
+  width: 100%;
 }
 
 .login-container > texera-google-login {
-  margin: 10px 0; /* 添加上下间距 */
-  display: flex;  /* 使用 flexbox */
-  justify-content: center; /* 水平方向居中 */
-  transform: translateX(-10px); /* 向左移动 14px */
+  margin: 10px 0;
+  display: flex;
+  justify-content: center;
+  transform: translateX(-10px);
 }
 
 .separator {
   display: flex;
-  align-items: center; /* 垂直居中 */
-  margin-bottom: 10px; /* 下方间距 */
-  width: 100%; /* 宽度与容器一致 */
+  align-items: center;
+  margin-bottom: 10px;
+  width: 100%;
 }
 
 .separator::before,
 .separator::after {
   content: '';
-  flex: 1; /* 横线自动拉伸 */
+  flex: 1;
   height: 1px;
-  background-color: #ccc; /* 横线颜色 */
+  background-color: #ccc;
 }
 
 .separator span {
-  margin: 0 10px; /* "OR" 和横线之间的间距 */
-  font-size: 14px; /* 字体大小 */
-  color: #666; /* 字体颜色 */
+  margin: 0 10px;
+  font-size: 14px;
+  color: #666;
 }
 
 .logo {
-  width: 100px; /* 限制宽度 */
-  height: auto; /* 高度自适应 */
+  width: 100px;
+  height: auto;
   margin-top: 10px;
 }

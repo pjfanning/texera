@@ -17,6 +17,7 @@ import { Router } from "@angular/router";
 })
 export class UserIconComponent {
   public user: User | undefined;
+  public isDropdownVisible = false;
 
   constructor(
     private userService: UserService,
@@ -27,6 +28,7 @@ export class UserIconComponent {
       .pipe(untilDestroyed(this))
       .subscribe(() => {
         this.user = this.userService.getCurrentUser();
+        this.isDropdownVisible = false;
       });
   }
 
@@ -44,5 +46,9 @@ export class UserIconComponent {
       // Redirect to /dashboard/login if user is undefined
       this.router.navigate(["/dashboard/login"]);
     }
+  }
+
+  public onDropdownVisibilityChange(isVisible: boolean): void {
+    this.isDropdownVisible = isVisible;
   }
 }
