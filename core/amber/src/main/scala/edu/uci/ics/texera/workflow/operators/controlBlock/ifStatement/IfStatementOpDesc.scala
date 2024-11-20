@@ -49,13 +49,13 @@ class IfStatementOpDesc extends LogicalOp {
       OperatorGroupConstants.CONTROL_GROUP,
       inputPorts = List(
         InputPort(PortIdentity(), "Condition(State)"),
-        InputPort(PortIdentity(1), "Data", dependencies = List(PortIdentity()))),
-      outputPorts = List(
-        OutputPort(PortIdentity(), "True"),
-        OutputPort(PortIdentity(1), "False"))
+        InputPort(PortIdentity(1), "Data", dependencies = List(PortIdentity()))
+      ),
+      outputPorts = List(OutputPort(PortIdentity(), "True"), OutputPort(PortIdentity(1), "False"))
     )
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = throw new NotImplementedError()
 
-  override def getOutputSchemas(schemas: Array[Schema]): Array[Schema] = Array(schemas(1), schemas(1))
+  override def getOutputSchemas(schemas: Array[Schema]): Array[Schema] =
+    Array(schemas(1), schemas(1))
 }
