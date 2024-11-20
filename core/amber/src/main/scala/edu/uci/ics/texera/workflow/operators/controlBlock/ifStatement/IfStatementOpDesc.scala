@@ -14,7 +14,7 @@ class IfStatementOpDesc extends LogicalOp {
   @JsonProperty(required = true)
   @JsonSchemaTitle("Condition State")
   @JsonPropertyDescription("name of the state variable to evaluate")
-  var stateName: String = _
+  var conditionName: String = _
 
   override def getPhysicalOp(
       workflowId: WorkflowIdentity,
@@ -26,7 +26,7 @@ class IfStatementOpDesc extends LogicalOp {
         executionId,
         operatorIdentifier,
         OpExecInitInfo((_, _) => {
-          new IfStatementOpExec(stateName)
+          new IfStatementOpExec(conditionName)
         })
       )
       .withInputPorts(operatorInfo.inputPorts)
