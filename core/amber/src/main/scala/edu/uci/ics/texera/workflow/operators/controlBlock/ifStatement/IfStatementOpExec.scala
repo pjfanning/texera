@@ -13,7 +13,11 @@ class IfStatementOpExec(conditionName: String) extends OperatorExecutor {
     None
   }
 
-  override def processTupleMultiPort(tuple: Tuple, port: Int): Iterator[(TupleLike, Option[PortIdentity])] = Iterator((tuple, Some(PortIdentity(output_port))))
+  override def processTupleMultiPort(
+      tuple: Tuple,
+      port: Int
+  ): Iterator[(TupleLike, Option[PortIdentity])] =
+    Iterator((tuple, Some(PortIdentity(output_port))))
 
   override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] = ???
 }
