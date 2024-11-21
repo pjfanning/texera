@@ -26,7 +26,7 @@ class IfOpDesc extends LogicalOp {
         executionId,
         operatorIdentifier,
         OpExecInitInfo((_, _) => {
-          new IfStatementOpExec(conditionName)
+          new IfOpExec(conditionName)
         })
       )
       .withInputPorts(operatorInfo.inputPorts)

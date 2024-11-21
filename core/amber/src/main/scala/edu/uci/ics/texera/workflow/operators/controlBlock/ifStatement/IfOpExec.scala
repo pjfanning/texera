@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.common.model.State
 import edu.uci.ics.amber.engine.common.model.tuple.{Tuple, TupleLike}
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 
-class IfStatementOpExec(conditionName: String) extends OperatorExecutor {
+class IfOpExec(conditionName: String) extends OperatorExecutor {
   private var output_port: Int = _
 
   override def processState(state: State, port: Int): Option[State] = {
