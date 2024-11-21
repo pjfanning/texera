@@ -44,8 +44,8 @@ class IfOpDesc extends LogicalOp {
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "If Statement",
-      "If Statement",
+      "If",
+      "If",
       OperatorGroupConstants.CONTROL_GROUP,
       inputPorts = List(
         InputPort(PortIdentity(), "Condition(State)"),
