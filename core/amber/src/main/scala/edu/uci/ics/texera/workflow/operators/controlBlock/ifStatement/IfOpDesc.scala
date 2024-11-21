@@ -10,7 +10,7 @@ import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIden
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 
-class IfStatementOpDesc extends LogicalOp {
+class IfOpDesc extends LogicalOp {
   @JsonProperty(required = true)
   @JsonSchemaTitle("Condition State")
   @JsonPropertyDescription("name of the state variable to evaluate")
