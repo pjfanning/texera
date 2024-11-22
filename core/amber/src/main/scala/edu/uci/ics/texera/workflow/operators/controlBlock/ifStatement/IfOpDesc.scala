@@ -49,7 +49,7 @@ class IfOpDesc extends LogicalOp {
       OperatorGroupConstants.CONTROL_GROUP,
       inputPorts = List(
         InputPort(PortIdentity(), "Condition(State)"),
-        InputPort(PortIdentity(1), "Data", dependencies = List(PortIdentity()))
+        InputPort(PortIdentity(1), dependencies = List(PortIdentity()))
       ),
       outputPorts = List(OutputPort(PortIdentity(), "True"), OutputPort(PortIdentity(1), "False"))
     )
