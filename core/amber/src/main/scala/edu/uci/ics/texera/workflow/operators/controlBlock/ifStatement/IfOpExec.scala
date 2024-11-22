@@ -9,7 +9,7 @@ class IfOpExec(conditionName: String) extends OperatorExecutor {
   private var output_port: Int = _
 
   override def processState(state: State, port: Int): Option[State] = {
-    output_port = if (state.get(conditionName).asInstanceOf[Boolean]) 0 else 1
+    output_port = if (state.get(conditionName).asInstanceOf[Boolean]) 1 else 0
     None
   }
 

@@ -51,7 +51,7 @@ class IfOpDesc extends LogicalOp {
         InputPort(PortIdentity(), "Condition"),
         InputPort(PortIdentity(1), dependencies = List(PortIdentity()))
       ),
-      outputPorts = List(OutputPort(PortIdentity(), "True"), OutputPort(PortIdentity(1), "False"))
+      outputPorts = List(OutputPort(PortIdentity(), "False"), OutputPort(PortIdentity(1), "True"))
     )
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = throw new NotImplementedError()
