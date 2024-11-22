@@ -12,9 +12,9 @@ import edu.uci.ics.texera.web.OPversion
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorInfo, PropertyNameConstants}
 import edu.uci.ics.texera.workflow.operators.aggregate.AggregateOpDesc
 import edu.uci.ics.texera.workflow.operators.cartesianProduct.CartesianProductOpDesc
-import edu.uci.ics.texera.workflow.operators.controlBlock.ifStatement.IfStatementOpDesc
 import edu.uci.ics.texera.workflow.operators.controlBlock.loop.LoopStartOpDesc
 import edu.uci.ics.texera.workflow.operators.controlBlock.state.DataToStateOpDesc
+import edu.uci.ics.texera.workflow.operators.controlBlock.ifStatement.IfOpDesc
 import edu.uci.ics.texera.workflow.operators.dictionary.DictionaryMatcherOpDesc
 import edu.uci.ics.texera.workflow.operators.difference.DifferenceOpDesc
 import edu.uci.ics.texera.workflow.operators.distinct.DistinctOpDesc
@@ -115,6 +115,7 @@ trait StateTransferFunc
   Array(
     new Type(value = classOf[StateToDataOpDesc], name = "StateToData"),
     new Type(value = classOf[DataToStateOpDesc], name = "DataToState"),
+    new Type(value = classOf[IfOpDesc], name = "IfStatement"),
     new Type(value = classOf[SankeyDiagramOpDesc], name = "SankeyDiagram"),
     new Type(value = classOf[IcicleChartOpDesc], name = "IcicleChart"),
     new Type(value = classOf[CSVScanSourceOpDesc], name = "CSVFileScan"),

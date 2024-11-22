@@ -21,8 +21,12 @@ then
   echo "${green}Amber compiled.${reset}"
   echo
 
+  echo "${green}Compiling Services...${reset}"
+  cd .. && bash scripts/build-services.sh
+  echo "${green}Services compiled.${reset}"
+
   echo "${green}Compiling GUI...${reset}"
-  cd ../gui && yarn install && ng build --configuration production --deploy-url=/ --base-href=/
+  cd gui && yarn install && ng build --configuration production --deploy-url=/ --base-href=/
   echo "${green}GUI compiled.${reset}"
   echo
   cd ..
@@ -35,6 +39,15 @@ while ! nc -z localhost 8080; do
 	sleep 0.1 # wait 100ms before check again
 done
 echo "${green}TexeraWebApplication launched at $(pgrep -f TexeraWebApplication)${reset}"
+echo
+
+echo "${green}Starting WorkflowCompilingService in daemon...${reset}"
+setsid nohup ./scripts/workflow-compiling-service.sh >/dev/null 2>&1 &
+echo "${green}Waiting TexeraWorkflowCompilingService to launch on 9090...${reset}"
+while ! nc -z localhost 9090; do
+	sleep 0.1 # wait 100ms before check again
+done
+echo "${green}WorkflowCompilingService launched at $(pgrep -f TexeraWorkflowCompilingService)${reset}"
 echo
 
 echo "${green}Starting TexeraRunWorker in daemon...${reset}"

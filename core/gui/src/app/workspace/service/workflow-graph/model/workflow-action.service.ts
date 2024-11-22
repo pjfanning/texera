@@ -25,6 +25,7 @@ import { isDefined } from "../../../../common/util/predicate";
 import { environment } from "../../../../../environments/environment";
 import { User } from "../../../../common/type/user";
 import { SharedModelChangeHandler } from "./shared-model-change-handler";
+import { ValidationWorkflowService } from "../../validation/validation-workflow.service";
 
 export const DEFAULT_WORKFLOW_NAME = "Untitled Workflow";
 export const DEFAULT_WORKFLOW = {
@@ -113,9 +114,6 @@ export class WorkflowActionService {
   }
 
   public disableWorkflowModification() {
-    if (!this.workflowModificationEnabled) {
-      return;
-    }
     this.workflowModificationEnabled = false;
     this.enableModificationStream.next(false);
     this.undoRedoService.disableWorkFlowModification();
