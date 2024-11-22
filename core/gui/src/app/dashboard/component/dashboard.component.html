@@ -178,11 +178,14 @@
 <!--    </ul>-->
 
     <nz-layout>
-      <div
-        *ngIf="displayNavbar"
-        id="nav">
+      <div *ngIf="displayNavbar" id="nav">
         <texera-search-bar></texera-search-bar>
-        <texera-user-icon></texera-user-icon>
+        <ng-container *ngIf="isLogin; else googleLogin">
+          <texera-user-icon></texera-user-icon>
+        </ng-container>
+        <ng-template #googleLogin>
+          <texera-google-login></texera-google-login>
+        </ng-template>
       </div>
 
       <nz-content>

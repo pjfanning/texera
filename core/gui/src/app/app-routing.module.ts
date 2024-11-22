@@ -21,7 +21,6 @@ import { HubWorkflowSearchComponent } from "./hub/component/workflow/search/hub-
 import { HubWorkflowComponent } from "./hub/component/workflow/hub-workflow.component";
 import { HubWorkflowDetailComponent } from "./hub/component/workflow/detail/hub-workflow-detail.component";
 import { LandingPageComponent } from "./hub/component/landing-page/landing-page.component";
-import {LoginPageComponent} from "./hub/component/login-page/login-page.component";
 
 const routes: Routes = [];
 
@@ -37,10 +36,6 @@ if (environment.userSystemEnabled) {
       {
         path: "about",
         component: AboutComponent,
-      },
-      {
-        path: "login",
-        component: LoginPageComponent,
       },
       {
         path: "hub",

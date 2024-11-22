@@ -51,11 +51,11 @@ export class GoogleAuthService {
               },
             });
             if (document.body.contains(parent)) {
-              window.google.accounts.id.renderButton(parent, { width: 270 });
+              window.google.accounts.id.renderButton(parent, { width: 200 });
             }
             window.google.accounts.id.prompt();
           } else {
-            setTimeout(initializeGoogleLogin, 1000); // Retry after 1 second
+            setTimeout(initializeGoogleLogin, 500); // Retry after 1 second
           }
         };
         initializeGoogleLogin();

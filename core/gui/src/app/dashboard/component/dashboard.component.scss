@@ -1,10 +1,11 @@
 #nav {
   height: 75px;
-  padding: 10px 0 10px 24px;
+  padding: 10px 16px 10px 24px;
   display: flex;
   align-items: center;
   background-color: white;
   justify-content: space-between;
+  width: 100%;
 }
 
 texera-filters-instructions {
@@ -13,16 +14,13 @@ texera-filters-instructions {
 
 texera-search-bar {
   flex: 1;
+  padding-right: 10px;
   max-width: calc(100% - 20px);
 }
 
 texera-google-login {
   float: right;
   padding: 5px 0;
-}
-
-texera-user-icon {
-  padding: 0 24px;
 }
 
 texera-user-icon {
@@ -63,32 +61,6 @@ nz-content {
   display: flex;
   flex-direction: column;
   width: 100%;
-}
-
-//.nav-links {
-//  list-style-type: none;
-//  min-height: 70px;
-//  height: 70px;
-//  padding: 10px;
-//  margin: 0;
-//  overflow: hidden;
-//  background-color: #f8f9fa;
-//  vertical-align: baseline;
-//}
-
-//.nav-item {
-//  float: left;
-//  padding: 14px;
-//}
-
-//.nav-link {
-//  color: black;
-//  font-weight: bold;
-//}
-
-#googleButton {
-  float: right;
-  padding: 5px 0;
 }
 
 .hidden {
