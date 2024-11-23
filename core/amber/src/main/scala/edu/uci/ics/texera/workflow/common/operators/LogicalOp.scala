@@ -93,11 +93,11 @@ import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOp
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
 import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.MachineLearningScorerOpDesc
+import edu.uci.ics.texera.workflow.operators.state.StateToDataOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.quiverPlot.QuiverPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.contourPlot.ContourPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.figureFactoryTable.FigureFactoryTableOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.sankeyDiagram.SankeyDiagramOpDesc
-import edu.uci.ics.texera.workflow.operators.state.{DataToStateOpDesc, StateToDataOpDesc}
 
 import java.util.UUID
 import scala.collection.mutable
