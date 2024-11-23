@@ -14,7 +14,7 @@ import edu.uci.ics.texera.workflow.operators.aggregate.AggregateOpDesc
 import edu.uci.ics.texera.workflow.operators.cartesianProduct.CartesianProductOpDesc
 import edu.uci.ics.texera.workflow.operators.controlBlock.loop.LoopStartOpDesc
 import edu.uci.ics.texera.workflow.operators.controlBlock.state.DataToStateOpDesc
-import edu.uci.ics.texera.workflow.operators.controlBlock.ifStatement.IfOpDesc
+import edu.uci.ics.texera.workflow.operators.controlBlock.ifStatement.{IfOpDesc, IfStatementOpDesc}
 import edu.uci.ics.texera.workflow.operators.dictionary.DictionaryMatcherOpDesc
 import edu.uci.ics.texera.workflow.operators.difference.DifferenceOpDesc
 import edu.uci.ics.texera.workflow.operators.distinct.DistinctOpDesc
@@ -98,6 +98,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.contourPlot.ContourPl
 import edu.uci.ics.texera.workflow.operators.visualization.figureFactoryTable.FigureFactoryTableOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.sankeyDiagram.SankeyDiagramOpDesc
 import edu.uci.ics.texera.workflow.operators.state.{DataToStateOpDesc, StateToDataOpDesc}
+
 import java.util.UUID
 import scala.collection.mutable
 import scala.util.Try
