@@ -1,8 +1,5 @@
 package edu.uci.ics.texera.workflow.operators.controlBlock.loop
 
-import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.common.model.PhysicalOp
 import edu.uci.ics.amber.engine.common.model.tuple.Schema
@@ -11,12 +8,7 @@ import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 
-class LoopStartOpDesc extends LogicalOp {
-
-  @JsonProperty(required = true)
-  @JsonSchemaTitle("Iteration Number")
-  var iteration: Int = _
-
+class LoopEndOpDesc extends LogicalOp {
   override def getPhysicalOp(
       workflowId: WorkflowIdentity,
       executionId: ExecutionIdentity
@@ -27,7 +19,7 @@ class LoopStartOpDesc extends LogicalOp {
         executionId,
         operatorIdentifier,
         OpExecInitInfo((_, _) => {
-          new LoopStartOpExec(iteration)
+          new LoopEndOpExec()
         })
       )
       .withInputPorts(operatorInfo.inputPorts)
@@ -37,8 +29,8 @@ class LoopStartOpDesc extends LogicalOp {
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "Loop Start",
-      "Loop Start",
+      "Loop End",
+      "Loop End",
       OperatorGroupConstants.CONTROL_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort())

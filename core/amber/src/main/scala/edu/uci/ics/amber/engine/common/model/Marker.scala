@@ -9,7 +9,7 @@ sealed trait Marker
 
 final case class StartOfInputChannel() extends Marker
 final case class EndOfInputChannel() extends Marker
-final case class StartOfIteration(currentIteration: Int) extends Marker
+final case class StartOfIteration() extends Marker
 final case class EndOfIteration(workerId: ActorVirtualIdentity) extends Marker
 
 final case class State(tuple: Option[Tuple] = None, passToAllDownstream: Boolean = false)

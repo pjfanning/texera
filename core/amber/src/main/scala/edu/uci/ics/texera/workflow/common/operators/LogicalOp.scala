@@ -12,7 +12,8 @@ import edu.uci.ics.texera.web.OPversion
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorInfo, PropertyNameConstants}
 import edu.uci.ics.texera.workflow.operators.aggregate.AggregateOpDesc
 import edu.uci.ics.texera.workflow.operators.cartesianProduct.CartesianProductOpDesc
-import edu.uci.ics.texera.workflow.operators.controlBlock.loop.LoopStartOpDesc
+import edu.uci.ics.texera.workflow.operators.controlBlock.SleepOpDesc
+import edu.uci.ics.texera.workflow.operators.controlBlock.loop.{LoopEndOpDesc, LoopStartOpDesc}
 import edu.uci.ics.texera.workflow.operators.controlBlock.state.DataToStateOpDesc
 import edu.uci.ics.texera.workflow.operators.controlBlock.ifStatement.{IfOpDesc, IfStatementOpDesc}
 import edu.uci.ics.texera.workflow.operators.dictionary.DictionaryMatcherOpDesc
@@ -161,6 +162,7 @@ trait StateTransferFunc
     new Type(value = classOf[AsterixDBSourceOpDesc], name = "AsterixDBSource"),
     new Type(value = classOf[TypeCastingOpDesc], name = "TypeCasting"),
     new Type(value = classOf[LimitOpDesc], name = "Limit"),
+    new Type(value = classOf[SleepOpDesc], name = "Sleep"),
     new Type(value = classOf[RandomKSamplingOpDesc], name = "RandomKSampling"),
     new Type(value = classOf[ReservoirSamplingOpDesc], name = "ReservoirSampling"),
     new Type(value = classOf[HashJoinOpDesc[String]], name = "HashJoin"),
@@ -174,6 +176,7 @@ trait StateTransferFunc
     new Type(value = classOf[IfStatementOpDesc], name = "IfStatement"),
     new Type(value = classOf[DataToStateOpDesc], name = "DataToState"),
     new Type(value = classOf[LoopStartOpDesc], name = "LoopStart"),
+    new Type(value = classOf[LoopEndOpDesc], name = "LoopEnd"),
     new Type(value = classOf[SortPartitionsOpDesc], name = "SortPartitions"),
     new Type(value = classOf[CSVOldScanSourceOpDesc], name = "CSVOldFileScan"),
     new Type(value = classOf[RedditSearchSourceOpDesc], name = "RedditSearch"),

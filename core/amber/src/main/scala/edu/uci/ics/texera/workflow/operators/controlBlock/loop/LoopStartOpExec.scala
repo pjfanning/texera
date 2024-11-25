@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.common.model.tuple.{AttributeType, Tuple, TupleL
 
 import scala.collection.mutable
 
-class LoopStartOpExec extends OperatorExecutor {
+class LoopStartOpExec(iteration: Int) extends OperatorExecutor {
   private val data = new mutable.ArrayBuffer[Tuple]
   private var currentIteration = 0
 
@@ -18,11 +18,21 @@ class LoopStartOpExec extends OperatorExecutor {
   }
 
   def produceTupleOnIterationStart(): Iterator[TupleLike] = {
-    data.iterator
+    //data.iterator
+    Iterator.empty
+  }
+
+  def checkCondition(): Boolean = {
+    iteration>currentIteration
   }
 
   override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] = {
     data.append(tuple)
     Iterator.empty
+  }
+
+  override def onFinish(port: Int): Iterator[TupleLike] = {
+    currentIteration += 1
+    data.iterator
   }
 }
