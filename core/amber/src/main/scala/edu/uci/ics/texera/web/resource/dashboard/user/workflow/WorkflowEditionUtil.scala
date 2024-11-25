@@ -1,6 +1,7 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.workflow
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonTypeInfo}
+import com.fasterxml.jackson.databind.node.ObjectNode
 import edu.uci.ics.amber.engine.common.Utils.objectMapper
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.texera.workflow.common.metadata.OperatorMetadataGenerator
@@ -8,7 +9,7 @@ import edu.uci.ics.texera.workflow.common.operators.{LogicalOp, PortDescription}
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, PartitionInfo}
 
 import java.util.UUID
-import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters._
 import scala.util.Random
 
 case class Point(x: Int, y: Int)
@@ -31,7 +32,7 @@ case class OperatorPredicate(
                               operatorID: String,
                               operatorType: String,
                               operatorVersion: String,
-                              operatorProperties: Map[String, Any],
+                              operatorProperties: ObjectNode, // Changed to ObjectNode
                               inputPorts: List[PortDescription],
                               outputPorts: List[PortDescription],
                               dynamicInputPorts: Boolean = false,
@@ -81,18 +82,20 @@ object WorkflowConversionUtil {
     val operatorMetadata = OperatorMetadataGenerator.generateOperatorMetadata(operatorClass)
 
     // Extract operator properties using the JSON schema
-    val propertiesNode = objectMapper.valueToTree[Map[String, Any]](logicalOp)
+    val propertiesNode = objectMapper.valueToTree[ObjectNode](logicalOp)
     val definedProperties = operatorMetadata.jsonSchema
       .get("properties")
-      .fields()
+      .fieldNames()
       .asScala
-      .map(_.getKey)
       .toSet
 
-    val operatorProperties = propertiesNode
-      .view
-      .filterKeys(definedProperties.contains)
-      .toMap
+    // Create a new ObjectNode for filtered properties
+    val filteredProperties = objectMapper.createObjectNode()
+    propertiesNode.fieldNames().asScala.foreach { fieldName =>
+      if (definedProperties.contains(fieldName)) {
+        filteredProperties.set(fieldName, propertiesNode.get(fieldName))
+      }
+    }
 
     // Extract dynamic input/output ports from metadata
     val dynamicInputPorts = operatorMetadata.additionalMetadata.dynamicInputPorts
@@ -102,11 +105,11 @@ object WorkflowConversionUtil {
       operatorID = logicalOp.operatorIdentifier.toString,
       operatorType = logicalOp.getClass.getSimpleName,
       operatorVersion = logicalOp.operatorVersion,
-      operatorProperties = operatorProperties,
+      operatorProperties = filteredProperties, // Use the filtered properties ObjectNode
       inputPorts = logicalOp.inputPorts,
       outputPorts = logicalOp.outputPorts,
       dynamicInputPorts = dynamicInputPorts,
-      dynamicOutputPorts = dynamicOutputPorts,
+      dynamicOutputPorts = dynamicOutputPorts
     )
   }
 
@@ -119,8 +122,8 @@ object WorkflowConversionUtil {
   def convertToOperatorLink(logicalLink: LogicalLink): OperatorLink = {
     OperatorLink(
       linkID = UUID.randomUUID().toString,
-      source = LogicalPort(logicalLink.fromOpId.toString, f"port-${logicalLink.fromPortId.id}"),
-      target = LogicalPort(logicalLink.toOpId.toString, f"port-${logicalLink.toPortId.id}")
+      source = LogicalPort(logicalLink.fromOpId.toString, s"port-${logicalLink.fromPortId.id}"),
+      target = LogicalPort(logicalLink.toOpId.toString, s"port-${logicalLink.toPortId.id}")
     )
   }
 }
@@ -207,5 +210,55 @@ object WorkflowEditionUtil {
     val newLinks = content.links :+ newLink
 
     content.copy(links = newLinks)
+  }
+
+  def main(args: Array[String]): Unit = {
+    val workflowJson =
+      """
+          {
+            "operators": [
+              {
+                "operatorID": "CSVFileScan-operator-0fb45eb2-3117-45a2-8245-420e569cc57a",
+                "operatorType": "CSVFileScan",
+                "operatorVersion": "fe684b5e5120c6a24077422336e82c44a24f3c14",
+                "operatorProperties": {
+                  "fileEncoding": "UTF_8",
+                  "customDelimiter": ",",
+                  "hasHeader": true,
+                  "fileName": "/bob@test.com/test dataset/v3/FileResolver.scala"
+                },
+                "inputPorts": [],
+                "outputPorts": [
+                  {
+                    "portID": "output-0",
+                    "displayName": "",
+                    "allowMultiInputs": false,
+                    "isDynamicPort": false
+                  }
+                ],
+                "showAdvanced": false,
+                "isDisabled": false,
+                "customDisplayName": "CSV File Scan",
+                "dynamicInputPorts": false,
+                "dynamicOutputPorts": false
+              }
+            ],
+            "operatorPositions": {
+              "CSVFileScan-operator-0fb45eb2-3117-45a2-8245-420e569cc57a": {
+                "x": 364,
+                "y": 220
+              }
+            },
+            "links": [],
+            "commentBoxes": [],
+            "settings": {
+              "dataTransferBatchSize": 400
+            }
+          }
+        """
+
+    val workflowContent = objectMapper.readValue(workflowJson, classOf[WorkflowContent])
+    println("Deserialized WorkflowContent:")
+    println(workflowContent)
   }
 }
