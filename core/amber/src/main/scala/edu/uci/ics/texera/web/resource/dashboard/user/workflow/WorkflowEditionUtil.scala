@@ -10,6 +10,7 @@ import edu.uci.ics.texera.workflow.common.metadata.{OperatorMetadata, OperatorMe
 import edu.uci.ics.texera.workflow.common.operators.{LogicalOp, PortDescription}
 import edu.uci.ics.texera.workflow.common.storage.FileResolver
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, LogicalPlan, PartitionInfo}
+import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.projection.{AttributeUnit, ProjectionOpDesc}
 import edu.uci.ics.texera.workflow.operators.source.scan.csv.CSVScanSourceOpDesc
 
@@ -193,12 +194,13 @@ object WorkflowConversionUtil {
 
 object WorkflowEditionUtil {
 
-  def addOperator(content: WorkflowContent, logicalOp: LogicalOp, nextTo: String = ""): WorkflowContent = {
-    val newOperators = content.operators :+ WorkflowConversionUtil.convertToOperatorPredicate(logicalOp)
-    val newOperatorId = logicalOp.operatorIdentifier.toString
+  def addOperator(content: WorkflowContent, logicalOp: LogicalOp, nextToOpId: String = ""): WorkflowContent = {
+    val newOperator = WorkflowConversionUtil.convertToOperatorPredicate(logicalOp)
+    val newOperators = content.operators :+ newOperator
+    val newOperatorId = newOperator.operatorID
 
-    val newPosition = if (nextTo.nonEmpty && content.operatorPositions.contains(nextTo)) {
-      val referencePosition = content.operatorPositions(nextTo)
+    val newPosition = if (nextToOpId.nonEmpty && content.operatorPositions.contains(nextToOpId)) {
+      val referencePosition = content.operatorPositions(nextToOpId)
       Point(referencePosition.x + 120, referencePosition.y + Random.between(-50, 50))
     } else {
       Point(100, 100)
@@ -251,6 +253,14 @@ object WorkflowEditionUtil {
     projectionOpDesc.attributes = attributeNames.map(name => new AttributeUnit(name, ""))
     projectionOpDesc.isDrop = isDrop
     projectionOpDesc
+  }
+
+  private def getLimitOpDesc(
+                              limit: Int
+                            ): LimitOpDesc = {
+    val limitOpDesc = new LimitOpDesc
+    limitOpDesc.limit = limit
+    limitOpDesc
   }
 
   private def getTestLogicalPlan: LogicalPlanPojo = {
@@ -373,16 +383,21 @@ object WorkflowEditionUtil {
       }
       """
 
-    val workflowContent = objectMapper.readValue(workflowJson, classOf[WorkflowContent])
+    val originalWorkflowContent = objectMapper.readValue(workflowJson, classOf[WorkflowContent])
+    // add a limit operator after projection
+    val projectionOpPredicate = originalWorkflowContent.operators.find(op => op.operatorID.contains("Projection")).get
+    val workflowContentAfterAddOperator = addOperator(originalWorkflowContent, getLimitOpDesc(10), projectionOpPredicate.operatorID)
+    val limitOpPredicate = workflowContentAfterAddOperator.operators.find(op => op.operatorID.contains("Limit")).get
+    val workflowContentAfterAddLink = addLink(
+      workflowContentAfterAddOperator,
+      projectionOpPredicate.operatorID,
+      projectionOpPredicate.outputPorts.head.portID,
+      limitOpPredicate.operatorID,
+      limitOpPredicate.inputPorts.head.portID)
 
-    val testLogicalPlan = getTestLogicalPlan
-    val artificialWorkflowContent = WorkflowConversionUtil.createWorkflowContent(testLogicalPlan)
-
-    // Serialize artificialWorkflowContent to JSON string
-    val serializedJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(artificialWorkflowContent)
-
+    val serializedJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(workflowContentAfterAddLink)
     // Define output file path
-    val outputFile = new File("artificialWorkflowContent.json")
+    val outputFile = new File("workflowContentAfterAddLimit.json")
 
     // Write JSON string to file
     val writer = new PrintWriter(outputFile)
