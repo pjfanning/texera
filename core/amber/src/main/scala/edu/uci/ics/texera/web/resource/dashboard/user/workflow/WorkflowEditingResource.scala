@@ -20,9 +20,9 @@ class WorkflowEditingResource {
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/operator/add")
   def addOperators(
-      workflowContent: WorkflowContent,
-      properties: ObjectNode,
-      operatorToConnect: List[SourceOperatorDescriptor] // whether to connect with a operator
+                    workflowContent: WorkflowContent,
+                    properties: ObjectNode,
+                    sourceOperatorDescriptor: List[SourceOperatorDescriptor] // whether to connect with a operator
                  ): WorkflowContent = {
 
   }
