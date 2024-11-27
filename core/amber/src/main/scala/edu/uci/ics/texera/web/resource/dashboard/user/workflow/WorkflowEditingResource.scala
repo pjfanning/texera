@@ -7,7 +7,11 @@ import edu.uci.ics.amber.engine.common.Utils.objectMapper
 import edu.uci.ics.amber.operator.PortDescription
 import edu.uci.ics.amber.operator.metadata.OperatorMetadataGenerator
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowEditingResource.{AddOpRequest, SourceOperatorDescriptor, WorkflowContent}
+import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowEditingResource.{
+  AddOpRequest,
+  SourceOperatorDescriptor,
+  WorkflowContent
+}
 import io.dropwizard.auth.Auth
 
 import java.util.UUID
@@ -20,63 +24,63 @@ import scala.util.Random
 object WorkflowEditingResource {
 
   case class Point(
-                    @JsonProperty("x") x: Int,
-                    @JsonProperty("y") y: Int
-                  )
+      @JsonProperty("x") x: Int,
+      @JsonProperty("y") y: Int
+  )
 
   case class Comment(
-                      @JsonProperty("content") content: String,
-                      @JsonProperty("creationTime") creationTime: String,
-                      @JsonProperty("creatorName") creatorName: String,
-                      @JsonProperty("creatorID") creatorID: Int
-                    )
+      @JsonProperty("content") content: String,
+      @JsonProperty("creationTime") creationTime: String,
+      @JsonProperty("creatorName") creatorName: String,
+      @JsonProperty("creatorID") creatorID: Int
+  )
 
   case class CommentBox(
-                         @JsonProperty("commentBoxID") commentBoxID: String,
-                         @JsonProperty("comments") comments: List[Comment],
-                         @JsonProperty("commentBoxPosition") commentBoxPosition: Point
-                       )
+      @JsonProperty("commentBoxID") commentBoxID: String,
+      @JsonProperty("comments") comments: List[Comment],
+      @JsonProperty("commentBoxPosition") commentBoxPosition: Point
+  )
 
   case class OperatorPredicate(
-                                @JsonProperty("operatorID") operatorID: String,
-                                @JsonProperty("operatorType") operatorType: String,
-                                @JsonProperty("operatorVersion") operatorVersion: String,
-                                @JsonProperty("operatorProperties") operatorProperties: ObjectNode,
-                                @JsonProperty("inputPorts") inputPorts: List[PortDescription],
-                                @JsonProperty("outputPorts") outputPorts: List[PortDescription],
-                                @JsonProperty("dynamicInputPorts") dynamicInputPorts: Boolean = false,
-                                @JsonProperty("dynamicOutputPorts") dynamicOutputPorts: Boolean = false,
-                                @JsonProperty("showAdvanced") showAdvanced: Boolean = false,
-                                @JsonProperty("isDisabled") isDisabled: Boolean = false,
-                                @JsonProperty("viewResult") viewResult: Boolean = false,
-                                @JsonProperty("markedForReuse") markedForReuse: Boolean = false,
-                                @JsonProperty("customDisplayName") customDisplayName: Option[String] = None
-                              )
+      @JsonProperty("operatorID") operatorID: String,
+      @JsonProperty("operatorType") operatorType: String,
+      @JsonProperty("operatorVersion") operatorVersion: String,
+      @JsonProperty("operatorProperties") operatorProperties: ObjectNode,
+      @JsonProperty("inputPorts") inputPorts: List[PortDescription],
+      @JsonProperty("outputPorts") outputPorts: List[PortDescription],
+      @JsonProperty("dynamicInputPorts") dynamicInputPorts: Boolean = false,
+      @JsonProperty("dynamicOutputPorts") dynamicOutputPorts: Boolean = false,
+      @JsonProperty("showAdvanced") showAdvanced: Boolean = false,
+      @JsonProperty("isDisabled") isDisabled: Boolean = false,
+      @JsonProperty("viewResult") viewResult: Boolean = false,
+      @JsonProperty("markedForReuse") markedForReuse: Boolean = false,
+      @JsonProperty("customDisplayName") customDisplayName: Option[String] = None
+  )
 
   case class LogicalPort(
-                          @JsonProperty("operatorID") operatorID: String,
-                          @JsonProperty("portID") portID: String
-                        )
+      @JsonProperty("operatorID") operatorID: String,
+      @JsonProperty("portID") portID: String
+  )
 
   case class OperatorLink(
-                           @JsonProperty("linkID") linkID: String,
-                           @JsonProperty("source") source: LogicalPort,
-                           @JsonProperty("target") target: LogicalPort
-                         )
+      @JsonProperty("linkID") linkID: String,
+      @JsonProperty("source") source: LogicalPort,
+      @JsonProperty("target") target: LogicalPort
+  )
 
   case class WorkflowContent(
-                              @JsonProperty("operators") operators: List[OperatorPredicate],
-                              @JsonProperty("operatorPositions") operatorPositions: Map[String, Point],
-                              @JsonProperty("links") links: List[OperatorLink],
-                              @JsonProperty("commentBoxes") commentBoxes: List[CommentBox],
-                              @JsonProperty("settings") settings: Map[String, Int]
-                            ) {
+      @JsonProperty("operators") operators: List[OperatorPredicate],
+      @JsonProperty("operatorPositions") operatorPositions: Map[String, Point],
+      @JsonProperty("links") links: List[OperatorLink],
+      @JsonProperty("commentBoxes") commentBoxes: List[CommentBox],
+      @JsonProperty("settings") settings: Map[String, Int]
+  ) {
 
     def addOperator(
-                     operatorType: String,
-                     properties: ObjectNode,
-                     nextToOpId: String = ""
-                   ): (WorkflowContent, OperatorPredicate) = {
+        operatorType: String,
+        properties: ObjectNode,
+        nextToOpId: String = ""
+    ): (WorkflowContent, OperatorPredicate) = {
       val newOperator = convertToOperatorPredicate(operatorType, properties)
       val newOperators = operators :+ newOperator
       val newOperatorId = newOperator.operatorID
@@ -94,11 +98,11 @@ object WorkflowEditingResource {
     }
 
     def addLink(
-                 fromOpId: String,
-                 fromPortId: String,
-                 toOpId: String,
-                 toPortId: String
-               ): (WorkflowContent, OperatorLink) = {
+        fromOpId: String,
+        fromPortId: String,
+        toOpId: String,
+        toPortId: String
+    ): (WorkflowContent, OperatorLink) = {
       val newLink = OperatorLink(
         linkID = getLinkId(UUID.randomUUID().toString),
         source = LogicalPort(fromOpId, fromPortId),
@@ -115,7 +119,10 @@ object WorkflowEditingResource {
     "link" + "-" + uuid
   }
 
-  def convertToOperatorPredicate(operatorType: String, propertiesNode: ObjectNode): OperatorPredicate = {
+  def convertToOperatorPredicate(
+      operatorType: String,
+      propertiesNode: ObjectNode
+  ): OperatorPredicate = {
     val operatorMetadata = OperatorMetadataGenerator.generateOperatorMetadata(operatorType)
 
     val definedProperties = operatorMetadata.jsonSchema
@@ -149,16 +156,16 @@ object WorkflowEditingResource {
   }
 
   case class SourceOperatorDescriptor(
-                                       sourceOpId: String,
-                                       sourcePortId: String,
-                                     )
+      sourceOpId: String,
+      sourcePortId: String
+  )
 
   case class AddOpRequest(
       workflowContent: WorkflowContent,
       operatorType: String,
       operatorProperties: ObjectNode,
       sourceOperatorDescriptor: List[SourceOperatorDescriptor]
-                         )
+  )
 }
 
 @Produces(Array(MediaType.APPLICATION_JSON))
@@ -170,32 +177,38 @@ class WorkflowEditingResource extends LazyLogging {
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/operator/add")
   def addOp(
-             request: AddOpRequest,
-             @Auth sessionUser: SessionUser
-           ): WorkflowContent = {
+      request: AddOpRequest,
+      @Auth sessionUser: SessionUser
+  ): WorkflowContent = {
 
     // Validate and retrieve the source operators
     val srcOps = request.sourceOperatorDescriptor.map(desc =>
-      request.workflowContent.operators.find(op => op.operatorID.equals(desc.sourceOpId))
-        .getOrElse(throw new RuntimeException(s"Given source op '${desc.sourceOpId}' doesn't exist"))
+      request.workflowContent.operators
+        .find(op => op.operatorID.equals(desc.sourceOpId))
+        .getOrElse(
+          throw new RuntimeException(s"Given source op '${desc.sourceOpId}' doesn't exist")
+        )
     )
 
     // First add the operator, update workflowContent
     val (workflowAfterAddOperator, newOp) = request.workflowContent.addOperator(
-      request.operatorType, request.operatorProperties, srcOps.head.operatorID
+      request.operatorType,
+      request.operatorProperties,
+      srcOps.head.operatorID
     )
 
     // Add links for each source operator descriptor, updating workflowContent in each step
-    val workflowAfterLinks = request.sourceOperatorDescriptor.zipWithIndex.foldLeft(workflowAfterAddOperator) {
-      case (updatedWorkflow, (srcOpDesc, i)) =>
-        val (workflowWithLink, _) = updatedWorkflow.addLink(
-          srcOpDesc.sourceOpId,
-          srcOpDesc.sourcePortId,
-          newOp.operatorID,
-          newOp.inputPorts(i).portID
-        )
-        workflowWithLink
-    }
+    val workflowAfterLinks =
+      request.sourceOperatorDescriptor.zipWithIndex.foldLeft(workflowAfterAddOperator) {
+        case (updatedWorkflow, (srcOpDesc, i)) =>
+          val (workflowWithLink, _) = updatedWorkflow.addLink(
+            srcOpDesc.sourceOpId,
+            srcOpDesc.sourcePortId,
+            newOp.operatorID,
+            newOp.inputPorts(i).portID
+          )
+          workflowWithLink
+      }
 
     // Return the fully updated WorkflowContent
     workflowAfterLinks
