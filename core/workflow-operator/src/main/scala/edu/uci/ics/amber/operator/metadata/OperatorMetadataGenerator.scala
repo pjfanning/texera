@@ -137,4 +137,28 @@ object OperatorMetadataGenerator {
     )
   }
 
+  def generateOperatorMetadata(operatorType: String): OperatorMetadata = {
+    if (!operatorTypeMap.values.toList.contains(operatorType))
+      throw new RuntimeException(
+        "Texera Operator Type " + operatorType + " is not registered in TexeraOperatorDescription class"
+      )
+
+    // find the operatorType of the predicate class
+    val opDescClass = operatorTypeMap.find(_._2 == operatorType).map(_._1).getOrElse {
+      throw new NoSuchElementException(s"No key found for value: $operatorType")
+    }
+
+    // generate json schema for operator properties
+    val jsonSchema = generateOperatorJsonSchema(opDescClass)
+
+    // generate texera operator info
+    val texeraOperatorInfo = opDescClass.getConstructor().newInstance().operatorInfo
+    OperatorMetadata(
+      operatorType,
+      jsonSchema,
+      texeraOperatorInfo,
+      opDescClass.getConstructor().newInstance().operatorVersion
+    )
+  }
+
 }
