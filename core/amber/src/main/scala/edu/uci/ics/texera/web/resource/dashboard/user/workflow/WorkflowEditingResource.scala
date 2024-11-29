@@ -162,10 +162,10 @@ object WorkflowEditingResource {
   )
 
   case class AddOpRequest(
-                           workflowContent: WorkflowContent,
-                           operatorType: String,
-                           operatorProperties: ObjectNode,
-                           links: List[LinkDescriptor]
+      workflowContent: WorkflowContent,
+      operatorType: String,
+      operatorProperties: ObjectNode,
+      links: List[LinkDescriptor]
   )
 }
 
