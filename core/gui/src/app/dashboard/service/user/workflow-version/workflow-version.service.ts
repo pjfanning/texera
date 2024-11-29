@@ -111,7 +111,7 @@ export class WorkflowVersionService {
     let currentWorkflow = this.workflowActionService.getWorkflow();
     currentWorkflow.content = recommendedWorkflow;
     this.displayReadonlyWorkflow(currentWorkflow);
-    this.highlightOpVersionDiff(this.differentOpIDsList)
+    this.highlightOpVersionDiff(this.differentOpIDsList);
   }
 
   public highlightOpVersionDiff(differentOpIDsList: DifferentOpIDsList) {

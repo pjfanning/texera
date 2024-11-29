@@ -9,7 +9,7 @@ import edu.uci.ics.amber.operator.metadata.OperatorMetadataGenerator
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowEditingResource.{
   AddOpRequest,
-  SourceOperatorDescriptor,
+  LinkDescriptor,
   WorkflowContent
 }
 import io.dropwizard.auth.Auth
@@ -155,34 +155,35 @@ object WorkflowEditingResource {
     )
   }
 
-  case class SourceOperatorDescriptor(
+  case class LinkDescriptor(
       sourceOpId: String,
-      sourcePortId: String
+      sourcePortId: String,
+      targetPortId: String
   )
 
   case class AddOpRequest(
-      workflowContent: WorkflowContent,
-      operatorType: String,
-      operatorProperties: ObjectNode,
-      sourceOperatorDescriptor: List[SourceOperatorDescriptor]
+                           workflowContent: WorkflowContent,
+                           operatorType: String,
+                           operatorProperties: ObjectNode,
+                           links: List[LinkDescriptor]
   )
 }
 
 @Produces(Array(MediaType.APPLICATION_JSON))
 @RolesAllowed(Array("REGULAR", "ADMIN"))
-@Path("/workflow-editing")
+@Path("/add-operator-and-links")
 class WorkflowEditingResource extends LazyLogging {
 
   @POST
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/operator/add")
-  def addOp(
+  def addOpAndLinks(
       request: AddOpRequest,
       @Auth sessionUser: SessionUser
   ): WorkflowContent = {
 
     // Validate and retrieve the source operators
-    val srcOps = request.sourceOperatorDescriptor.map(desc =>
+    val srcOps = request.links.map(desc =>
       request.workflowContent.operators
         .find(op => op.operatorID.equals(desc.sourceOpId))
         .getOrElse(
@@ -199,13 +200,13 @@ class WorkflowEditingResource extends LazyLogging {
 
     // Add links for each source operator descriptor, updating workflowContent in each step
     val workflowAfterLinks =
-      request.sourceOperatorDescriptor.zipWithIndex.foldLeft(workflowAfterAddOperator) {
+      request.links.zipWithIndex.foldLeft(workflowAfterAddOperator) {
         case (updatedWorkflow, (srcOpDesc, i)) =>
           val (workflowWithLink, _) = updatedWorkflow.addLink(
             srcOpDesc.sourceOpId,
             srcOpDesc.sourcePortId,
             newOp.operatorID,
-            newOp.inputPorts(i).portID
+            srcOpDesc.targetPortId
           )
           workflowWithLink
       }

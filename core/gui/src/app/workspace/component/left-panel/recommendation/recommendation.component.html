@@ -1,12 +1,24 @@
 <div class="recommendation-container">
   <h4>Operators Recommendation</h4>
-  <ul nz-list [nzDataSource]="data" nzBordered nzSize="large">
+  <ul
+    nz-list
+    [nzDataSource]="data"
+    nzBordered
+    nzSize="large">
     <ng-container *ngFor="let item of data; trackBy: trackByFn">
-      <li nz-list-item nzNoFlex (click)="onItemClick(item)">
+      <li
+        nz-list-item
+        nzNoFlex
+        (click)="onItemClick(item)">
         <span>{{ item.name }}</span>
         <ul nz-list-item-actions>
           <nz-list-item-action>
-            <button nz-button nzType="link" (click)="onApply(item, $event)">Apply</button>
+            <button
+              nz-button
+              nzType="link"
+              (click)="onApply(item, $event)">
+              Apply
+            </button>
           </nz-list-item-action>
         </ul>
       </li>

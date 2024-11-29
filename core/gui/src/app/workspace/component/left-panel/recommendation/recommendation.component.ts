@@ -1,16 +1,16 @@
-import { Component } from '@angular/core';
-import { NzMessageService } from 'ng-zorro-antd/message';
+import { Component } from "@angular/core";
+import { NzMessageService } from "ng-zorro-antd/message";
 
 @Component({
-  selector: 'recommendation-list',
-  templateUrl: './recommendation.component.html',
+  selector: "recommendation-list",
+  templateUrl: "./recommendation.component.html",
 })
 export class RecommendationComponent {
   data = [
-    { id: 1, name: 'Filter Operator' },
-    { id: 2, name: 'Join Operator' },
-    { id: 3, name: 'Projection Operator' },
-    { id: 4, name: 'Aggregation Operator' },
+    { id: 1, name: "Filter Operator" },
+    { id: 2, name: "Join Operator" },
+    { id: 3, name: "Projection Operator" },
+    { id: 4, name: "Aggregation Operator" },
   ];
 
   constructor(private msg: NzMessageService) {}

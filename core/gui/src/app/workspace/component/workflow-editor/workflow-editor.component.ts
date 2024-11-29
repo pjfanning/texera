@@ -1,4 +1,11 @@
-import {AfterViewInit, ChangeDetectorRef, Component, ComponentFactoryResolver, OnDestroy, Renderer2} from "@angular/core";
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ComponentFactoryResolver,
+  OnDestroy,
+  Renderer2,
+} from "@angular/core";
 import { fromEvent, merge, Subject } from "rxjs";
 import { NzModalCommentBoxComponent } from "./comment-box-modal/nz-modal-comment-box.component";
 import { NzModalRef, NzModalService } from "ng-zorro-antd/modal";
@@ -19,10 +26,11 @@ import { WorkflowVersionService } from "../../../dashboard/service/user/workflow
 import { OperatorMenuService } from "../../service/operator-menu/operator-menu.service";
 import { NzContextMenuService } from "ng-zorro-antd/dropdown";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ViewContainerRef, ComponentRef } from '@angular/core';
+import { ViewContainerRef, ComponentRef } from "@angular/core";
 import * as _ from "lodash";
 import * as joint from "jointjs";
-import {RecommendationMenuComponent} from "./recommendation-menu/recommendation-menu.component";
+import { RecommendationMenuComponent } from "./recommendation-menu/recommendation-menu.component";
+import { WorkflowEditingService } from "../../service/edit-workflow/workflow-editing.service";
 
 // jointjs interactive options for enabling and disabling interactivity
 // https://resources.jointjs.com/docs/jointjs/v3.2/joint.html#dia.Paper.prototype.options.interactive
@@ -91,8 +99,8 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
     private router: Router,
     public nzContextMenu: NzContextMenuService,
     private viewContainerRef: ViewContainerRef,
-    private renderer: Renderer2,
-
+    private workflowEditingService: WorkflowEditingService,
+    private renderer: Renderer2
   ) {
     this.wrapper = this.workflowActionService.getJointGraphWrapper();
   }
@@ -152,7 +160,7 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
     this.handlePointerEvents();
     this.handleURLFragment();
     this.invokeResize();
-    this.handleFloatingTips();
+    this.handleFloatingRecommendationMenu();
   }
 
   ngOnDestroy(): void {
@@ -1275,13 +1283,14 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
     }, 175);
   }
 
-  private handleFloatingTips(): void {
-    this.paper.on('element:change:position', (elementView: joint.dia.ElementView) => {
+  private handleFloatingRecommendationMenu(): void {
+    this.paper.on("element:change:position", (elementView: joint.dia.ElementView) => {
       const operatorID = elementView.model.id.toString();
       this.updateRecommendationMenuPosition(operatorID);
     });
 
-    this.wrapper.getJointOperatorHighlightStream()
+    this.wrapper
+      .getJointOperatorHighlightStream()
       .pipe(untilDestroyed(this))
       .subscribe(operatorIDs => {
         operatorIDs.forEach(operatorID => {
@@ -1289,7 +1298,8 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
         });
       });
 
-    this.wrapper.getJointOperatorUnhighlightStream()
+    this.wrapper
+      .getJointOperatorUnhighlightStream()
       .pipe(untilDestroyed(this))
       .subscribe(operatorIDs => {
         operatorIDs.forEach(operatorID => {
@@ -1303,14 +1313,15 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
       this.hideRecommendationMenu();
     }
 
-    this.recommendationMenuRef = this.viewContainerRef.createComponent(RecommendationMenuComponent);
-    this.recommendationMenuRef.instance.tips = ['Sub Topic 1', 'Sub Topic 2'];
-
-    // Append the floating tip to the editorWrapper instead of document.body
-    this.editorWrapper.appendChild(this.recommendationMenuRef.location.nativeElement);
-
-    // Position the floating tip
-    this.updateRecommendationMenuPosition(operatorID);
+    this.workflowEditingService
+      .getRecommendedWorkflowEditions(operatorID)
+      .pipe(untilDestroyed(this))
+      .subscribe(editionList => {
+        this.recommendationMenuRef = this.viewContainerRef.createComponent(RecommendationMenuComponent);
+        this.recommendationMenuRef.instance.editions = editionList;
+        this.editorWrapper.appendChild(this.recommendationMenuRef.location.nativeElement);
+        this.updateRecommendationMenuPosition(operatorID);
+      });
   }
 
   private hideRecommendationMenu(): void {
@@ -1337,7 +1348,7 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
     const top = (bbox.y + bbox.height + 5) * scale.sy + paperOffset.ty;
 
     // Set the position relative to the editorWrapper
-    tipElement.style.position = 'absolute';
+    tipElement.style.position = "absolute";
     tipElement.style.left = `${left}px`;
     tipElement.style.top = `${top}px`;
   }

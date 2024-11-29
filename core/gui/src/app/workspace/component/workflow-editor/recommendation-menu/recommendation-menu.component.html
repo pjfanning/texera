@@ -1,17 +1,23 @@
-<nz-card nzTitle="Operator Recommendation" class="recommendation-menu-card">
+<nz-card
+  nzTitle="Operator Recommendation"
+  class="recommendation-menu-card">
   <div class="recommendation-list">
     <div
-      *ngFor="let tip of tips; let i = index"
+      *ngFor="let edition of editions; let i = index"
       class="recommendation-item"
-      [ngClass]="{ 'selected-item': selectedRecommendationIndex === i }"
-      (click)="onRecommendedOperationClick(i)"
-    >
-      {{ tip }}
+      [ngClass]="{ 'selected-item': selectedRecommendedEditionIndex === i }"
+      (click)="onRecommendedOperationClick(i)">
+      {{ edition.getDescription() }}
     </div>
   </div>
 
   <div class="menu-footer">
-    <button nz-button nzType="primary" nzShape="round" [disabled]="selectedRecommendationIndex === null" (click)="onConfirmClick()">
+    <button
+      nz-button
+      nzType="primary"
+      nzShape="round"
+      [disabled]="selectedRecommendedEditionIndex === null"
+      (click)="onConfirmClick()">
       ✅ Confirm
     </button>
   </div>
