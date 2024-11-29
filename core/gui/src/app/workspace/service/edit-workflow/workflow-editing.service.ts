@@ -15,12 +15,69 @@ export const WORKFLOW_EDITING_ADD_OP_URL = `${WORKFLOW_EDITING_BASE_URL}/add-ope
 export class WorkflowEditingService {
   constructor(private http: HttpClient) {}
 
-  public getRecommendedWorkflowEditions(opId: String): Observable<WorkflowEdition[]> {
-    // Return an empty list as an observable
-    // TODO: hard code the map
+  public getRecommendedWorkflowEditions(
+    opId: string,
+    workflowContent: WorkflowContent
+  ): Observable<WorkflowEdition[]> {
     return new Observable<WorkflowEdition[]>((observer) => {
-      observer.next([]); // Emit an empty list
-      observer.complete(); // Signal completion
+      if (opId.includes("CSVFileScan")) {
+        // For CSVFileScan, recommend Projection and Limit
+        const recommendations: WorkflowEdition[] = [
+          new AddOpAndLinksEdition(
+            workflowContent,
+            "Projection",
+            this.getProjectionProperties([
+              { originalAttribute: "tweet_id", alias: "" },
+            ]),
+            [
+              {
+                sourceOpId: opId,
+                sourcePortId: "output-0",
+                targetPortId: "input-0",
+              },
+            ],
+            "Project only tweet_id and alias attributes."
+          ),
+          new AddOpAndLinksEdition(
+            workflowContent,
+            "Limit",
+            this.getLimitProperties(10),
+            [
+              {
+                sourceOpId: opId,
+                sourcePortId: "output-0",
+                targetPortId: "input-0",
+              },
+            ],
+            "Limit the results to 10 rows."
+          ),
+        ];
+
+        observer.next(recommendations); // Emit the recommendations
+      } else if (opId.includes("Projection")) {
+        const recommendations: WorkflowEdition[] = [
+          new AddOpAndLinksEdition(
+            workflowContent,
+            "Aggregate",
+            this.getAggregateProperties([{
+              aggFunction: "count",
+              attribute: "tweet_id",
+              resultAttribute: "#tweets"
+            }], ["date"]),
+            [
+              {
+                sourceOpId: opId,
+                sourcePortId: "output-0",
+                targetPortId: "input-0",
+              },
+            ],
+            "Count number of tweets each month"
+          ),
+        ]
+      } else {
+        observer.next([]); // Emit an empty array if no recommendations
+      }
+      observer.complete(); // Mark the observable as complete
     });
   }
 
@@ -69,5 +126,31 @@ export class WorkflowEditingService {
       "operatorProperties" in addOp &&
       "operatorType" in addOp
     );
+  }
+
+  // functions to generate the properties
+  public getCSVFileScanProperties(fileName: string): Record<string, any> {
+    return {
+      "fileName": fileName
+    }
+  }
+
+  public getProjectionProperties(attributes: {originalAttribute: string; alias: string}[]): Record<string, any> {
+    return {
+      "attributes": attributes
+    }
+  }
+
+  public getLimitProperties(limit: number): Record<string, any> {
+    return {
+      "limit": limit
+    }
+  }
+
+  public getAggregateProperties(aggregations: {aggFunction: string; attribute: string; resultAttribute: string}[], groupByKeys: string[]) {
+    return {
+      aggregations: aggregations,
+      groupByKeys: groupByKeys
+    }
   }
 }

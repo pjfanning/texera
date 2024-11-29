@@ -171,12 +171,12 @@ object WorkflowEditingResource {
 
 @Produces(Array(MediaType.APPLICATION_JSON))
 @RolesAllowed(Array("REGULAR", "ADMIN"))
-@Path("/add-operator-and-links")
+@Path("/workflow-editing")
 class WorkflowEditingResource extends LazyLogging {
 
   @POST
   @Produces(Array(MediaType.APPLICATION_JSON))
-  @Path("/operator/add")
+  @Path("/add-operator-and-links")
   def addOpAndLinks(
       request: AddOpRequest,
       @Auth sessionUser: SessionUser

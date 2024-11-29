@@ -1314,7 +1314,7 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
     }
 
     this.workflowEditingService
-      .getRecommendedWorkflowEditions(operatorID)
+      .getRecommendedWorkflowEditions(operatorID, this.workflowActionService.getWorkflowContent())
       .pipe(untilDestroyed(this))
       .subscribe(editionList => {
         this.recommendationMenuRef = this.viewContainerRef.createComponent(RecommendationMenuComponent);

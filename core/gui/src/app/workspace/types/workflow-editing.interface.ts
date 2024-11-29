@@ -18,14 +18,14 @@ export interface LinkDescriptor {
 export class AddOpAndLinksEdition extends WorkflowEdition {
   workflowContent: WorkflowContent;
   operatorType: string;
-  operatorProperties: Map<string, any>;
+  operatorProperties: Record<string, any>;
   links: LinkDescriptor[];
   description: string;
 
   constructor(
     workflowContent: WorkflowContent,
     operatorType: string,
-    operatorProperties: Map<string, any>,
+    operatorProperties: Record<string, any>,
     links: LinkDescriptor[],
     description: string
   ) {
