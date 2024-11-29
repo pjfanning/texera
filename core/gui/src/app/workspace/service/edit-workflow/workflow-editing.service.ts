@@ -36,7 +36,7 @@ export class WorkflowEditingService {
                 targetPortId: "input-0",
               },
             ],
-            "Project only tweet_id and alias attributes."
+            "Keep only tweet_id and date attributes."
           ),
           new AddOpAndLinksEdition(
             workflowContent,
@@ -74,6 +74,7 @@ export class WorkflowEditingService {
             "Count number of tweets each month"
           ),
         ]
+        observer.next(recommendations);
       } else {
         observer.next([]); // Emit an empty array if no recommendations
       }
@@ -106,6 +107,7 @@ export class WorkflowEditingService {
       operatorType: addOp.operatorType,
     };
 
+    console.log("send request: ", request);
     return this.http
       .post<WorkflowContent>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_EDITING_ADD_OP_URL}`, request)
       .pipe(
