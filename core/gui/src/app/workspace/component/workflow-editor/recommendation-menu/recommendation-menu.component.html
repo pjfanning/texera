@@ -10,15 +10,4 @@
       {{ edition.getDescription() }}
     </div>
   </div>
-
-  <div class="menu-footer">
-    <button
-      nz-button
-      nzType="primary"
-      nzShape="round"
-      [disabled]="selectedRecommendedEditionIndex === null"
-      (click)="onConfirmClick()">
-      ✅ Confirm
-    </button>
-  </div>
 </nz-card>

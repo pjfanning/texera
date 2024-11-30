@@ -7,6 +7,7 @@ import {WorkflowContent} from "../../../../common/type/workflow";
 import {WorkflowEdition} from "../../../types/workflow-editing.interface";
 import {WorkflowEditingService} from "../../../service/edit-workflow/workflow-editing.service";
 import {NotificationService} from "../../../../common/service/notification/notification.service";
+import {BehaviorSubject, Observable} from "rxjs";
 
 @UntilDestroy()
 @Component({
@@ -30,26 +31,16 @@ export class RecommendationMenuComponent {
     this.selectedRecommendedEditionIndex = index;
 
     const workflowEdition: WorkflowEdition = this.editions[this.selectedRecommendedEditionIndex];
-    console.log("click on one edition: ", workflowEdition);
     this.workflowEditingService
       .applyWorkflowEdition(workflowEdition)
       .pipe(untilDestroyed(this))
       .subscribe({
-        next: workflowContent => {
-          this.workflowVersionService.displayRecommendedWorkflowPreview(workflowContent);
+        next: workflowContentWithEdition => {
+          this.workflowEditingService.displayRecommendedWorkflowPreview(workflowEdition, workflowContentWithEdition);
         },
         error: err => {
           this.notificationService.error(err)
         }
       })
-  }
-
-  onConfirmClick(): void {
-    if (this.selectedRecommendedEditionIndex !== null) {
-      const selectedTip = this.editions[this.selectedRecommendedEditionIndex];
-      console.log(`Confirmed tip: ${selectedTip}`);
-      // Handle the confirmed tip action
-      // TODO: change the actual workflow content
-    }
   }
 }

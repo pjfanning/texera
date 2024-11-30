@@ -3,8 +3,9 @@ import { HttpClient } from "@angular/common/http";
 import { WorkflowContent } from "../../../common/type/workflow";
 import { AddOpAndLinksEdition, WorkflowEdition } from "../../types/workflow-editing.interface";
 import { AppSettings } from "../../../common/app-setting";
-import { Observable, throwError } from "rxjs";
+import {BehaviorSubject, Observable, throwError} from "rxjs";
 import { catchError } from "rxjs/operators";
+import {WorkflowVersionService} from "../../../dashboard/service/user/workflow-version/workflow-version.service";
 
 export const WORKFLOW_EDITING_BASE_URL = "workflow-editing";
 export const WORKFLOW_EDITING_ADD_OP_URL = `${WORKFLOW_EDITING_BASE_URL}/add-operator-and-links`;
@@ -13,8 +14,52 @@ export const WORKFLOW_EDITING_ADD_OP_URL = `${WORKFLOW_EDITING_BASE_URL}/add-ope
   providedIn: "root",
 })
 export class WorkflowEditingService {
-  constructor(private http: HttpClient) {}
 
+  // state variable for monitoring
+  private displayParticularRecommendedWorkflowEdition: BehaviorSubject<boolean> =  new BehaviorSubject<boolean>(false);
+  private displayedRecommendedWorkflowEdition = new BehaviorSubject<{ description: string; workflowContent: WorkflowContent } | null>(null);
+  constructor(
+    public workflowVersionService: WorkflowVersionService,
+    private http: HttpClient,
+  ) {}
+
+  // Control the preview display, close and confirm
+  public displayRecommendedWorkflowPreview(workflowEdition: WorkflowEdition, workflowContentWithEdition: WorkflowContent) {
+    this.workflowVersionService.displayRecommendedWorkflowPreview(workflowContentWithEdition);
+    this.setDisplayState(
+      true,
+      {
+        description: workflowEdition.getDescription(),
+        workflowContent: workflowContentWithEdition,
+      }
+    )
+  }
+
+  public applyRecommendedWorkflowEdition() {
+    this.workflowVersionService.applyRecommendedWorkflow();
+    this.setDisplayState(false);
+  }
+
+  public closeRecommendedWorkflowEditionPreview() {
+    this.workflowVersionService.closeRecommendedWorkflowEditionPreview();
+    this.setDisplayState(false);
+  }
+
+  public getDisplayRecommendedWorkflowEditionStream(): Observable<boolean> {
+    return this.displayParticularRecommendedWorkflowEdition.asObservable();
+  }
+
+  private setDisplayState(display: boolean, state?: {description: string, workflowContent: WorkflowContent}) {
+    if (display && state) {
+      this.displayedRecommendedWorkflowEdition.next(state);
+    } else {
+      this.displayedRecommendedWorkflowEdition.next(null);
+    }
+    this.displayParticularRecommendedWorkflowEdition.next(display);
+  }
+  // End of the state management related methods
+
+  // The hard-coded edition Map
   public getRecommendedWorkflowEditions(
     opId: string,
     workflowContent: WorkflowContent
@@ -91,7 +136,6 @@ export class WorkflowEditingService {
       return this.addOperatorAndLinks(edition);
     } else {
       const typeError = new Error("Unsupported WorkflowEdition type.");
-      console.error(typeError.message);
       return throwError(() => typeError);
     }
   }
@@ -107,12 +151,10 @@ export class WorkflowEditingService {
       operatorType: addOp.operatorType,
     };
 
-    console.log("send request: ", request);
     return this.http
       .post<WorkflowContent>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_EDITING_ADD_OP_URL}`, request)
       .pipe(
         catchError((error) => {
-          console.error("Error adding operator and links:", error);
           return throwError(() => new Error("HTTP error occurred while adding operator and links."));
         })
       );

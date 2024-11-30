@@ -103,11 +103,13 @@ export class WorkflowVersionService {
     this.highlightOpVersionDiff(this.differentOpIDsList);
   }
 
+  // Recommendation: Method related to display recommended workflow
   public displayRecommendedWorkflowPreview(recommendedWorkflow: WorkflowContent) {
     this.differentOpIDsList = this.getWorkflowsDifference(
       this.workflowActionService.getWorkflowContent(),
       recommendedWorkflow
     );
+    // TODO: here the reference is required, think about how to get rid of this.
     let currentWorkflow = this.workflowActionService.getWorkflow();
     currentWorkflow.content = recommendedWorkflow;
     this.displayReadonlyWorkflow(currentWorkflow);
@@ -236,6 +238,21 @@ export class WorkflowVersionService {
     this.restoreModificationState();
   }
 
+  // Recommendation
+  public applyRecommendedWorkflow() {
+    // set all elements to transparent boundary
+    this.unhighlightOpVersionDiff(this.differentOpIDsList);
+    // we need to clear the undo and redo stack because it is a new version from a previous workflow on paper
+    this.undoRedoService.clearRedoStack();
+    this.undoRedoService.clearUndoStack();
+    // we need to enable workflow modifications which also automatically enables undoredo service
+    this.workflowActionService.enableWorkflowModification();
+    // clear the temp workflow
+    this.workflowActionService.resetTempWorkflow();
+    this.workflowPersistService.setWorkflowPersistFlag(true);
+    this.restoreModificationState();
+  }
+
   public closeReadonlyWorkflowDisplay() {
     // should enable modifications first to be able to make action of reloading old version on paper
     this.workflowActionService.enableWorkflowModification();
@@ -257,6 +274,13 @@ export class WorkflowVersionService {
     this.unhighlightOpVersionDiff(this.differentOpIDsList);
     this.closeReadonlyWorkflowDisplay();
     this.setDisplayParticularVersion(false);
+  }
+
+  // Recommendation
+  public closeRecommendedWorkflowEditionPreview() {
+    // set all elements to transparent boundary
+    this.unhighlightOpVersionDiff(this.differentOpIDsList);
+    this.closeReadonlyWorkflowDisplay();
   }
 
   public unhighlightOpVersionDiff(differentOpIDsList: DifferentOpIDsList) {
