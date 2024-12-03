@@ -111,8 +111,8 @@ export class MenuComponent implements OnInit, OnDestroy {
     public coeditorPresenceService: CoeditorPresenceService,
     private modalService: NzModalService,
     private reportGenerationService: ReportGenerationService,
-    public workflowPodBrainService: WorkflowPodBrainService,
-    private panelService: PanelService
+    private panelService: PanelService,
+    public workflowPodBrainService: WorkflowPodBrainService
   ) {
     workflowWebsocketService
       .subscribeToEvent("ExecutionDurationUpdateEvent")
