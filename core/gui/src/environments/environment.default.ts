@@ -13,6 +13,11 @@ export const defaultEnvironment = {
   apiUrl: "api",
 
   /**
+   * root API of the envoy proxy
+   */
+  envoyUrl: "wsapi/workflow-websocket",
+
+  /**
    * whether fetching available source tables is enabled
    * see SourceTablesService for details
    */
