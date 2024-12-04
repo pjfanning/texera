@@ -29,12 +29,12 @@ import { isDefined } from "../../../common/util/predicate";
 import { NzModalService } from "ng-zorro-antd/modal";
 import { ResultExportationComponent } from "../result-exportation/result-exportation.component";
 import { ReportGenerationService } from "../../service/report-generation/report-generation.service";
-import { PowerState } from "../power-button/power-button.component";
-import { WorkflowPodBrainService } from "../../service/workflow-pod-brain/workflow-pod-brain.service";
-
 import { ShareAccessComponent } from "src/app/dashboard/component/user/share-access/share-access.component";
 import { PanelService } from "../../service/panel/panel.service";
 import { DASHBOARD_USER_WORKFLOW } from "../../../app-routing.constant";
+import { PowerState } from "../power-button/power-button.component";
+import { WorkflowPodBrainService } from "../../service/workflow-pod-brain/workflow-pod-brain.service";
+
 /**
  * MenuComponent is the top level menu bar that shows
  *  the Texera title and workflow execution button

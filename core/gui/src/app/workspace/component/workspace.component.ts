@@ -113,8 +113,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       this.updateViewCount();
     } else {
       let wid = this.route.snapshot.params.id ?? 0;
-      let uid = this.userService.getCurrentUser()?.uid ?? 1;
-      this.workflowWebsocketService.openWebsocket(wid, uid);
+      this.workflowWebsocketService.openWebsocket(wid);
     }
 
     this.registerLoadOperatorMetadata();

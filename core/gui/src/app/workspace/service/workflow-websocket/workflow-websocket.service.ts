@@ -65,17 +65,11 @@ export class WorkflowWebsocketService {
     this.websocket?.complete();
   }
 
-  public openWebsocket(wId: number, uId: number) {
-    if (uId == undefined) {
-      console.log(`uId is ${uId}, defaulting to uId = 1`);
-      uId = 1;
-    }
+  public openWebsocket(wId: number) {
     const websocketUrl =
       getWebsocketUrl(WorkflowWebsocketService.TEXERA_WEBSOCKET_ENDPOINT, "") +
       "?wid=" +
       wId +
-      "&uid=" +
-      uId +
       (environment.userSystemEnabled && AuthService.getAccessToken() !== null
         ? "&access-token=" + AuthService.getAccessToken()
         : "");
@@ -116,6 +110,6 @@ export class WorkflowWebsocketService {
       return;
     }
     this.closeWebsocket();
-    this.openWebsocket(wId, uId);
+    this.openWebsocket(wId);
   }
 }
