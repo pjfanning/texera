@@ -65,11 +65,17 @@ export class WorkflowWebsocketService {
     this.websocket?.complete();
   }
 
-  public openWebsocket(wId: number) {
+  public openWebsocket(wId: number, uId?: number) {
+    if (uId == undefined) {
+      console.log(`uId is ${uId}, defaulting to uId = 1`);
+      uId = 1;
+    }
     const websocketUrl =
       getWebsocketUrl(WorkflowWebsocketService.TEXERA_WEBSOCKET_ENDPOINT, "") +
       "?wid=" +
       wId +
+      "&uid=" +
+      uId +
       (environment.userSystemEnabled && AuthService.getAccessToken() !== null
         ? "&access-token=" + AuthService.getAccessToken()
         : "");
