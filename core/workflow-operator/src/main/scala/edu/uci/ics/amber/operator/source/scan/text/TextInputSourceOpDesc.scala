@@ -5,6 +5,7 @@ import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchema
 import edu.uci.ics.amber.core.executor.OpExecInitInfo
 import edu.uci.ics.amber.core.tuple.{Attribute, Schema}
 import edu.uci.ics.amber.core.workflow.{PhysicalOp, SchemaPropagationFunc}
+import edu.uci.ics.amber.core.workflow.locationpreference.GoToSpecificNode
 import edu.uci.ics.amber.operator.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.amber.operator.metadata.annotations.UIWidget
 import edu.uci.ics.amber.operator.source.SourceOperatorDescriptor
@@ -34,7 +35,9 @@ class TextInputSourceOpDesc extends SourceOperatorDescriptor with TextSourceOpDe
       .withOutputPorts(operatorInfo.outputPorts)
       .withPropagateSchema(
         SchemaPropagationFunc(_ => Map(operatorInfo.outputPorts.head.id -> sourceSchema()))
-      )
+      ).withLocationPreference(
+        Some(GoToSpecificNode("")))
+  //      ).withSuggestedWorkerNum(1)
 
   override def sourceSchema(): Schema =
     Schema

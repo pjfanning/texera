@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.common
 
 import akka.actor.{Address, Deploy}
 import akka.remote.RemoteScope
-import edu.uci.ics.amber.core.workflow.{PhysicalOp, PreferController, RoundRobinPreference}
+import edu.uci.ics.amber.core.workflow.{PhysicalOp, PreferController, RoundRobinPrefnpuerence, GoToSpecificNode}
 import edu.uci.ics.amber.engine.architecture.controller.execution.OperatorExecution
 import edu.uci.ics.amber.engine.architecture.deploysemantics.AddressInfo
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
@@ -38,6 +38,8 @@ object ExecutorDeployment {
       val preferredAddress: Address = locationPreference match {
         case PreferController =>
           addressInfo.controllerAddress
+        case node: GoToSpecificNode =>
+          addressInfo.allAddresses.find(addr => addr.host.get == node.nodeAddr).get
         case RoundRobinPreference =>
           assert(
             addressInfo.allAddresses.nonEmpty,

@@ -9,6 +9,7 @@ import edu.uci.ics.amber.operator.{LogicalOp, StateTransferFunc}
 import edu.uci.ics.amber.operator.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.amber.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
 import edu.uci.ics.amber.workflow.{InputPort, OutputPort}
+import edu.uci.ics.amber.core.workflow.locationpreference.GoToSpecificNode
 
 import scala.util.{Success, Try}
 
@@ -35,6 +36,7 @@ class LimitOpDesc extends LogicalOp {
       .withInputPorts(operatorInfo.inputPorts)
       .withOutputPorts(operatorInfo.outputPorts)
       .withParallelizable(false)
+      .withLocationPreference(Some(GoToSpecificNode("")))
   }
 
   override def operatorInfo: OperatorInfo =
