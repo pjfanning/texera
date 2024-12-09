@@ -72,6 +72,10 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
     private changeDetectorRef: ChangeDetectorRef
   ) {}
 
+  cleanPrevStatsCache(): void {
+    this.prevTableStats = this.tableStats;
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     this.operatorId = changes.operatorId?.currentValue;
     if (this.operatorId) {
@@ -128,8 +132,9 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
             this.prevTableStats = this.tableStats;
           }
         }
+        setTimeout(() => this.cleanPrevStatsCache(), 2000);
       });
-
+      
     this.workflowResultService
       .getSinkStorageMode()
       .pipe(untilDestroyed(this))
