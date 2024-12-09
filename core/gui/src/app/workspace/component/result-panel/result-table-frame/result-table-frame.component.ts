@@ -132,7 +132,7 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
             this.prevTableStats = this.tableStats;
           }
         }
-        setTimeout(() => this.cleanPrevStatsCache(), 2000);
+        setTimeout(() => this.cleanPrevStatsCache(), 1500);
       });
       
     this.workflowResultService
