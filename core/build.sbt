@@ -1,4 +1,5 @@
 lazy val DAO = project in file("dao")
+lazy val WorkflowComputingUnitManager = project in file("workflow-computing-unit-manager")
 lazy val WorkflowCore = (project in file("workflow-core"))
   .dependsOn(DAO)
   .configs(Test)
@@ -20,7 +21,7 @@ lazy val WorkflowExecutionService = (project in file("amber"))
 
 // root project definition
 lazy val CoreProject = (project in file("."))
-  .aggregate(DAO, WorkflowCore, WorkflowOperator, WorkflowCompilingService, WorkflowExecutionService)
+  .aggregate(DAO, WorkflowComputingUnitManager, WorkflowCore, WorkflowOperator, WorkflowCompilingService, WorkflowExecutionService)
   .settings(
     name := "core",
     version := "0.1.0",
