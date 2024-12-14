@@ -13,6 +13,7 @@ import edu.uci.ics.texera.dao.jooq.generated.tables.PublicProject;
 import edu.uci.ics.texera.dao.jooq.generated.tables.User;
 import edu.uci.ics.texera.dao.jooq.generated.tables.UserConfig;
 import edu.uci.ics.texera.dao.jooq.generated.tables.Workflow;
+import edu.uci.ics.texera.dao.jooq.generated.tables.WorkflowComputingUnit;
 import edu.uci.ics.texera.dao.jooq.generated.tables.WorkflowExecutions;
 import edu.uci.ics.texera.dao.jooq.generated.tables.WorkflowOfProject;
 import edu.uci.ics.texera.dao.jooq.generated.tables.WorkflowOfUser;
@@ -59,6 +60,8 @@ public class Indexes {
     public static final Index USER_CONFIG_PRIMARY = Indexes0.USER_CONFIG_PRIMARY;
     public static final Index WORKFLOW_IDX_WORKFLOW_NAME_DESCRIPTION_CONTENT = Indexes0.WORKFLOW_IDX_WORKFLOW_NAME_DESCRIPTION_CONTENT;
     public static final Index WORKFLOW_PRIMARY = Indexes0.WORKFLOW_PRIMARY;
+    public static final Index WORKFLOW_COMPUTING_UNIT_PRIMARY = Indexes0.WORKFLOW_COMPUTING_UNIT_PRIMARY;
+    public static final Index WORKFLOW_COMPUTING_UNIT_UID = Indexes0.WORKFLOW_COMPUTING_UNIT_UID;
     public static final Index WORKFLOW_EXECUTIONS_PRIMARY = Indexes0.WORKFLOW_EXECUTIONS_PRIMARY;
     public static final Index WORKFLOW_EXECUTIONS_UID = Indexes0.WORKFLOW_EXECUTIONS_UID;
     public static final Index WORKFLOW_EXECUTIONS_VID = Indexes0.WORKFLOW_EXECUTIONS_VID;
@@ -104,6 +107,8 @@ public class Indexes {
         public static Index USER_CONFIG_PRIMARY = Internal.createIndex("PRIMARY", UserConfig.USER_CONFIG, new OrderField[] { UserConfig.USER_CONFIG.UID, UserConfig.USER_CONFIG.KEY }, true);
         public static Index WORKFLOW_IDX_WORKFLOW_NAME_DESCRIPTION_CONTENT = Internal.createIndex("idx_workflow_name_description_content", Workflow.WORKFLOW, new OrderField[] { Workflow.WORKFLOW.NAME, Workflow.WORKFLOW.DESCRIPTION, Workflow.WORKFLOW.CONTENT }, false);
         public static Index WORKFLOW_PRIMARY = Internal.createIndex("PRIMARY", Workflow.WORKFLOW, new OrderField[] { Workflow.WORKFLOW.WID }, true);
+        public static Index WORKFLOW_COMPUTING_UNIT_PRIMARY = Internal.createIndex("PRIMARY", WorkflowComputingUnit.WORKFLOW_COMPUTING_UNIT, new OrderField[] { WorkflowComputingUnit.WORKFLOW_COMPUTING_UNIT.CUID }, true);
+        public static Index WORKFLOW_COMPUTING_UNIT_UID = Internal.createIndex("uid", WorkflowComputingUnit.WORKFLOW_COMPUTING_UNIT, new OrderField[] { WorkflowComputingUnit.WORKFLOW_COMPUTING_UNIT.UID }, false);
         public static Index WORKFLOW_EXECUTIONS_PRIMARY = Internal.createIndex("PRIMARY", WorkflowExecutions.WORKFLOW_EXECUTIONS, new OrderField[] { WorkflowExecutions.WORKFLOW_EXECUTIONS.EID }, true);
         public static Index WORKFLOW_EXECUTIONS_UID = Internal.createIndex("uid", WorkflowExecutions.WORKFLOW_EXECUTIONS, new OrderField[] { WorkflowExecutions.WORKFLOW_EXECUTIONS.UID }, false);
         public static Index WORKFLOW_EXECUTIONS_VID = Internal.createIndex("vid", WorkflowExecutions.WORKFLOW_EXECUTIONS, new OrderField[] { WorkflowExecutions.WORKFLOW_EXECUTIONS.VID }, false);

@@ -13,6 +13,7 @@ import edu.uci.ics.texera.dao.jooq.generated.tables.PublicProject;
 import edu.uci.ics.texera.dao.jooq.generated.tables.User;
 import edu.uci.ics.texera.dao.jooq.generated.tables.UserConfig;
 import edu.uci.ics.texera.dao.jooq.generated.tables.Workflow;
+import edu.uci.ics.texera.dao.jooq.generated.tables.WorkflowComputingUnit;
 import edu.uci.ics.texera.dao.jooq.generated.tables.WorkflowExecutions;
 import edu.uci.ics.texera.dao.jooq.generated.tables.WorkflowOfProject;
 import edu.uci.ics.texera.dao.jooq.generated.tables.WorkflowOfUser;
@@ -75,6 +76,11 @@ public class Tables {
      * The table <code>texera_db.workflow</code>.
      */
     public static final Workflow WORKFLOW = Workflow.WORKFLOW;
+
+    /**
+     * The table <code>texera_db.workflow_computing_unit</code>.
+     */
+    public static final WorkflowComputingUnit WORKFLOW_COMPUTING_UNIT = WorkflowComputingUnit.WORKFLOW_COMPUTING_UNIT;
 
     /**
      * The table <code>texera_db.workflow_executions</code>.
