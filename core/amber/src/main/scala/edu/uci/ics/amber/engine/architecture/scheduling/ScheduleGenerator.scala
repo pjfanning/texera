@@ -1,15 +1,16 @@
 package edu.uci.ics.amber.engine.architecture.scheduling
 
-import edu.uci.ics.amber.core.storage.result.OpResultStorage
+import edu.uci.ics.amber.core.storage.result.{OpResultStorage, ResultStorage}
+import edu.uci.ics.amber.core.tuple.Schema
 import edu.uci.ics.amber.core.workflow.{PhysicalOp, PhysicalPlan, WorkflowContext}
-import edu.uci.ics.amber.engine.architecture.scheduling.RegionPlanGenerator.replaceVertex
+import edu.uci.ics.amber.engine.architecture.scheduling.ScheduleGenerator.replaceVertex
 import edu.uci.ics.amber.engine.architecture.scheduling.resourcePolicies.{
   DefaultResourceAllocator,
   ExecutionClusterInfo
 }
 import edu.uci.ics.amber.operator.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.amber.operator.source.cache.CacheSourceOpDesc
-import edu.uci.ics.amber.virtualidentity.{OperatorIdentity, PhysicalOpIdentity}
+import edu.uci.ics.amber.virtualidentity.{OperatorIdentity, PhysicalOpIdentity, WorkflowIdentity}
 import edu.uci.ics.amber.workflow.PhysicalLink
 import org.jgrapht.graph.DirectedAcyclicGraph
 import org.jgrapht.traverse.TopologicalOrderIterator
@@ -17,7 +18,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, IteratorHasAsScala}
 
-object RegionPlanGenerator {
+object ScheduleGenerator {
   def replaceVertex(
       graph: DirectedAcyclicGraph[Region, RegionLink],
       oldVertex: Region,
@@ -49,14 +50,27 @@ object RegionPlanGenerator {
   }
 }
 
-abstract class RegionPlanGenerator(
+abstract class ScheduleGenerator(
     workflowContext: WorkflowContext,
-    var physicalPlan: PhysicalPlan,
-    opResultStorage: OpResultStorage
+    var physicalPlan: PhysicalPlan
 ) {
   private val executionClusterInfo = new ExecutionClusterInfo()
 
-  def generate(): (RegionPlan, PhysicalPlan)
+  def generate(): (Schedule, PhysicalPlan)
+
+  /**
+    * A schedule is a ranking on the regions of a region plan. Currently we use a total order of the regions.
+    */
+  def generateScheduleFromRegionPlan(regionPlan: RegionPlan): Schedule = {
+    val levelSets = regionPlan
+      .topologicalIterator()
+      .zipWithIndex
+      .map(zippedRegionId => {
+        zippedRegionId._2 -> Set.apply(regionPlan.getRegion(zippedRegionId._1))
+      })
+      .toMap
+    Schedule.apply(levelSets)
+  }
 
   def allocateResource(
       regionDAG: DirectedAcyclicGraph[Region, RegionLink]
@@ -139,8 +153,9 @@ abstract class RegionPlanGenerator(
       .removeLink(physicalLink)
 
     // create cache writer and link
+    val matWriterInputSchema = fromOp.outputPorts(fromPortId)._3.toOption.get
     val matWriterPhysicalOp: PhysicalOp =
-      createMatWriter(physicalLink)
+      createMatWriter(physicalLink, Array(matWriterInputSchema), workflowContext.workflowId)
     val sourceToWriterLink =
       PhysicalLink(
         fromOp.id,
@@ -154,7 +169,7 @@ abstract class RegionPlanGenerator(
 
     // create cache reader and link
     val matReaderPhysicalOp: PhysicalOp =
-      createMatReader(matWriterPhysicalOp.id.logicalOpId, physicalLink)
+      createMatReader(matWriterPhysicalOp.id.logicalOpId, physicalLink, workflowContext.workflowId)
     val readerToDestLink =
       PhysicalLink(
         matReaderPhysicalOp.id,
@@ -169,13 +184,14 @@ abstract class RegionPlanGenerator(
       .addLink(readerToDestLink)
   }
 
-  def createMatReader(
+  private def createMatReader(
       matWriterLogicalOpId: OperatorIdentity,
-      physicalLink: PhysicalLink
+      physicalLink: PhysicalLink,
+      workflowIdentity: WorkflowIdentity
   ): PhysicalOp = {
     val matReader = new CacheSourceOpDesc(
       matWriterLogicalOpId,
-      opResultStorage: OpResultStorage
+      ResultStorage.getOpResultStorage(workflowIdentity)
     )
     matReader.setContext(workflowContext)
     matReader.setOperatorId(s"cacheSource_${getMatIdFromPhysicalLink(physicalLink)}")
@@ -189,20 +205,25 @@ abstract class RegionPlanGenerator(
 
   }
 
-  def createMatWriter(
-      physicalLink: PhysicalLink
+  private def createMatWriter(
+      physicalLink: PhysicalLink,
+      inputSchema: Array[Schema],
+      workflowIdentity: WorkflowIdentity
   ): PhysicalOp = {
     val matWriter = new ProgressiveSinkOpDesc()
     matWriter.setContext(workflowContext)
     matWriter.setOperatorId(s"materialized_${getMatIdFromPhysicalLink(physicalLink)}")
-
     // expect exactly one input port and one output port
-
-    matWriter.setStorage(
-      opResultStorage.create(
+    val schema = matWriter.getOutputSchema(inputSchema)
+    ResultStorage
+      .getOpResultStorage(workflowIdentity)
+      .create(
         key = matWriter.operatorIdentifier,
-        mode = OpResultStorage.defaultStorageMode
+        mode = OpResultStorage.defaultStorageMode,
+        schema = Some(schema)
       )
+    matWriter.setUpstreamId(
+      matWriter.operatorIdentifier
     )
 
     matWriter.getPhysicalOp(
