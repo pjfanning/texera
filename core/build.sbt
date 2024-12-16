@@ -1,5 +1,5 @@
 lazy val DAO = project in file("dao")
-lazy val WorkflowComputingUnitManager = project in file("workflow-computing-unit-manager")
+lazy val WorkflowComputingUnitManager = (project in file("workflow-computing-unit-manager")).dependsOn(DAO)
 lazy val WorkflowCore = (project in file("workflow-core"))
   .dependsOn(DAO)
   .configs(Test)
