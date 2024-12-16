@@ -1,6 +1,6 @@
 import scala.collection.Seq
 
-name := "workflow-computing-unit-manager"
+name := "workflow-computing-unit-managing-service"
 organization := "edu.uci.ics"
 version := "0.1.0"
 
