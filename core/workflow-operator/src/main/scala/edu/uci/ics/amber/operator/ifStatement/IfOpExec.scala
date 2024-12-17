@@ -1,9 +1,9 @@
-package edu.uci.ics.texera.workflow.operators.controlBlock.ifStatement
+package edu.uci.ics.amber.operator.ifStatement
 
-import edu.uci.ics.amber.engine.common.executor.OperatorExecutor
-import edu.uci.ics.amber.engine.common.model.State
-import edu.uci.ics.amber.engine.common.model.tuple.{Tuple, TupleLike}
-import edu.uci.ics.amber.engine.common.workflow.PortIdentity
+import edu.uci.ics.amber.core.executor.OperatorExecutor
+import edu.uci.ics.amber.core.marker.State
+import edu.uci.ics.amber.core.tuple.{Tuple, TupleLike}
+import edu.uci.ics.amber.workflow.PortIdentity
 
 class IfOpExec(conditionName: String) extends OperatorExecutor {
   private var outputPort: PortIdentity = PortIdentity(1) // by default, it should be the true port.
