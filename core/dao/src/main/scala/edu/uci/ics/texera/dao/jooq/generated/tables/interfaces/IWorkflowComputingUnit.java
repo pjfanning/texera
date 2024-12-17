@@ -39,12 +39,12 @@ public interface IWorkflowComputingUnit extends Serializable {
     /**
      * Setter for <code>texera_db.workflow_computing_unit.cuid</code>.
      */
-    public void setCuid(String value);
+    public void setCuid(UInteger value);
 
     /**
      * Getter for <code>texera_db.workflow_computing_unit.cuid</code>.
      */
-    public String getCuid();
+    public UInteger getCuid();
 
     /**
      * Setter for <code>texera_db.workflow_computing_unit.creation_time</code>.

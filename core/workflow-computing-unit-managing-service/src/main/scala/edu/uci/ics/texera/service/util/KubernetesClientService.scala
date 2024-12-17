@@ -1,11 +1,11 @@
-package service
+package edu.uci.ics.texera.service.util
 
 import config.ApplicationConf.appConfig
-import io.kubernetes.client.openapi.{ApiClient, Configuration}
+import edu.uci.ics.texera.service.util.KubernetesClientConfig.kubernetesConfig
 import io.kubernetes.client.openapi.apis.{AppsV1Api, CoreV1Api}
-import io.kubernetes.client.openapi.models.{V1Container, V1ContainerPort, V1ObjectMeta, V1Pod, V1PodList, V1PodSpec}
+import io.kubernetes.client.openapi.models._
+import io.kubernetes.client.openapi.{ApiClient, Configuration}
 import io.kubernetes.client.util.Config
-import service.KubernetesClientConfig.kubernetesConfig
 
 import java.util
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -27,9 +27,7 @@ object KubernetesClientConfig {
 
 class KubernetesClientService(
                                val namespace: String = kubernetesConfig.namespace,
-                               val brainNamespace: String = kubernetesConfig.workflowPodBrainNamespace,
-                               val poolNamespace: String = kubernetesConfig.workflowPodPoolNamespace,
-                               val deploymentName: String = kubernetesConfig.workflowPodBrainDeploymentName) {
+                               val poolNamespace: String = kubernetesConfig.workflowPodPoolNamespace) {
 
   // Kubernetes Api Clients are collections of different K8s objects and functions
   // which provide programmatic access to K8s resources.
@@ -85,7 +83,7 @@ class KubernetesClientService(
   def createPod(uid: Int, wid: Int): V1Pod = {
     val uidString: String = String.valueOf(uid)
     val uidLabelSelector: String = s"userId=$uidString"
-    val pod: V1Pod = createUserPod(uid, wid)
+    val pod: V1Pod = createPod(uid, wid)
 
     // Should be a list with a single pod
     try {
@@ -107,7 +105,7 @@ class KubernetesClientService(
    * @param uid        The uid which a pod pod will be created for.
    * @return The newly created V1Pod object.
    */
-  def createUserPod(uid: Int, wid: Int): V1Pod = {
+  def createPod(uid: Int): V1Pod = {
     if (getPodFromLabel(poolNamespace, s"name=user-pod-$uid-$wid") != null) {
       throw new Exception(s"Pod with uid $uid and wid $wid already exists")
     }

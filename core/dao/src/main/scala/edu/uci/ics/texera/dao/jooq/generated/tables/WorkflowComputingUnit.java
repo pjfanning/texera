@@ -34,7 +34,7 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class WorkflowComputingUnit extends TableImpl<WorkflowComputingUnitRecord> {
 
-    private static final long serialVersionUID = -1687577845;
+    private static final long serialVersionUID = -1444685935;
 
     /**
      * The reference instance of <code>texera_db.workflow_computing_unit</code>
@@ -62,7 +62,7 @@ public class WorkflowComputingUnit extends TableImpl<WorkflowComputingUnitRecord
     /**
      * The column <code>texera_db.workflow_computing_unit.cuid</code>.
      */
-    public final TableField<WorkflowComputingUnitRecord, String> CUID = createField(DSL.name("cuid"), org.jooq.impl.SQLDataType.VARCHAR(128).nullable(false), this, "");
+    public final TableField<WorkflowComputingUnitRecord, UInteger> CUID = createField(DSL.name("cuid"), org.jooq.impl.SQLDataType.INTEGERUNSIGNED.nullable(false), this, "");
 
     /**
      * The column <code>texera_db.workflow_computing_unit.creation_time</code>.
@@ -167,7 +167,7 @@ public class WorkflowComputingUnit extends TableImpl<WorkflowComputingUnitRecord
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<UInteger, String, String, Timestamp, Timestamp> fieldsRow() {
+    public Row5<UInteger, String, UInteger, Timestamp, Timestamp> fieldsRow() {
         return (Row5) super.fieldsRow();
     }
 }

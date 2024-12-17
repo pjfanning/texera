@@ -17,11 +17,11 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class WorkflowComputingUnit implements IWorkflowComputingUnit {
 
-    private static final long serialVersionUID = 147333175;
+    private static final long serialVersionUID = -891676537;
 
     private UInteger  uid;
     private String    name;
-    private String    cuid;
+    private UInteger  cuid;
     private Timestamp creationTime;
     private Timestamp terminateTime;
 
@@ -38,7 +38,7 @@ public class WorkflowComputingUnit implements IWorkflowComputingUnit {
     public WorkflowComputingUnit(
         UInteger  uid,
         String    name,
-        String    cuid,
+        UInteger  cuid,
         Timestamp creationTime,
         Timestamp terminateTime
     ) {
@@ -70,12 +70,12 @@ public class WorkflowComputingUnit implements IWorkflowComputingUnit {
     }
 
     @Override
-    public String getCuid() {
+    public UInteger getCuid() {
         return this.cuid;
     }
 
     @Override
-    public void setCuid(String cuid) {
+    public void setCuid(UInteger cuid) {
         this.cuid = cuid;
     }
 
