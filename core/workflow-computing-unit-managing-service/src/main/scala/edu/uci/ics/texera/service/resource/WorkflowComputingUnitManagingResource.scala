@@ -5,71 +5,91 @@ import edu.uci.ics.texera.dao.SqlServer
 import edu.uci.ics.texera.dao.SqlServer.withTransaction
 import edu.uci.ics.texera.dao.jooq.generated.tables.daos.WorkflowComputingUnitDao
 import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.WorkflowComputingUnit
-import edu.uci.ics.texera.service.resource.WorkflowComputingUnitManagingResource.{WorkflowComputingUnitCreationParams, WorkflowPodTerminationParams, context}
+import edu.uci.ics.texera.service.resource.WorkflowComputingUnitManagingResource.{
+  WorkflowComputingUnitCreationParams,
+  WorkflowPodTerminationParams,
+  context
+}
+import edu.uci.ics.texera.service.util.KubernetesClientService
+
 import io.kubernetes.client.openapi.models.V1Pod
 import jakarta.ws.rs._
 import jakarta.ws.rs.core.{MediaType, Response}
 import org.jooq.DSLContext
 import org.jooq.types.UInteger
-import edu.uci.ics.texera.service.util.KubernetesClientService
-import io.kubernetes.client.proto.V1.Pod
 
+import java.net.URI
 import java.sql.Timestamp
 
 object WorkflowComputingUnitManagingResource {
 
-  private lazy val context: DSLContext = SqlServer.getInstance(StorageConfig.jdbcUrl, StorageConfig.jdbcUsername, StorageConfig.jdbcPassword).createDSLContext()
-  case class WorkflowComputingUnitCreationParams(uid: UInteger) // TODO: add unit type
+  private lazy val context: DSLContext = SqlServer
+    .getInstance(StorageConfig.jdbcUrl, StorageConfig.jdbcUsername, StorageConfig.jdbcPassword)
+    .createDSLContext()
 
-  case class WorkflowPodTerminationParams(cuid: UInteger)
+  case class WorkflowComputingUnitCreationParams(uid: UInteger) // TODO: add unit type if needed
+
+  case class WorkflowPodTerminationParams(podURI: URI)
 }
 
 @Produces(Array(MediaType.APPLICATION_JSON))
 @Path("/workflowpod")
 class WorkflowComputingUnitManagingResource {
+
   /**
-   * Create a new pod for the given workflow wid and workflow content
-   *
-   * @param param the parameters
-   * @return the created pod
-   */
+    * Create a new pod for the given user ID.
+    *
+    * @param param The parameters containing the user ID.
+    * @return The created pod or an error response.
+    */
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/create")
-  def createWorkflowComputingUnit(
-                 param: WorkflowComputingUnitCreationParams
-               ): Response = {
+  def createWorkflowComputingUnit(param: WorkflowComputingUnitCreationParams): Response = {
+    var computingUnit: WorkflowComputingUnit = null
     var newPod: V1Pod = null
+
     try {
-      newPod = new KubernetesClientService().createPod(param.uid.intValue())
+      withTransaction(context) { ctx =>
+        val wcDao = new WorkflowComputingUnitDao(ctx.configuration())
+
+        // Create a new database entry and insert to generate cuid
+        computingUnit = new WorkflowComputingUnit()
+        computingUnit.setUid(param.uid)
+        computingUnit.setCreationTime(new Timestamp(System.currentTimeMillis()))
+        wcDao.insert(computingUnit)
+
+        // Retrieve the generated cuid
+        val cuid = computingUnit.getCuid
+
+        // Create the pod with the generated cuid
+        newPod = KubernetesClientService.createPod(cuid.intValue())
+
+        // Update the computing unit with the pod name and creation time
+        computingUnit.setName(newPod.getMetadata.getName)
+        computingUnit.setCreationTime(
+          Timestamp.from(newPod.getMetadata.getCreationTimestamp.toInstant)
+        )
+
+        wcDao.update(computingUnit)
+      }
     } catch {
-      case e: Exception => return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage).build()
+      case e: Exception =>
+        // Rollback on error and return a failure response
+        return Response
+          .status(Response.Status.BAD_REQUEST)
+          .entity(s"Error creating pod: ${e.getMessage}")
+          .build()
     }
 
-    // Set uid, wid, name, pod_uid, creation_time manually
-    // terminate_time is set on pod termination
-    val computingUnit: WorkflowComputingUnit = new WorkflowComputingUnit()
-    computingUnit.setUid(param.uid)
-    computingUnit.setName(newPod.getMetadata.getName)
-    computingUnit.setCreationTime(Timestamp.from(newPod.getMetadata.getCreationTimestamp.toInstant))
-
-
-    // Insert the new pod into the database within a transaction
-    withTransaction(context) { ctx =>
-      val wcDao = new WorkflowComputingUnitDao(ctx.configuration())
-      wcDao.insert(computingUnit)
-    }
-
-    // If everything succeeds, return the new SQL pod as the response entity
     Response.ok(computingUnit).build()
   }
 
-
   /**
-    * List all pods created by current user
+    * List all computing units created by the current user.
     *
-    * @return
+    * @return A list of computing units that are not terminated.
     */
   @GET
   @Path("")
@@ -77,37 +97,44 @@ class WorkflowComputingUnitManagingResource {
   def listComputingUnits(): java.util.List[WorkflowComputingUnit] = {
     withTransaction(context) { ctx =>
       val cuDao = new WorkflowComputingUnitDao(ctx.configuration())
-      var units: java.util.List[WorkflowComputingUnit] = null
-      units = cuDao.findAll()
-
-      units.removeIf((pod: WorkflowComputingUnit) => pod.getTerminateTime != null)
+      val units = cuDao.findAll()
+      units.removeIf((unit: WorkflowComputingUnit) => unit.getTerminateTime != null)
       units
     }
   }
 
-
   /**
-    * Terminate the workflow's pod
-    * @param param the parameters
+    * Terminate the computing unit's pod based on the pod URI.
     *
-    * @return request response
+    * @param param The parameters containing the pod URI.
+    * @return A response indicating success or failure.
     */
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/terminate")
-  def terminateComputingUnit(
-                    param: WorkflowPodTerminationParams
-                  ): Response = {
-    new KubernetesClientService().deletePod()
-    withTransaction(context) { ctx =>
-      val cuDao = new WorkflowComputingUnitDao(ctx.configuration())
-      val units = cuDao.fetchByCuid(param.cuid)
-      units.forEach(unit =>
-        unit.setTerminateTime(new Timestamp(System.currentTimeMillis()))
-      )
-      cuDao.update(units)
-      Response.ok(s"Successfully terminated compute unit with id ${param.cuid}").build()
+  def terminateComputingUnit(param: WorkflowPodTerminationParams): Response = {
+    try {
+      // Attempt to delete the pod using the provided URI
+      KubernetesClientService.deletePod(param.podURI)
+
+      // If successful, update the database
+      withTransaction(context) { ctx =>
+        val cuDao = new WorkflowComputingUnitDao(ctx.configuration())
+        val cuid = KubernetesClientService.parseCUIDFromURI(param.podURI)
+        val units = cuDao.fetchByCuid(UInteger.valueOf(cuid))
+
+        units.forEach(unit => unit.setTerminateTime(new Timestamp(System.currentTimeMillis())))
+        cuDao.update(units)
+      }
+
+      Response.ok(s"Successfully terminated compute unit with URI ${param.podURI}").build()
+    } catch {
+      case e: Exception =>
+        Response
+          .status(Response.Status.BAD_REQUEST)
+          .entity(s"Error terminating pod: ${e.getMessage}")
+          .build()
     }
   }
 }
