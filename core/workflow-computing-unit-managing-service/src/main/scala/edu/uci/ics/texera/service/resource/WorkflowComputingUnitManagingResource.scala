@@ -27,13 +27,13 @@ object WorkflowComputingUnitManagingResource {
     .getInstance(StorageConfig.jdbcUrl, StorageConfig.jdbcUsername, StorageConfig.jdbcPassword)
     .createDSLContext()
 
-  case class WorkflowComputingUnitCreationParams(uid: UInteger) // TODO: add unit type if needed
+  case class WorkflowComputingUnitCreationParams(uid: UInteger, name: String) // TODO: add unit type if needed
 
   case class WorkflowPodTerminationParams(podURI: URI)
 }
 
 @Produces(Array(MediaType.APPLICATION_JSON))
-@Path("/workflowpod")
+@Path("/computing-unit")
 class WorkflowComputingUnitManagingResource {
 
   /**
@@ -57,6 +57,7 @@ class WorkflowComputingUnitManagingResource {
         // Create a new database entry and insert to generate cuid
         computingUnit = new WorkflowComputingUnit()
         computingUnit.setUid(param.uid)
+        computingUnit.setName(param.name)
         computingUnit.setCreationTime(new Timestamp(System.currentTimeMillis()))
         wcDao.insert(computingUnit)
 
@@ -74,15 +75,7 @@ class WorkflowComputingUnitManagingResource {
 
         wcDao.update(computingUnit)
       }
-    } catch {
-      case e: Exception =>
-        // Rollback on error and return a failure response
-        return Response
-          .status(Response.Status.BAD_REQUEST)
-          .entity(s"Error creating pod: ${e.getMessage}")
-          .build()
     }
-
     Response.ok(computingUnit).build()
   }
 
@@ -114,7 +107,6 @@ class WorkflowComputingUnitManagingResource {
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/terminate")
   def terminateComputingUnit(param: WorkflowPodTerminationParams): Response = {
-    try {
       // Attempt to delete the pod using the provided URI
       KubernetesClientService.deletePod(param.podURI)
 
@@ -129,12 +121,6 @@ class WorkflowComputingUnitManagingResource {
       }
 
       Response.ok(s"Successfully terminated compute unit with URI ${param.podURI}").build()
-    } catch {
-      case e: Exception =>
-        Response
-          .status(Response.Status.BAD_REQUEST)
-          .entity(s"Error terminating pod: ${e.getMessage}")
-          .build()
-    }
+
   }
 }

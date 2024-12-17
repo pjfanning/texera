@@ -310,8 +310,8 @@
       <!--      [disabled]="!workflowWebsocketService.isConnected || displayParticularWorkflowVersion"-->
       <nz-button-group id="execution-buttons">
         <texera-power-button
-          [state]="powerState"
-          (stateChange)="onPowerStateChange($event)">
+          [uid]=0
+        >
         </texera-power-button>
         <button
           nz-button
@@ -345,7 +345,7 @@
           [nzPopoverTrigger]="userSystemEnabled?'hover':null"
           [nzPopoverContent]="executionSettings"
           nzPopoverPlacement="bottom"
-          [disabled]="powerState !== PowerState.Running || runDisable || !workflowWebsocketService.isConnected || displayParticularWorkflowVersion"
+          [disabled]="runDisable || !workflowWebsocketService.isConnected || displayParticularWorkflowVersion"
           id="run-button"
           nz-button
           nzType="primary">

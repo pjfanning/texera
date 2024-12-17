@@ -20,4 +20,7 @@ object WorkflowComputingUnitManagingServiceConf {
   val computeUnitPoolNamespace: String = conf("kubernetes")
     .asInstanceOf[Map[String, Any]]("compute-unit-pool-namespace")
     .asInstanceOf[String]
+  val computeUnitImageName: String = conf("kubernetes")
+    .asInstanceOf[Map[String, Any]]("imageName")
+    .asInstanceOf[String]
 }

@@ -1,6 +1,7 @@
 package edu.uci.ics.texera.service.util
 
 import config.WorkflowComputingUnitManagingServiceConf
+import config.WorkflowComputingUnitManagingServiceConf.computeUnitImageName
 import io.kubernetes.client.openapi.apis.{AppsV1Api, CoreV1Api}
 import io.kubernetes.client.openapi.models._
 import io.kubernetes.client.openapi.{ApiClient, Configuration}
@@ -132,7 +133,7 @@ object KubernetesClientService {
             util.List.of(
               new V1Container()
                 .name("worker")
-                .image("kelvinyz/texera-pod")
+                .image(computeUnitImageName)
                 .ports(util.List.of(new V1ContainerPort().containerPort(8010)))
             )
           )

@@ -19,7 +19,7 @@ Now the pod is ready, the button becomes a terminate button, when user click it,
 
 The component for the workflow's workspace menu is: `core/gui/src/app/workspace/component/menu`, you will need to modify this component to add such button. Please try to make this button a **standalone** component, and let the existing `menu` component to import the power button you wrote. This can keep the code clean.
 
-For sending request to the backend from the frontend, you may add a new `service` in the gui(e.g. `workflow-pod-brain.service.ts`). You can refer to other existing services under `core/gui/src/app/workspace/service` to create a new one just for the workflow pod brain.
+For sending request to the backend from the frontend, you may add a new `service` in the gui(e.g. `workflow-computing-unit-managing.service.ts`). You can refer to other existing services under `core/gui/src/app/workspace/service` to create a new one just for the workflow pod brain.
 
 ## Structure Overview
 

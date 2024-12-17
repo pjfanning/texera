@@ -32,8 +32,7 @@ import { ReportGenerationService } from "../../service/report-generation/report-
 import { ShareAccessComponent } from "src/app/dashboard/component/user/share-access/share-access.component";
 import { PanelService } from "../../service/panel/panel.service";
 import { DASHBOARD_USER_WORKFLOW } from "../../../app-routing.constant";
-import { PowerState } from "../power-button/power-button.component";
-import { WorkflowPodBrainService } from "../../service/workflow-pod-brain/workflow-pod-brain.service";
+import { WorkflowComputingUnitManagingService } from "../../service/workflow-computing-unit/workflow-computing-unit-managing.service";
 
 /**
  * MenuComponent is the top level menu bar that shows
@@ -90,8 +89,6 @@ export class MenuComponent implements OnInit, OnDestroy {
   public displayParticularWorkflowVersion: boolean = false;
   public onClickRunHandler: () => void;
 
-  public powerState: PowerState;
-
   constructor(
     public executeWorkflowService: ExecuteWorkflowService,
     public workflowActionService: WorkflowActionService,
@@ -112,7 +109,6 @@ export class MenuComponent implements OnInit, OnDestroy {
     private modalService: NzModalService,
     private reportGenerationService: ReportGenerationService,
     private panelService: PanelService,
-    public workflowPodBrainService: WorkflowPodBrainService
   ) {
     workflowWebsocketService
       .subscribeToEvent("ExecutionDurationUpdateEvent")
@@ -139,8 +135,6 @@ export class MenuComponent implements OnInit, OnDestroy {
     // this.currentWorkflowName = this.workflowCacheService.getCachedWorkflow();
     this.registerWorkflowModifiableChangedHandler();
     this.registerWorkflowIdUpdateHandler();
-
-    this.powerState = PowerState.Off;
   }
 
   public ngOnInit(): void {
@@ -286,42 +280,6 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   public onClickAddCommentBox(): void {
     this.workflowActionService.addCommentBox(this.workflowUtilService.getNewCommentBox());
-  }
-
-  public async onPowerStateChange(newState: PowerState) {
-    this.powerState = newState;
-
-    switch (newState) {
-      case PowerState.Initializing:
-        await this.sendPodRequest();
-        break;
-      case PowerState.Running:
-        // Handle running state
-        console.log("System is now running");
-        break;
-      case PowerState.Stopping:
-        await this.sendPodRequest();
-        break;
-      case PowerState.Off:
-        console.log("System is now off");
-        break;
-    }
-  }
-
-  private async sendPodRequest() {
-    try {
-      const response = await this.workflowPodBrainService.sendRequest(this.powerState);
-      console.log("Request successful, response:", response);
-
-      if (this.powerState === PowerState.Initializing) {
-        await this.waitForConditions();
-        this.powerState = PowerState.Running;
-      } else {
-        this.powerState = PowerState.Off;
-      }
-    } catch (error) {
-      console.error("Error sending pod request:", error);
-    }
   }
 
   private async waitForConditions(): Promise<void> {
@@ -637,5 +595,4 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   protected readonly environment = environment;
-  protected readonly PowerState = PowerState;
 }

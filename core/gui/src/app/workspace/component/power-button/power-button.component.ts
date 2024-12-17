@@ -1,8 +1,10 @@
-import { Component, Input, Output, EventEmitter } from "@angular/core";
-import { UntilDestroy } from "@ngneat/until-destroy";
-
-// Different states the power button can be in
-export enum PowerState {
+import { Component, Input } from "@angular/core";
+import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import { NotificationService } from "../../../common/service/notification/notification.service";
+import {
+  WorkflowComputingUnitManagingService
+} from "../../service/workflow-computing-unit/workflow-computing-unit-managing.service";
+ enum PowerState {
   Off = "off",
   Initializing = "initializing",
   Running = "running",
@@ -16,25 +18,60 @@ export enum PowerState {
   styleUrls: ["./power-button.component.scss"],
 })
 export class PowerButtonComponent {
-  @Input() disabled = false;
-  @Input() state: PowerState = PowerState.Off;
-  @Output() stateChange = new EventEmitter<PowerState>();
+  @Input() uid!: number; // User ID is provided as input
+  state: PowerState = PowerState.Off;
 
-  onClick() {
-    let newState: PowerState;
-    switch (this.state) {
-      case PowerState.Off:
-        newState = PowerState.Initializing;
-        break;
-      case PowerState.Initializing:
-      case PowerState.Stopping:
-        // Currently do not allow for state change by clicking
-        return;
-      case PowerState.Running:
-        newState = PowerState.Stopping;
-        break;
+  constructor(
+    private computingUnitService: WorkflowComputingUnitManagingService,
+    private notificationService: NotificationService
+  ) {}
+
+  onClick(): void {
+    if (this.state === PowerState.Off) {
+      this.startComputingUnit();
+    } else if (this.state === PowerState.Running) {
+      this.terminateComputingUnit();
     }
-    this.stateChange.emit(newState);
+  }
+
+  private startComputingUnit(): void {
+    this.state = PowerState.Initializing;
+    const name = `Compute Unit - created by ${this.uid}`;
+
+    this.computingUnitService
+      .createComputingUnit(this.uid, name)
+      .pipe(untilDestroyed(this))
+      .subscribe({
+        next: () => {
+          this.state = PowerState.Running;
+          this.notificationService.success("Compute unit started successfully.");
+        },
+        error: (err: unknown) => {
+          this.state = PowerState.Off;
+          this.notificationService.error("Failed to start compute unit.");
+          console.error("Error starting compute unit:", err);
+        },
+      });
+  }
+
+  private terminateComputingUnit(): void {
+    this.state = PowerState.Stopping;
+    const podURI = `urn:kubernetes:default:computing-unit-${this.uid}`;
+
+    this.computingUnitService
+      .terminateComputingUnit(podURI)
+      .pipe(untilDestroyed(this))
+      .subscribe({
+        next: () => {
+          this.state = PowerState.Off;
+          this.notificationService.success("Compute unit terminated successfully.");
+        },
+        error: (err: unknown) => {
+          this.state = PowerState.Running;
+          this.notificationService.error("Failed to terminate compute unit.");
+          console.error("Error terminating compute unit:", err);
+        },
+      });
   }
 
   getButtonText(): string {
@@ -42,11 +79,10 @@ export class PowerButtonComponent {
       case PowerState.Off:
         return "Start";
       case PowerState.Initializing:
-        return "Initializing...";
+      case PowerState.Stopping:
+        return "Loading...";
       case PowerState.Running:
         return "Running";
-      case PowerState.Stopping:
-        return "Stopping...";
     }
   }
 
@@ -55,15 +91,14 @@ export class PowerButtonComponent {
       case PowerState.Off:
         return "step-forward";
       case PowerState.Initializing:
+      case PowerState.Stopping:
         return "loading";
       case PowerState.Running:
         return "pause";
-      case PowerState.Stopping:
-        return "loading";
     }
   }
 
   isRunning(): boolean {
-    return this.state === "running";
+    return this.state === PowerState.Running;
   }
 }

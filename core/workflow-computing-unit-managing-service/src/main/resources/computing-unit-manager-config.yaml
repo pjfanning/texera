@@ -1,2 +1,3 @@
 kubernetes:
   compute-unit-pool-namespace: "wf-pod-pool"  # The name of the compute unit pool namespace
+  imageName: "bobbai00/texera-computing-unit"
