@@ -134,7 +134,7 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
         }
         setTimeout(() => this.cleanPrevStatsCache(), 1500);
       });
-      
+
     this.workflowResultService
       .getSinkStorageMode()
       .pipe(untilDestroyed(this))
