@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.core.storage.util.mongo
 
-import com.mongodb.client.model.{Aggregates, IndexOptions, Indexes, Sorts}
+import com.mongodb.client.model.{Aggregates, Sorts}
 import com.mongodb.client.{FindIterable, MongoCollection}
 import org.bson.Document
 
@@ -118,7 +118,8 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
       val result = collection.aggregate(pipeline.asJava).iterator().asScala.toList
 
       if (result.nonEmpty) {
-        val counts: Map[String, Int] = result.map(doc => doc.getString("_id") -> doc.getInteger("count").toInt).toMap
+        val counts: Map[String, Int] =
+          result.map(doc => doc.getString("_id") -> doc.getInteger("count").toInt).toMap
         val total: Double = counts.values.map(_.toDouble).sum
 
         // Extract the top two categories and calculate their percentages
@@ -128,8 +129,12 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
         val otherTotal: Double = sortedCounts.drop(2).map(_._2.toDouble).sum
 
         val stats: Map[String, Any] = Map(
-          "firstPercent" -> firstCategory.map { case (_, count) => (count / total * 100) }.getOrElse(0.0),
-          "secondPercent" -> secondCategory.map { case (_, count) => (count / total * 100) }.getOrElse(0.0),
+          "firstPercent" -> firstCategory
+            .map { case (_, count) => (count / total * 100) }
+            .getOrElse(0.0),
+          "secondPercent" -> secondCategory
+            .map { case (_, count) => (count / total * 100) }
+            .getOrElse(0.0),
           "other" -> (otherTotal / total * 100),
           "firstCat" -> firstCategory.map(_._1).getOrElse("None"),
           "secondCat" -> secondCategory.map(_._1).getOrElse("None")
