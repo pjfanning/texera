@@ -164,6 +164,6 @@ class MongoDocument[T >: Null <: AnyRef](
 
   def getDateColStats: Map[String, Map[String, Date]] = collectionMgr.calculateDateStats()
 
-  def getCategoricalStats: Map[String, Map[String, Map[String, Integer]]] =
+  def getCategoricalStats: Map[String, Map[String, Any]] =
     collectionMgr.calculateCategoricalStats()
 }

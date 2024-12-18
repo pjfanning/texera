@@ -105,7 +105,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
   /**
     * Calculate categorical statistics (value counts) for categorical fields.
     */
-  def calculateCategoricalStats(): Map[String, Map[String, Map[String, Integer]]] = {
+  def calculateCategoricalStats(): Map[String, Map[String, Any]] = {
     val categoricalFields = detectCategoricalFields()
 
     categoricalFields.flatMap { field =>
@@ -116,9 +116,26 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
       )
 
       val result = collection.aggregate(pipeline.asJava).iterator().asScala.toList
+
       if (result.nonEmpty) {
-        val counts = result.map(doc => doc.getString("_id") -> doc.getInteger("count")).toMap
-        Some(field -> Map("counts" -> counts))
+        val counts: Map[String, Int] = result.map(doc => doc.getString("_id") -> doc.getInteger("count").toInt).toMap
+        val total: Double = counts.values.map(_.toDouble).sum
+
+        // Extract the top two categories and calculate their percentages
+        val sortedCounts: Seq[(String, Int)] = counts.toSeq.sortBy(-_._2)
+        val firstCategory: Option[(String, Int)] = sortedCounts.headOption
+        val secondCategory: Option[(String, Int)] = sortedCounts.lift(1)
+        val otherTotal: Double = sortedCounts.drop(2).map(_._2.toDouble).sum
+
+        val stats: Map[String, Any] = Map(
+          "firstPercent" -> firstCategory.map { case (_, count) => (count / total * 100) }.getOrElse(0.0),
+          "secondPercent" -> secondCategory.map { case (_, count) => (count / total * 100) }.getOrElse(0.0),
+          "other" -> (otherTotal / total * 100),
+          "firstCat" -> firstCategory.map(_._1).getOrElse("None"),
+          "secondCat" -> secondCategory.map(_._1).getOrElse("None")
+        )
+
+        Some(field -> stats)
       } else {
         None
       }
