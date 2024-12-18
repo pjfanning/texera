@@ -6,15 +6,15 @@ import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.core.storage.StorageConfig
 import edu.uci.ics.texera.dao.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.Tables._
-import edu.uci.ics.texera.web.model.jooq.generated.enums.WorkflowUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
+import edu.uci.ics.texera.dao.jooq.generated.Tables._
+import edu.uci.ics.texera.dao.jooq.generated.enums.WorkflowUserAccessPrivilege
+import edu.uci.ics.texera.dao.jooq.generated.tables.daos.{
   WorkflowDao,
   WorkflowOfProjectDao,
   WorkflowOfUserDao,
   WorkflowUserAccessDao
 }
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
+import edu.uci.ics.texera.dao.jooq.generated.tables.pojos._
 import edu.uci.ics.texera.web.resource.dashboard.hub.workflow.HubWorkflowResource.recordUserActivity
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
@@ -567,7 +567,6 @@ class WorkflowResource extends LazyLogging {
   @PUT
   @Path("/public/{wid}")
   def makePublic(@PathParam("wid") wid: UInteger, @Auth user: SessionUser): Unit = {
-    println(wid + " is public now")
     val workflow: Workflow = workflowDao.fetchOneByWid(wid)
     workflow.setIsPublished(1.toByte)
     workflowDao.update(workflow)
@@ -576,7 +575,6 @@ class WorkflowResource extends LazyLogging {
   @PUT
   @Path("/private/{wid}")
   def makePrivate(@PathParam("wid") wid: UInteger): Unit = {
-    println(wid + " is private now")
     val workflow: Workflow = workflowDao.fetchOneByWid(wid)
     workflow.setIsPublished(0.toByte)
     workflowDao.update(workflow)
@@ -586,9 +584,10 @@ class WorkflowResource extends LazyLogging {
   @Path("/type/{wid}")
   def getWorkflowType(@PathParam("wid") wid: UInteger): String = {
     val workflow: Workflow = workflowDao.fetchOneByWid(wid)
-    if (workflow.getIsPublished() == 1.toByte)
+    if (workflow.getIsPublished == 1.toByte) {
       "Public"
-    else
+    } else {
       "Private"
+    }
   }
 }
