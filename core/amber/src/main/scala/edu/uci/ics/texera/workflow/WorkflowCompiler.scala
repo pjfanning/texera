@@ -3,7 +3,7 @@ package edu.uci.ics.texera.workflow
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.core.storage.result.{OpResultStorage, ResultStorage}
 import edu.uci.ics.amber.core.tuple.Schema
-import edu.uci.ics.amber.core.workflow.{PhysicalPlan, WorkflowContext}
+import edu.uci.ics.amber.core.workflow.{PhysicalOp, PhysicalPlan, WorkflowContext}
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
 import edu.uci.ics.amber.engine.common.Utils.objectMapper
 import edu.uci.ics.amber.operator.SpecialPhysicalOpFactory
@@ -69,9 +69,11 @@ class WorkflowCompiler(
           })
 
         // assign the sinks to toAddSink operators' external output ports
-        subPlan
+        val sinksToAdd = ArrayBuffer[PhysicalOp]()
+        val sinkLinksToAdd = ArrayBuffer[PhysicalLink]()
+        physicalPlan
           .topologicalIterator()
-          .map(subPlan.getOperator)
+          .map(physicalPlan.getOperator)
           .flatMap { physicalOp =>
             physicalOp.outputPorts.map(outputPort => (physicalOp, outputPort))
           }
@@ -125,8 +127,15 @@ class WorkflowCompiler(
                   sinkPhysicalOp.id,
                   PortIdentity(internal = true)
                 )
-              physicalPlan = physicalPlan.addOperator(sinkPhysicalOp).addLink(sinkLink)
+
+              sinksToAdd += sinkPhysicalOp
+              sinkLinksToAdd += sinkLink
           })
+        // add sinks and links to sinks to the physical plan
+        // why not doing this when iterating the physical plan: jgrapht discourages such behaviors!
+        // https://jgrapht.org/javadoc/org.jgrapht.core/org/jgrapht/traverse/TopologicalOrderIterator.html
+        physicalPlan = sinksToAdd.foldLeft(physicalPlan)((plan, op) => plan.addOperator(op))
+        physicalPlan = sinkLinksToAdd.foldLeft(physicalPlan)((plan, link) => plan.addLink(link))
       } match {
         case Success(_) =>
 
