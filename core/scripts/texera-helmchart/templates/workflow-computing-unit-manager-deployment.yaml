@@ -1,25 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-texera
+  name: {{ .Release.Name }}-{{ .Values.workflowComputingUnitManager.name }}
   namespace: {{ .Values.namespace }}
   labels:
-    app: {{ .Release.Name }}-texera
+    app: {{ .Release.Name }}-{{ .Values.workflowComputingUnitManager.name }}
 spec:
-  replicas: {{ .Values.texera.numOfPods }}
+  replicas: {{ .Values.workflowComputingUnitManager.numOfPods }}
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-texera
+      app: {{ .Release.Name }}-{{ .Values.workflowComputingUnitManager.name }}
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-texera
+        app: {{ .Release.Name }}-{{ .Values.workflowComputingUnitManager.name }}
     spec:
+      serviceAccountName: {{ .Values.workflowComputingUnitManager.serviceAccountName }}
       containers:
-        - name: texera
-          image: {{ .Values.texera.imageName }}
+        - name: {{ .Values.workflowComputingUnitManager.name }}
+          image: {{ .Values.workflowComputingUnitManager.imageName }}
           ports:
-            - containerPort: {{ .Values.texera.service.port }}
+            - containerPort: {{ .Values.workflowComputingUnitManager.service.port }}
           env:
             - name: MYSQL_URL
               value: "jdbc:mysql://{{ .Release.Name }}-mysql.{{ .Release.Namespace }}.svc.cluster.local:3306/{{ .Values.mysql.auth.database }}"

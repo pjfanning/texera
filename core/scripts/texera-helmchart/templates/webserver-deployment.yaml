@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-workflow-pod
+  name: {{ .Release.Name }}-{{ .Values.webserver.name }}
   namespace: {{ .Values.namespace }}
   labels:
-    app: {{ .Release.Name }}-workflow-pod
+    app: {{ .Release.Name }}-{{ .Values.webserver.name }}
 spec:
-  replicas: {{ .Values.texeraWorkflowPod.numOfPods | default 1 }}
+  replicas: {{ .Values.webserver.numOfPods }}
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-workflow-pod
+      app: {{ .Release.Name }}-{{ .Values.webserver.name }}
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-workflow-pod
+        app: {{ .Release.Name }}-{{ .Values.webserver.name }}
     spec:
       containers:
-        - name: workflow-pod
-          image: {{ .Values.texeraWorkflowPod.imageName }}
+        - name: webserver
+          image: {{ .Values.webserver.imageName }}
           ports:
-            - containerPort: {{ .Values.workflowPods.service.port }}
+            - containerPort: {{ .Values.webserver.service.port }}
           env:
             - name: MYSQL_URL
               value: "jdbc:mysql://{{ .Release.Name }}-mysql.{{ .Release.Namespace }}.svc.cluster.local:3306/{{ .Values.mysql.auth.database }}"

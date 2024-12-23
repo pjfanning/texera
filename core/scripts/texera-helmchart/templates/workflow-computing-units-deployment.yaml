@@ -1,26 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-workflow-pod-brain
+  name: {{ .Release.Name }}-{{ .Values.workflowComputingUnit.name }}
   namespace: {{ .Values.namespace }}
   labels:
-    app: {{ .Release.Name }}-workflow-pod-brain
+    app: {{ .Release.Name }}-{{ .Values.workflowComputingUnit.name }}
 spec:
-  replicas: {{ .Values.texeraWorkflowPodBrain.numOfPods }}
+  replicas: {{ .Values.workflowComputingUnit.numOfPods | default 1 }}
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-workflow-pod-brain
+      app: {{ .Release.Name }}-{{ .Values.workflowComputingUnit.name }}
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-workflow-pod-brain
+        app: {{ .Release.Name }}-{{ .Values.workflowComputingUnit.name }}
     spec:
-      serviceAccountName: {{ .Values.workflowPodBrain.name }}
       containers:
-        - name: workflow-pod-brain
-          image: {{ .Values.texeraWorkflowPodBrain.imageName }}
+        - name: {{ .Values.workflowComputingUnit.name }}
+          image: {{ .Values.workflowComputingUnit.imageName }}
           ports:
-            - containerPort: {{ .Values.texeraWorkflowPodBrain.service.port }}
+            - containerPort: {{ .Values.workflowComputingUnits.service.port }}
           env:
             - name: MYSQL_URL
               value: "jdbc:mysql://{{ .Release.Name }}-mysql.{{ .Release.Namespace }}.svc.cluster.local:3306/{{ .Values.mysql.auth.database }}"
