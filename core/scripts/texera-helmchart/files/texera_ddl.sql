@@ -29,10 +29,10 @@ CREATE TABLE IF NOT EXISTS user
     `google_avatar` VARCHAR(100) null,
     PRIMARY KEY (`uid`),
     CONSTRAINT CK_nulltest
-        CHECK (`password` IS NOT NULL OR `google_id` IS NOT NULL)
-) ENGINE = INNODB,
+    CHECK (`password` IS NOT NULL OR `google_id` IS NOT NULL)
+    ) ENGINE = INNODB,
 -- start auto increment userID from 1 because userID 0 means user not exists
-  AUTO_INCREMENT = 1;
+    AUTO_INCREMENT = 1;
 
 CREATE TABLE IF NOT EXISTS user_config
 (
@@ -41,19 +41,19 @@ CREATE TABLE IF NOT EXISTS user_config
     `value` text         NOT NULL,
     PRIMARY KEY (`uid`, `key`),
     FOREIGN KEY (`uid`) REFERENCES user (`uid`) ON DELETE CASCADE
-) ENGINE = InnoDB;
+    ) ENGINE = InnoDB;
 
 CREATE TABLE IF NOT EXISTS workflow
 (
     `name`               VARCHAR(128)                NOT NULL,
-	`description`        VARCHAR(500),
+    `description`        VARCHAR(500),
     `wid`                INT UNSIGNED AUTO_INCREMENT NOT NULL,
     `content`            LONGTEXT                    NOT NULL,
     `creation_time`      TIMESTAMP                   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `last_modified_time` TIMESTAMP                   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`wid`)
-) ENGINE = INNODB,
-  AUTO_INCREMENT = 1;
+    ) ENGINE = INNODB,
+    AUTO_INCREMENT = 1;
 
 CREATE TABLE IF NOT EXISTS workflow_of_user
 (
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS workflow_of_user
     PRIMARY KEY (`uid`, `wid`),
     FOREIGN KEY (`uid`) REFERENCES `user` (`uid`) ON DELETE CASCADE,
     FOREIGN KEY (`wid`) REFERENCES `workflow` (`wid`) ON DELETE CASCADE
-) ENGINE = INNODB;
+    ) ENGINE = INNODB;
 
 CREATE TABLE IF NOT EXISTS workflow_user_access
 (
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS workflow_user_access
     PRIMARY KEY (`uid`, `wid`),
     FOREIGN KEY (`uid`) REFERENCES `user` (`uid`) ON DELETE CASCADE,
     FOREIGN KEY (`wid`) REFERENCES `workflow` (`wid`) ON DELETE CASCADE
-) ENGINE = INNODB;
+    ) ENGINE = INNODB;
 
 CREATE TABLE IF NOT EXISTS workflow_version
 (
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS workflow_version
     `creation_time`      TIMESTAMP                   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`vid`),
     FOREIGN KEY (`wid`) REFERENCES `workflow` (`wid`) ON DELETE CASCADE
-) ENGINE = INNODB;
+    ) ENGINE = INNODB;
 
 CREATE TABLE IF NOT EXISTS project
 (
@@ -95,17 +95,17 @@ CREATE TABLE IF NOT EXISTS project
     UNIQUE(`owner_id`, `name`),
     PRIMARY KEY (`pid`),
     FOREIGN KEY (`owner_id`) REFERENCES user (`uid`)   ON DELETE CASCADE
-) ENGINE = INNODB,
-  AUTO_INCREMENT = 1;
+    ) ENGINE = INNODB,
+    AUTO_INCREMENT = 1;
 
 CREATE TABLE IF NOT EXISTS workflow_of_project
 (
-     `wid`            INT UNSIGNED                     NOT NULL,
-     `pid`            INT UNSIGNED                     NOT NULL,
-     PRIMARY KEY (`wid`, `pid`),
-     FOREIGN KEY (`wid`) REFERENCES `workflow` (`wid`) ON DELETE CASCADE,
-     FOREIGN KEY (`pid`) REFERENCES `project` (`pid`)  ON DELETE CASCADE
-) ENGINE = INNODB;
+    `wid`            INT UNSIGNED                     NOT NULL,
+    `pid`            INT UNSIGNED                     NOT NULL,
+    PRIMARY KEY (`wid`, `pid`),
+    FOREIGN KEY (`wid`) REFERENCES `workflow` (`wid`) ON DELETE CASCADE,
+    FOREIGN KEY (`pid`) REFERENCES `project` (`pid`)  ON DELETE CASCADE
+    ) ENGINE = INNODB;
 
 CREATE TABLE IF NOT EXISTS project_user_access
 (
@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS project_user_access
     PRIMARY KEY (`uid`, `pid`),
     FOREIGN KEY (`uid`) REFERENCES `user` (`uid`) ON DELETE CASCADE,
     FOREIGN KEY (`pid`) REFERENCES `project` (`pid`) ON DELETE CASCADE
-) ENGINE = INNODB;
+    ) ENGINE = INNODB;
 
 CREATE TABLE IF NOT EXISTS workflow_executions
 (
@@ -133,7 +133,7 @@ CREATE TABLE IF NOT EXISTS workflow_executions
     PRIMARY KEY (`eid`),
     FOREIGN KEY (`vid`) REFERENCES `workflow_version` (`vid`) ON DELETE CASCADE,
     FOREIGN KEY (`uid`) REFERENCES `user` (`uid`) ON DELETE CASCADE
-) ENGINE = INNODB;
+    ) ENGINE = INNODB;
 
 CREATE TABLE IF NOT EXISTS public_project
 (
@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS public_project
     `uid`             INT UNSIGNED,
     PRIMARY KEY (`pid`),
     FOREIGN KEY (`pid`) REFERENCES `project` (`pid`) ON DELETE CASCADE
-) ENGINE = INNODB;
+    ) ENGINE = INNODB;
 
 CREATE TABLE IF NOT EXISTS workflow_runtime_statistics
 (
@@ -159,7 +159,7 @@ CREATE TABLE IF NOT EXISTS workflow_runtime_statistics
     PRIMARY KEY (`workflow_id`, `execution_id`, `operator_id`, `time`),
     FOREIGN KEY (`workflow_id`) REFERENCES `workflow` (`wid`) ON DELETE CASCADE,
     FOREIGN KEY (`execution_id`) REFERENCES `workflow_executions` (`eid`) ON DELETE CASCADE
-) ENGINE = INNODB;
+    ) ENGINE = INNODB;
 
 CREATE TABLE IF NOT EXISTS dataset
 (
@@ -207,3 +207,57 @@ CREATE FULLTEXT INDEX `idx_user_project_name_description` ON `texera_db`.`projec
 CREATE FULLTEXT INDEX `idx_dataset_name_description` ON `texera_db`.`dataset` (name, description);
 
 CREATE FULLTEXT INDEX `idx_dataset_version_name` ON `texera_db`.`dataset_version` (name);
+
+ALTER TABLE workflow
+    ADD is_published BOOLEAN NOT NULL DEFAULT false;
+
+CREATE TABLE IF NOT EXISTS workflow_user_likes
+(
+    `uid` INT UNSIGNED NOT NULL,
+    `wid` INT UNSIGNED NOT NULL,
+    PRIMARY KEY (`uid`, `wid`),
+    FOREIGN KEY (`uid`) REFERENCES `user` (`uid`) ON DELETE CASCADE,
+    FOREIGN KEY (`wid`) REFERENCES `workflow` (`wid`) ON DELETE CASCADE
+    ) ENGINE = INNODB;
+
+CREATE TABLE IF NOT EXISTS workflow_user_clones
+(
+    `uid` INT UNSIGNED NOT NULL,
+    `wid` INT UNSIGNED NOT NULL,
+    PRIMARY KEY (`uid`, `wid`),
+    FOREIGN KEY (`uid`) REFERENCES `user` (`uid`) ON DELETE CASCADE,
+    FOREIGN KEY (`wid`) REFERENCES `workflow` (`wid`) ON DELETE CASCADE
+    ) ENGINE = INNODB;
+
+CREATE TABLE IF NOT EXISTS workflow_user_activity (
+                                                      `uid` INT UNSIGNED NOT NULL DEFAULT 0,
+                                                      `wid` INT UNSIGNED NOT NULL,
+                                                      `ip` VARCHAR(15) DEFAULT NULL,
+    `activate` VARCHAR(10) NOT NULL,
+    `activity_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE = INNODB;
+
+CREATE TABLE IF NOT EXISTS workflow_view_count
+(
+    `wid` INT UNSIGNED NOT NULL,
+    `view_count` INT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (`wid`),
+    FOREIGN KEY (`wid`) REFERENCES `workflow` (`wid`) ON DELETE CASCADE
+    ) ENGINE = INNODB;
+
+ALTER TABLE dataset
+    MODIFY COLUMN is_public BOOLEAN NOT NULL DEFAULT true;
+
+ALTER TABLE workflow
+    CHANGE COLUMN is_published is_public BOOLEAN NOT NULL DEFAULT false;
+
+CREATE TABLE IF NOT EXISTS workflow_computing_unit
+(
+    `uid`                INT UNSIGNED                NOT NULL,
+    `name`               VARCHAR(128)                NOT NULL,
+    `cuid`               INT UNSIGNED                NOT NULL,
+    `creation_time`      TIMESTAMP                   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `terminate_time`     TIMESTAMP                   DEFAULT NULL,
+    FOREIGN KEY (`uid`) REFERENCES `user` (`uid`),
+    PRIMARY KEY (`cuid`)
+    ) ENGINE = INNODB;
