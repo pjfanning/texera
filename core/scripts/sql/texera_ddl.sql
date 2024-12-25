@@ -255,9 +255,8 @@ CREATE TABLE IF NOT EXISTS workflow_computing_unit
 (
     `uid`                INT UNSIGNED                NOT NULL,
     `name`               VARCHAR(128)                NOT NULL,
-    `cuid`               INT UNSIGNED                NOT NULL,
+    `cuid`               INT UNSIGNED                AUTO_INCREMENT NOT NULL,
     `creation_time`      TIMESTAMP                   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `terminate_time`     TIMESTAMP                   DEFAULT NULL,
-    FOREIGN KEY (`uid`) REFERENCES `user` (`uid`),
     PRIMARY KEY (`cuid`)
-    ) ENGINE = INNODB;
+) ENGINE = INNODB;

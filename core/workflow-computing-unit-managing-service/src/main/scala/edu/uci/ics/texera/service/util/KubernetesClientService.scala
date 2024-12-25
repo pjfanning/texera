@@ -1,7 +1,7 @@
 package edu.uci.ics.texera.service.util
 
 import config.WorkflowComputingUnitManagingServiceConf
-import config.WorkflowComputingUnitManagingServiceConf.computeUnitImageName
+import config.WorkflowComputingUnitManagingServiceConf.{computeUnitImageName, computeUnitPortNumber}
 import io.kubernetes.client.openapi.apis.{AppsV1Api, CoreV1Api}
 import io.kubernetes.client.openapi.models._
 import io.kubernetes.client.openapi.{ApiClient, Configuration}
@@ -13,6 +13,7 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 object KubernetesClientService {
 
+  private val podNamePrefix = "computing-unit"
   // Create Kubernetes Core and Apps clients
   private val coreApi: CoreV1Api = {
     val client: ApiClient = Config.defaultClient()
@@ -30,8 +31,16 @@ object KubernetesClientService {
     * @return A URI representing the pod location.
     */
   def generatePodURI(cuid: Int): URI = {
-    new URI(s"urn:kubernetes:$poolNamespace:computing-unit-$cuid")
+    new URI(s"urn:kubernetes:$poolNamespace:${generatePodName(cuid)}")
   }
+
+  /**
+   * Generate pod name using the cuid
+   *
+   * @param cuid The computing unit ID
+   * @return The pod name
+   */
+  def generatePodName(cuid: Int): String = s"$podNamePrefix-$cuid"
 
   /**
     * Parses the computing unit ID (cuid) from a given pod URI.
@@ -104,40 +113,40 @@ object KubernetesClientService {
     * @return The newly created V1Pod object.
     */
   def createPod(cuid: Int): V1Pod = {
-    if (getPodFromLabel(poolNamespace, s"name=computing-unit-$cuid") != null) {
+    val podName = generatePodName(cuid)
+    if (getPodFromLabel(poolNamespace, s"name=$podName") != null) {
       throw new Exception(s"Pod with cuid $cuid already exists")
     }
 
-    val cuidString: String = String.valueOf(cuid)
     val pod: V1Pod = new V1Pod()
       .apiVersion("v1")
       .kind("Pod")
       .metadata(
         new V1ObjectMeta()
-          .name(s"computing-unit-$cuid")
+          .name(podName)
           .namespace(poolNamespace)
           .labels(
             util.Map.of(
-              "computingUnitId",
-              cuidString,
+              "cuid",
+              String.valueOf(cuid),
               "name",
-              s"computing-unit-$cuid",
-              "workflow",
-              "worker"
+              podName,
             )
           )
       )
       .spec(
         new V1PodSpec()
+          .overhead(null) // https://github.com/kubernetes-client/java/issues/3076
           .containers(
             util.List.of(
               new V1Container()
-                .name("worker")
+                .name("computing-unit-master")
                 .image(computeUnitImageName)
-                .ports(util.List.of(new V1ContainerPort().containerPort(8010)))
+                .ports(util.List.of(new V1ContainerPort().containerPort(computeUnitPortNumber)))
+
             )
           )
-          .hostname(s"computing-unit-$cuid")
+          .hostname(podName)
           .subdomain("workflow-pods")
       )
 
@@ -153,7 +162,7 @@ object KubernetesClientService {
     */
   def deletePod(podURI: URI): Unit = {
     val cuid = parseCUIDFromURI(podURI)
-    coreApi.deleteNamespacedPod(s"computing-unit-$cuid", poolNamespace).execute()
+    coreApi.deleteNamespacedPod(generatePodName(cuid), poolNamespace).execute()
     Thread.sleep(3000)
   }
 
@@ -166,16 +175,16 @@ object KubernetesClientService {
   private def waitForPodStatus(cuid: Int, desiredStatus: String): Unit = {
     var attempts = 0
     val maxAttempts = 60
-
-    while (attempts < maxAttempts && !isPodInDesiredState(s"computing-unit-$cuid", desiredStatus)) {
+    val podName = generatePodName(cuid)
+    while (attempts < maxAttempts && !isPodInDesiredState(podName, desiredStatus)) {
       attempts += 1
       Thread.sleep(1000)
-      println(s"Waiting for pod computing-unit-$cuid to reach $desiredStatus (attempt $attempts)")
+      println(s"Waiting for pod $podName to reach $desiredStatus (attempt $attempts)")
     }
 
-    if (!isPodInDesiredState(s"computing-unit-$cuid", desiredStatus)) {
+    if (!isPodInDesiredState(podName, desiredStatus)) {
       throw new RuntimeException(
-        s"Pod computing-unit-$cuid failed to reach $desiredStatus after $maxAttempts attempts"
+        s"Pod $podName failed to reach $desiredStatus after $maxAttempts attempts"
       )
     }
   }

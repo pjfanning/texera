@@ -7,7 +7,7 @@ import edu.uci.ics.texera.dao.jooq.generated.tables.daos.WorkflowComputingUnitDa
 import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.WorkflowComputingUnit
 import edu.uci.ics.texera.service.resource.WorkflowComputingUnitManagingResource.{
   WorkflowComputingUnitCreationParams,
-  WorkflowPodTerminationParams,
+  WorkflowComputingUnitTerminationParams,
   context
 }
 import edu.uci.ics.texera.service.util.KubernetesClientService
@@ -29,7 +29,7 @@ object WorkflowComputingUnitManagingResource {
 
   case class WorkflowComputingUnitCreationParams(uid: UInteger, name: String) // TODO: add unit type if needed
 
-  case class WorkflowPodTerminationParams(podURI: URI)
+  case class WorkflowComputingUnitTerminationParams(uri: String, name: String)
 }
 
 @Produces(Array(MediaType.APPLICATION_JSON))
@@ -62,7 +62,7 @@ class WorkflowComputingUnitManagingResource {
         wcDao.insert(computingUnit)
 
         // Retrieve the generated cuid
-        val cuid = computingUnit.getCuid
+        val cuid = ctx.lastID().intValue()
 
         // Create the pod with the generated cuid
         newPod = KubernetesClientService.createPod(cuid.intValue())
@@ -90,9 +90,7 @@ class WorkflowComputingUnitManagingResource {
   def listComputingUnits(): java.util.List[WorkflowComputingUnit] = {
     withTransaction(context) { ctx =>
       val cuDao = new WorkflowComputingUnitDao(ctx.configuration())
-      val units = cuDao.findAll()
-      units.removeIf((unit: WorkflowComputingUnit) => unit.getTerminateTime != null)
-      units
+      cuDao.findAll()
     }
   }
 
@@ -106,21 +104,22 @@ class WorkflowComputingUnitManagingResource {
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/terminate")
-  def terminateComputingUnit(param: WorkflowPodTerminationParams): Response = {
+  def terminateComputingUnit(param: WorkflowComputingUnitTerminationParams): Response = {
       // Attempt to delete the pod using the provided URI
-      KubernetesClientService.deletePod(param.podURI)
+    val podURI = URI.create(param.uri)
+    KubernetesClientService.deletePod(podURI)
 
       // If successful, update the database
       withTransaction(context) { ctx =>
         val cuDao = new WorkflowComputingUnitDao(ctx.configuration())
-        val cuid = KubernetesClientService.parseCUIDFromURI(param.podURI)
+        val cuid = KubernetesClientService.parseCUIDFromURI(podURI)
         val units = cuDao.fetchByCuid(UInteger.valueOf(cuid))
 
         units.forEach(unit => unit.setTerminateTime(new Timestamp(System.currentTimeMillis())))
         cuDao.update(units)
       }
 
-      Response.ok(s"Successfully terminated compute unit with URI ${param.podURI}").build()
+      Response.ok(s"Successfully terminated compute unit with URI $podURI").build()
 
   }
 }
