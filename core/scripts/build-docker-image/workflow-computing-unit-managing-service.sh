@@ -1,0 +1,1 @@
+ docker build -t bobbai/texera-workflow-computing-unit-managing-service:dev -f core/workflow-computing-unit-managing-service/workflow-computing-unit-managing-service.dockerfile .
