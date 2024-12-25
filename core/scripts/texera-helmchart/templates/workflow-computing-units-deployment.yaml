@@ -21,11 +21,11 @@ spec:
           ports:
             - containerPort: {{ .Values.workflowComputingUnits.service.port }}
           env:
-            - name: MYSQL_URL
-              value: "jdbc:mysql://{{ .Release.Name }}-mysql.{{ .Release.Namespace }}.svc.cluster.local:3306/{{ .Values.mysql.auth.database }}"
-            - name: MYSQL_USER
+            - name: JDBC_URL
+              value: "jdbc:mysql://{{ .Release.Name }}-mysql.{{ .Values.namespace }}.svc.cluster.local:3306/{{ .Values.mysql.auth.database }}"
+            - name: JDBC_USERNAME
               value: {{ .Values.mysql.auth.username }}
-            - name: MYSQL_PASSWORD
+            - name: JDBC_PASSWORD
               value: {{ .Values.mysql.auth.password }}
 {{/*            - name: MONGODB_URL*/}}
 {{/*              value: "mongodb://{{ .Release.Name }}-mongodb.{{ .Release.Namespace }}.svc.cluster.local:27017/{{ index .Values.mongodb.auth.databases 0 }}"*/}}

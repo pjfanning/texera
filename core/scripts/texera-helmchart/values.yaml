@@ -1,4 +1,4 @@
-namespace: default
+namespace: texera-dev
 
 createNamespaces: true
 
@@ -14,13 +14,12 @@ createNamespaces: true
 #  node: minikube # the node that contains the pv
 
 mysql:
+  namespaceOverride: texera-dev
   image:
     debug: true
 
   initdbScriptsConfigMap: mysql-init-script
-
   auth:
-    createDatabase: true
     rootPassword: texera
     database: texera_db
     username: texera
@@ -41,7 +40,7 @@ workflowComputingUnitManager:
   name: workflow-computing-unit-manager
   numOfPods: 1
   serviceAccountName: workflow-computing-unit-manager-service-account
-  imageName: kelvinyz/texera-pod-brain:test-env
+  imageName: bobbai/texera-workflow-computing-unit-managing-service:dev
   service:
     type: NodePort # for testing purpose, NodePort mode is fine
     port: 8888 # port of the pod
@@ -52,19 +51,12 @@ workflowComputingUnitManager:
 workflowComputingUnit:
   name: workflow-computing-unit
   numOfPods: 1
-  imageName: pureblank/backend-image:implement-power-button # image name of the workflow pod
+  imageName: bobbai/texera-workflow-computing-unit:dev
 
 webserver:
   name: webserver
   numOfPods: 1  # Number of pods for the Texera deployment
-  imageName: kelvinyz/texera-full-stack:ingress-test # image name of the texera
-  pv: # pv is used to store the user-resources, i.e. /core/amber/user-resources
-    nodeAffinityNode: minikube # Node where the PV is mounted
-    name: texera-pv
-    size: 20Gi
-    path: /mnt/data/texera
-    accessModes:
-      - ReadWriteMany  # This enables multiple read/write access
+  imageName: bobbai/texera-webserver:dev-no-usersys # image name of the texera
   service:
     type: NodePort # for testing purpose, NodePort mode is fine
     port: 8080 # port of the pod
@@ -86,7 +78,7 @@ envoy:
 
 workflowComputingUnits:
   name: workflow-computing-units
-  namespace: wf-pod-pool
+  namespace: workflow-computing-units-pool
   service:
     port: 8080
     targetPort: 8080
@@ -128,8 +120,8 @@ ingress:
     - path: /rtc
       serviceName: webserver-svc
       servicePort: 1234
-    - path: /workflowpod
-      serviceName: texera-wf-brain-svc
+    - path: /computing-unit
+      serviceName: workflow-computing-unit-manager-svc
       servicePort: 8888
     - path: /wsapi/workflow-websocket
       serviceName: envoy-svc
