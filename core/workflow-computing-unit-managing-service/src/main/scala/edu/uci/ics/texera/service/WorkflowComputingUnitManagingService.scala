@@ -12,6 +12,7 @@ class WorkflowComputingUnitManagingService extends Application[Configuration] {
 
   override def run(configuration: Configuration, environment: Environment): Unit = {
     // Register http resources
+    environment.jersey.setUrlPattern("/api/*")
     environment.jersey().register(new WorkflowComputingUnitManagingResource)
   }
 }
@@ -25,6 +26,7 @@ object WorkflowComputingUnitManagingService {
       .resolve("workflow-computing-unit-managing-service-config.yaml")
       .toAbsolutePath
       .toString
+
     new WorkflowComputingUnitManagingService().run("server", configFilePath)
   }
 }
