@@ -1,4 +1,4 @@
-{{- if .Values.ingress.enabled }}
+{{- if .Values.ingressPaths.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -10,10 +10,10 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: {{ .Values.ingress.hostname }}
+    - host: {{ .Values.ingressPaths.hostname }}
       http:
         paths:
-          {{- range .Values.ingress.paths }}
+          {{- range .Values.ingressPaths.paths }}
           - path: {{ .path }}
             pathType: Prefix
             backend:

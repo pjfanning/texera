@@ -35,7 +35,15 @@ mysql:
 #
 #  architecture: standalone
 
-# Part 2: Configuration of Texera
+webserver:
+  name: webserver
+  numOfPods: 1  # Number of pods for the Texera deployment
+  imageName: bobbai/texera-webserver:dev-no-usersys # image name of the texera
+  service:
+    type: NodePort # for testing purpose, NodePort mode is fine
+    port: 8080 # port of the pod
+    nodePort: 30081 # exposed port
+
 workflowComputingUnitManager:
   name: workflow-computing-unit-manager
   numOfPods: 1
@@ -46,21 +54,20 @@ workflowComputingUnitManager:
     port: 8888 # port of the pod
     nodePort: 30082 # exposed port
 
-# Configuration for the workflow pod
-# TODO: consider remove this
+workflowCompilingService:
+  name: workflow-compiling-service
+  numOfPods: 1
+  imageName: bobbai/texera-workflow-compiling-service:dev
+  service:
+    type: NodePort
+    port: 9090
+    nodePort: 30083
+
 workflowComputingUnit:
   name: workflow-computing-unit
   numOfPods: 1
   imageName: bobbai/texera-workflow-computing-unit:dev
 
-webserver:
-  name: webserver
-  numOfPods: 1  # Number of pods for the Texera deployment
-  imageName: bobbai/texera-webserver:dev-no-usersys # image name of the texera
-  service:
-    type: NodePort # for testing purpose, NodePort mode is fine
-    port: 8080 # port of the pod
-    nodePort: 30081 # exposed port
 
 # Config required for envoy and workflow pods
 envoy:
@@ -74,7 +81,7 @@ envoy:
   service:
     type: NodePort
     port: 10000
-    nodePort: 30083
+    nodePort: 30084
 
 workflowComputingUnits:
   name: workflow-computing-units
@@ -107,22 +114,22 @@ ingress-nginx:
 
 
 # Custom Ingress resource configs
-ingress:
+ingressPaths:
   enabled: true
   hostname: "texera.example.com"
   paths:
-    - path: /
-      serviceName: webserver-svc
-      servicePort: 8080
-    - path: /api
-      serviceName: webserver-svc
-      servicePort: 8080
-    - path: /rtc
-      serviceName: webserver-svc
-      servicePort: 1234
-    - path: /computing-unit
+    - path: /api/computing-unit
       serviceName: workflow-computing-unit-manager-svc
       servicePort: 8888
+    - path: /api/compile
+      serviceName: workflow-compiling-service-svc
+      servicePort: 9090
     - path: /wsapi/workflow-websocket
       serviceName: envoy-svc
       servicePort: 10000
+    - path: /api
+      serviceName: webserver-svc
+      servicePort: 8080
+    - path: /
+      serviceName: webserver-svc
+      servicePort: 8080

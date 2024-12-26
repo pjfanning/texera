@@ -16,13 +16,3 @@ spec:
       {{- if eq .Values.webserver.service.type "NodePort" }}
       nodePort: {{ .Values.webserver.service.nodePort }}
       {{- end }}
-
-    # --- RTC does not work ---
-    # TODO: run this as a separate deployment and service
-    - name: rtc-port
-      protocol: TCP
-      port: 1234
-      targetPort: 1234
-      {{- if eq .Values.webserver.service.type "NodePort" }}
-      nodePort: 30084
-      {{- end }}
