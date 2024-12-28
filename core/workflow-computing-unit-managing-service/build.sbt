@@ -21,7 +21,6 @@ libraryDependencies ++= Seq(
   "mysql" % "mysql-connector-java" % "8.0.33",
   "com.softwaremill.sttp.client4" %% "core" % "4.0.0-M6",
   "com.lihaoyi" %% "upickle" % "3.1.0",
-  "org.yaml" % "snakeyaml" % "1.30",                    // for reading storage config yaml file
   "com.typesafe" % "config" % "1.4.2"
 )
 

@@ -106,6 +106,10 @@ object KubernetesClientService {
     pod.getStatus.getPhase == desiredState
   }
 
+  def getPodByName(podName: String): V1Pod = {
+    coreApi.readNamespacedPod(podName, poolNamespace).execute()
+  }
+
   /**
     * Creates a new pod under the specified namespace for the given computing unit ID.
     *
@@ -150,9 +154,7 @@ object KubernetesClientService {
           .subdomain("workflow-pods")
       )
 
-    val result = coreApi.createNamespacedPod(poolNamespace, pod).execute()
-    waitForPodStatus(cuid, "Running")
-    result
+    coreApi.createNamespacedPod(poolNamespace, pod).execute()
   }
 
   /**
