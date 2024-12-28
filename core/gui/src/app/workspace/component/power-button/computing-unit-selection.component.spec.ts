@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { HttpClientTestingModule } from "@angular/common/http/testing";
-import { PowerButtonComponent } from "./power-button.component";
+import { ComputingUnitSelectionComponent } from "./computing-unit-selection.component";
 import { NzButtonModule } from "ng-zorro-antd/button";
 import { CommonModule } from "@angular/common";
 import { NzIconModule } from "ng-zorro-antd/icon";
 
 describe("PowerButtonComponent", () => {
-  let component: PowerButtonComponent;
-  let fixture: ComponentFixture<PowerButtonComponent>;
+  let component: ComputingUnitSelectionComponent;
+  let fixture: ComponentFixture<ComputingUnitSelectionComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [PowerButtonComponent], // Declare if not standalone
+      declarations: [ComputingUnitSelectionComponent], // Declare if not standalone
       imports: [
         HttpClientTestingModule, // Use TestingModule instead of HttpClientModule
         CommonModule,
@@ -20,7 +20,7 @@ describe("PowerButtonComponent", () => {
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(PowerButtonComponent);
+    fixture = TestBed.createComponent(ComputingUnitSelectionComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

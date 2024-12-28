@@ -1,7 +1,13 @@
 export interface WorkflowComputingUnit {
-  cuid: number | undefined;
+  cuid: number;
   uid: number;
   name: string;
-  creationTime: number | undefined;
+  creationTime: number;
   terminateTime: number | undefined;
+}
+
+export interface DashboardWorkflowComputingUnit {
+  computingUnit: WorkflowComputingUnit;
+  uri: string;
+  status: string;
 }

@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { Observable } from "rxjs";
 import { AppSettings } from "../../../common/app-setting";
-import {WorkflowComputingUnit} from "../../types/workflow-computing-unit";
+import { DashboardWorkflowComputingUnit } from "../../types/workflow-computing-unit";
 
 export const COMPUTING_UNIT_BASE_URL = "computing-unit";
 export const COMPUTING_UNIT_CREATE_URL = `${COMPUTING_UNIT_BASE_URL}/create`;
@@ -17,14 +17,13 @@ export class WorkflowComputingUnitManagingService {
 
   /**
    * Create a new workflow computing unit (pod).
-   * @param uid The user ID.
    * @param name The name for the computing unit.
    * @returns An Observable of the created WorkflowComputingUnit.
    */
-  public createComputingUnit(uid: number, name: string): Observable<WorkflowComputingUnit> {
-    const body = { uid, name };
+  public createComputingUnit(name: string, unitType: string = "k8s_pod"): Observable<DashboardWorkflowComputingUnit> {
+    const body = { name, unitType };
 
-    return this.http.post<WorkflowComputingUnit>(
+    return this.http.post<DashboardWorkflowComputingUnit>(
       `${AppSettings.getApiEndpoint()}/${COMPUTING_UNIT_CREATE_URL}`,
       body
     );
@@ -32,24 +31,21 @@ export class WorkflowComputingUnitManagingService {
 
   /**
    * Terminate a computing unit (pod) by its URI.
-   * @param podURI The URI of the pod to be terminated.
    * @returns An Observable of the server response.
+   * @param uri
    */
-  public terminateComputingUnit(podURI: string): Observable<Response> {
-    const body = { podURI };
+  public terminateComputingUnit(uri: string): Observable<Response> {
+    const body = { uri: uri, name: "dummy" };
 
-    return this.http.post<Response>(
-      `${AppSettings.getApiEndpoint()}/${COMPUTING_UNIT_TERMINATE_URL}`,
-      body
-    );
+    return this.http.post<Response>(`${AppSettings.getApiEndpoint()}/${COMPUTING_UNIT_TERMINATE_URL}`, body);
   }
 
   /**
    * List all active computing units.
    * @returns An Observable of a list of WorkflowComputingUnit.
    */
-  public listComputingUnits(): Observable<WorkflowComputingUnit[]> {
-    return this.http.get<WorkflowComputingUnit[]>(
+  public listComputingUnits(): Observable<DashboardWorkflowComputingUnit[]> {
+    return this.http.get<DashboardWorkflowComputingUnit[]>(
       `${AppSettings.getApiEndpoint()}/${COMPUTING_UNIT_LIST_URL}`
     );
   }
