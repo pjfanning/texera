@@ -140,7 +140,8 @@ import { LandingPageComponent } from "./hub/component/landing-page/landing-page.
 import { BrowseSectionComponent } from "./hub/component/browse-section/browse-section.component";
 import { BreakpointConditionInputComponent } from "./workspace/component/code-editor-dialog/breakpoint-condition-input/breakpoint-condition-input.component";
 import { CodeDebuggerComponent } from "./workspace/component/code-editor-dialog/code-debugger.component";
-import { PowerButtonComponent } from "./workspace/component/power-button/power-button.component";
+import { ComputingUnitSelectionComponent } from "./workspace/component/power-button/computing-unit-selection.component";
+import { NzDividerModule } from "ng-zorro-antd/divider";
 
 registerLocaleData(en);
 
@@ -231,7 +232,7 @@ registerLocaleData(en);
     BrowseSectionComponent,
     BreakpointConditionInputComponent,
     CodeDebuggerComponent,
-    PowerButtonComponent,
+    ComputingUnitSelectionComponent,
   ],
   imports: [
     BrowserModule,
@@ -290,6 +291,7 @@ registerLocaleData(en);
     NzTreeViewModule,
     NzNoAnimationModule,
     TreeModule,
+    NzDividerModule,
   ],
   providers: [
     provideNzI18n(en_US),
