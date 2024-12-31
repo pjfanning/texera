@@ -8,8 +8,8 @@ import edu.uci.ics.amber.core.workflow.{PhysicalOp, SchemaPropagationFunc}
 import edu.uci.ics.amber.operator.map.MapOpDesc
 import edu.uci.ics.amber.operator.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.amber.operator.metadata.annotations.AutofillAttributeName
-import edu.uci.ics.amber.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
-import edu.uci.ics.amber.workflow.{InputPort, OutputPort}
+import edu.uci.ics.amber.core.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
+import edu.uci.ics.amber.core.workflow.{InputPort, OutputPort}
 
 @JsonSchemaInject(json = """
 {
@@ -57,8 +57,8 @@ class SentimentAnalysisOpDesc extends MapOpDesc {
       )
   }
 
-  override def operatorInfo =
-    new OperatorInfo(
+  override def operatorInfo: OperatorInfo =
+    OperatorInfo(
       "Sentiment Analysis",
       "analysis the sentiment of a text using machine learning",
       OperatorGroupConstants.MACHINE_LEARNING_GROUP,
