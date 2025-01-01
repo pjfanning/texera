@@ -19,7 +19,7 @@ spec:
         - name: {{ .Values.workflowComputingUnit.name }}
           image: {{ .Values.workflowComputingUnit.imageName }}
           ports:
-            - containerPort: {{ .Values.workflowComputingUnits.service.port }}
+            - containerPort: {{ .Values.workflowComputingUnitPool.service.port }}
           env:
             - name: JDBC_URL
               value: "jdbc:mysql://{{ .Release.Name }}-mysql.{{ .Values.namespace }}.svc.cluster.local:3306/{{ .Values.mysql.auth.database }}"

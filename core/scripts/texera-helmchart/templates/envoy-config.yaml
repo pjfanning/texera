@@ -27,10 +27,10 @@ data:
                           domains: ["*"]
                           routes:
                             - match:
-                                prefix: "/wsapi/workflow-websocket"
+                                prefix: "/wsapi"
                               route:
                                 cluster: dynamic_service
-                                prefix_rewrite: "/wsapi/workflow-websocket"
+                                prefix_rewrite: "/wsapi"
                     http_filters:
                       - name: envoy.filters.http.lua
                         typed_config:
@@ -38,10 +38,9 @@ data:
                           inline_code: |
                             function envoy_on_request(request_handle)
                                 local uri = request_handle:headers():get(":path")
-                                local wid = string.match(uri, "wid=(%d+)")
-                                local uid = string.match(uri, "uid=(%d+)")
-                                if uid then
-                                  local new_host = "user-pod-" .. uid .. "-" .. wid .. ".workflow-pods.wf-pod-pool.svc.cluster.local:8080"
+                                local cuid = string.match(uri, "cuid=(%d+)")
+                                if cuid then
+                                  local new_host = "computing-unit-" .. cuid .. ".workflow-computing-unit-svc.workflow-computing-unit-pool.svc.cluster.local:8085"
                                   request_handle:headers():replace(":authority", new_host)
                                 end
                               end

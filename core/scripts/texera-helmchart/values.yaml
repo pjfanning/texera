@@ -83,12 +83,14 @@ envoy:
     port: 10000
     nodePort: 30084
 
-workflowComputingUnits:
-  name: workflow-computing-units
-  namespace: workflow-computing-units-pool
+# headless service
+# each pod's url is: computing-unit-%cuid.workflow-computing-unit.workflow-computing-unit-pool.svc.cluster.local
+workflowComputingUnitPool:
+  name: workflow-computing-unit
+  namespace: workflow-computing-unit-pool
   service:
-    port: 8080
-    targetPort: 8080
+    port: 8085
+    targetPort: 8085
 
 
 # Ingress dependency configs
