@@ -4,12 +4,13 @@
   nzAllowClear
   [nzDropdownRender]="renderTemplate"
   nzPlaceHolder="Select a computing unit"
-  [(ngModel)]="selectedComputingUnitUri">
+  [(ngModel)]="selectedComputingUnit"
+  (ngModelChange)="onComputingUnitChange($event)">
   <nz-option
     *ngFor="let unit of computingUnits"
     nzCustomContent
-    [nzLabel]="unit.computingUnit.name"
-    [nzValue]="unit.uri">
+    [nzLabel]="unit.uri"
+    [nzValue]="unit">
     <div class="computing-unit-option">
       <!-- Badge with state -->
       <nz-badge

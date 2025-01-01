@@ -34,6 +34,11 @@ export const defaultEnvironment = {
   userSystemEnabled: false,
 
   /**
+   * whether workflow computing unit system is enabled
+   */
+  computingUnitSystemEnabled: true,
+
+  /**
    * whether local login is enabled
    */
   localLogin: true,

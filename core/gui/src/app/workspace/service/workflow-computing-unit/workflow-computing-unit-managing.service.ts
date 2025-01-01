@@ -18,6 +18,7 @@ export class WorkflowComputingUnitManagingService {
   /**
    * Create a new workflow computing unit (pod).
    * @param name The name for the computing unit.
+   * @param unitType
    * @returns An Observable of the created WorkflowComputingUnit.
    */
   public createComputingUnit(name: string, unitType: string = "k8s_pod"): Observable<DashboardWorkflowComputingUnit> {
