@@ -7,13 +7,19 @@ import edu.uci.ics.texera.service.resource.WorkflowComputingUnitManagingResource
 import io.dropwizard.core.setup.{Bootstrap, Environment}
 import io.dropwizard.core.{Application, Configuration}
 
-class WorkflowComputingUnitManagingService extends Application[WorkflowComputingUnitManagingServiceConfiguration] {
+class WorkflowComputingUnitManagingService
+    extends Application[WorkflowComputingUnitManagingServiceConfiguration] {
 
-  override def initialize(bootstrap: Bootstrap[WorkflowComputingUnitManagingServiceConfiguration]): Unit = {
+  override def initialize(
+      bootstrap: Bootstrap[WorkflowComputingUnitManagingServiceConfiguration]
+  ): Unit = {
     // register scala module to dropwizard default object mapper
     bootstrap.getObjectMapper.registerModule(DefaultScalaModule)
   }
-  override def run(configuration: WorkflowComputingUnitManagingServiceConfiguration, environment: Environment): Unit = {
+  override def run(
+      configuration: WorkflowComputingUnitManagingServiceConfiguration,
+      environment: Environment
+  ): Unit = {
     // Register http resources
     environment.jersey.setUrlPattern("/api/*")
     environment.jersey().register(new WorkflowComputingUnitManagingResource)

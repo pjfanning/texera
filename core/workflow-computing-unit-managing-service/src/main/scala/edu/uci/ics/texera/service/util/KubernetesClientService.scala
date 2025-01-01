@@ -1,7 +1,11 @@
 package edu.uci.ics.texera.service.util
 
 import config.WorkflowComputingUnitManagingServiceConf
-import config.WorkflowComputingUnitManagingServiceConf.{computeUnitImageName, computeUnitPortNumber}
+import config.WorkflowComputingUnitManagingServiceConf.{
+  computeUnitImageName,
+  computeUnitPortNumber,
+  computeUnitServiceName
+}
 import io.kubernetes.client.openapi.apis.{AppsV1Api, CoreV1Api}
 import io.kubernetes.client.openapi.models._
 import io.kubernetes.client.openapi.{ApiClient, Configuration}
@@ -30,16 +34,16 @@ object KubernetesClientService {
     * @param cuid The computing unit ID.
     * @return A URI representing the pod location.
     */
-  def generatePodURI(cuid: Int): URI = {
-    new URI(s"urn:kubernetes:$poolNamespace:${generatePodName(cuid)}")
+  def generatePodURI(cuid: Int): String = {
+    s"${generatePodName(cuid)}.$computeUnitServiceName.$poolNamespace.svc.cluster.local"
   }
 
   /**
-   * Generate pod name using the cuid
-   *
-   * @param cuid The computing unit ID
-   * @return The pod name
-   */
+    * Generate pod name using the cuid
+    *
+    * @param cuid The computing unit ID
+    * @return The pod name
+    */
   def generatePodName(cuid: Int): String = s"$podNamePrefix-$cuid"
 
   /**
@@ -48,9 +52,9 @@ object KubernetesClientService {
     * @param uri The pod URI.
     * @return The extracted computing unit ID as an integer.
     */
-  def parseCUIDFromURI(uri: URI): Int = {
-    val pattern = """.*computing-unit-(\d+)""".r
-    uri.toString match {
+  def parseCUIDFromURI(uri: String): Int = {
+    val pattern = """computing-unit-(\d+).*""".r
+    uri match {
       case pattern(cuid) => cuid.toInt
       case _             => throw new IllegalArgumentException(s"Invalid pod URI: $uri")
     }
@@ -131,10 +135,12 @@ object KubernetesClientService {
           .namespace(poolNamespace)
           .labels(
             util.Map.of(
+              "type",
+              "computing-unit",
               "cuid",
               String.valueOf(cuid),
               "name",
-              podName,
+              podName
             )
           )
       )
@@ -147,11 +153,10 @@ object KubernetesClientService {
                 .name("computing-unit-master")
                 .image(computeUnitImageName)
                 .ports(util.List.of(new V1ContainerPort().containerPort(computeUnitPortNumber)))
-
             )
           )
           .hostname(podName)
-          .subdomain("workflow-pods")
+          .subdomain(computeUnitServiceName)
       )
 
     coreApi.createNamespacedPod(poolNamespace, pod).execute()
@@ -162,7 +167,7 @@ object KubernetesClientService {
     *
     * @param podURI The URI of the pod to delete.
     */
-  def deletePod(podURI: URI): Unit = {
+  def deletePod(podURI: String): Unit = {
     val cuid = parseCUIDFromURI(podURI)
     coreApi.deleteNamespacedPod(generatePodName(cuid), poolNamespace).execute()
     Thread.sleep(3000)

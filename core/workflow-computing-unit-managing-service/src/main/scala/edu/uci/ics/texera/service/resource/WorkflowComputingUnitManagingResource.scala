@@ -6,7 +6,12 @@ import edu.uci.ics.texera.dao.SqlServer.withTransaction
 import edu.uci.ics.texera.dao.jooq.generated.tables.daos.WorkflowComputingUnitDao
 import edu.uci.ics.texera.dao.jooq.generated.tables.WorkflowComputingUnit.WORKFLOW_COMPUTING_UNIT
 import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.WorkflowComputingUnit
-import edu.uci.ics.texera.service.resource.WorkflowComputingUnitManagingResource.{DashboardWorkflowComputingUnit, WorkflowComputingUnitCreationParams, WorkflowComputingUnitTerminationParams, context}
+import edu.uci.ics.texera.service.resource.WorkflowComputingUnitManagingResource.{
+  DashboardWorkflowComputingUnit,
+  WorkflowComputingUnitCreationParams,
+  WorkflowComputingUnitTerminationParams,
+  context
+}
 import edu.uci.ics.texera.service.util.KubernetesClientService
 import io.kubernetes.client.openapi.models.V1Pod
 import jakarta.ws.rs._
@@ -29,7 +34,11 @@ object WorkflowComputingUnitManagingResource {
 
   case class WorkflowComputingUnitTerminationParams(uri: String, name: String)
 
-  case class DashboardWorkflowComputingUnit(computingUnit: WorkflowComputingUnit, uri: String, status: String)
+  case class DashboardWorkflowComputingUnit(
+      computingUnit: WorkflowComputingUnit,
+      uri: String,
+      status: String
+  )
 }
 
 @Produces(Array(MediaType.APPLICATION_JSON))
@@ -46,7 +55,9 @@ class WorkflowComputingUnitManagingResource {
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/create")
-  def createWorkflowComputingUnit(param: WorkflowComputingUnitCreationParams): DashboardWorkflowComputingUnit = {
+  def createWorkflowComputingUnit(
+      param: WorkflowComputingUnitCreationParams
+  ): DashboardWorkflowComputingUnit = {
     try {
       withTransaction(context) { ctx =>
         val wcDao = new WorkflowComputingUnitDao(ctx.configuration())
@@ -122,21 +133,21 @@ class WorkflowComputingUnitManagingResource {
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/terminate")
   def terminateComputingUnit(param: WorkflowComputingUnitTerminationParams): Response = {
-      // Attempt to delete the pod using the provided URI
-    val podURI = URI.create(param.uri)
+    // Attempt to delete the pod using the provided URI
+    val podURI = param.uri
     KubernetesClientService.deletePod(podURI)
 
-      // If successful, update the database
-      withTransaction(context) { ctx =>
-        val cuDao = new WorkflowComputingUnitDao(ctx.configuration())
-        val cuid = KubernetesClientService.parseCUIDFromURI(podURI)
-        val units = cuDao.fetchByCuid(UInteger.valueOf(cuid))
+    // If successful, update the database
+    withTransaction(context) { ctx =>
+      val cuDao = new WorkflowComputingUnitDao(ctx.configuration())
+      val cuid = KubernetesClientService.parseCUIDFromURI(podURI)
+      val units = cuDao.fetchByCuid(UInteger.valueOf(cuid))
 
-        units.forEach(unit => unit.setTerminateTime(new Timestamp(System.currentTimeMillis())))
-        cuDao.update(units)
-      }
+      units.forEach(unit => unit.setTerminateTime(new Timestamp(System.currentTimeMillis())))
+      cuDao.update(units)
+    }
 
-      Response.ok(s"Successfully terminated compute unit with URI $podURI").build()
+    Response.ok(s"Successfully terminated compute unit with URI $podURI").build()
 
   }
 }
