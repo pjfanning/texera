@@ -117,7 +117,6 @@ class WorkflowComputingUnitManagingResource {
           )
         })
 
-      println(result.size())
       result
     }
   }

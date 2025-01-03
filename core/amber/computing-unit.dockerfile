@@ -6,6 +6,8 @@ WORKDIR /core
 # Copy all projects under core to /core
 COPY core/ .
 
+RUN rm -rf amber/user-resources/*
+
 # Update system and install dependencies
 RUN apt-get update && apt-get install -y \
     netcat \

@@ -4,6 +4,7 @@ FROM sbtscala/scala-sbt:eclipse-temurin-jammy-11.0.17_8_1.9.3_2.13.11
 WORKDIR /core
 COPY core/ .
 
+RUN rm -rf amber/user-resources/*
 RUN apt-get update && apt-get install -y unzip
 
 # build the service

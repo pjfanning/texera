@@ -103,7 +103,7 @@ export class ComputingUnitSelectionComponent implements OnInit {
       .terminateComputingUnit(uri)
       .pipe(untilDestroyed(this))
       .subscribe({
-        next: () => {
+        next: (res: Response) => {
           this.notificationService.success(`Terminated computing unit with URI: ${uri}`);
           this.refreshComputingUnits();
         },

@@ -23,6 +23,8 @@ FROM sbtscala/scala-sbt:eclipse-temurin-jammy-11.0.17_8_1.9.3_2.13.11
 WORKDIR /core
 COPY core/ .
 
+RUN rm -rf amber/user-resources/*
+
 RUN apt-get update
 RUN apt-get install -y netcat unzip python3-pip
 RUN pip3 install python-lsp-server python-lsp-server[websockets]

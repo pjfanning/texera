@@ -37,12 +37,20 @@ mysql:
 
 webserver:
   name: webserver
-  numOfPods: 1  # Number of pods for the Texera deployment
-  imageName: bobbai/texera-webserver:dev-no-usersys # image name of the texera
+  numOfPods: 3  # Number of pods for the Texera deployment
+  imageName: bobbai/texera-webserver:dev-usersys # image name of the texera
   service:
     type: NodePort # for testing purpose, NodePort mode is fine
     port: 8080 # port of the pod
     nodePort: 30081 # exposed port
+  volume:
+    enabled: true
+    size: 10Gi
+    hostPath: /mnt/data/webserver # Path on the host machine
+    mountPath: /core/amber/user-resources # Path inside the container
+    storageClassName: manual
+    accessModes:
+      - ReadWriteMany
 
 workflowComputingUnitManager:
   name: workflow-computing-unit-manager

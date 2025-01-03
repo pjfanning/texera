@@ -6,6 +6,7 @@ import config.WorkflowComputingUnitManagingServiceConf.{
   computeUnitPortNumber,
   computeUnitServiceName
 }
+import edu.uci.ics.amber.core.storage.StorageConfig
 import io.kubernetes.client.openapi.apis.{AppsV1Api, CoreV1Api}
 import io.kubernetes.client.openapi.models._
 import io.kubernetes.client.openapi.{ApiClient, Configuration}
@@ -153,6 +154,13 @@ object KubernetesClientService {
                 .name("computing-unit-master")
                 .image(computeUnitImageName)
                 .ports(util.List.of(new V1ContainerPort().containerPort(computeUnitPortNumber)))
+                .env(
+                  util.List.of(
+                    new V1EnvVar().name("JDBC_URL").value(StorageConfig.jdbcUrl),
+                    new V1EnvVar().name("JDBC_USERNAME").value(StorageConfig.jdbcUsername),
+                    new V1EnvVar().name("JDBC_PASSWORD").value(StorageConfig.jdbcPassword)
+                  )
+                )
             )
           )
           .hostname(podName)
@@ -170,7 +178,6 @@ object KubernetesClientService {
   def deletePod(podURI: String): Unit = {
     val cuid = parseCUIDFromURI(podURI)
     coreApi.deleteNamespacedPod(generatePodName(cuid), poolNamespace).execute()
-    Thread.sleep(3000)
   }
 
   /**
