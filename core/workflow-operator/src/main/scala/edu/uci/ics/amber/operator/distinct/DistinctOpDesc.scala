@@ -11,11 +11,21 @@ import edu.uci.ics.amber.workflow.{InputPort, OutputPort}
 
 class DistinctOpDesc extends LogicalOp {
 
+  @JsonProperty(required = false)
+  @JsonSchemaTitle("nodeAddr")
+  @JsonSchemaInject(json = UIWidget.UIWidgetTextArea)
+  var nodeAddr: String = _
+
+  @JsonProperty(defaultValue = "true")
+  @JsonSchemaTitle("location preference(default)")
+  @JsonPropertyDescription("Whether use default RoundRobinPreference")
+  var UseRoundRobin: Boolean = true
+
   override def getPhysicalOp(
-      workflowId: WorkflowIdentity,
-      executionId: ExecutionIdentity
-  ): PhysicalOp = {
-    PhysicalOp
+                              workflowId: WorkflowIdentity,
+                              executionId: ExecutionIdentity
+                            ): PhysicalOp = {
+    val baseOp = PhysicalOp
       .oneToOnePhysicalOp(
         workflowId,
         executionId,
@@ -26,6 +36,12 @@ class DistinctOpDesc extends LogicalOp {
       .withOutputPorts(operatorInfo.outputPorts)
       .withPartitionRequirement(List(Option(HashPartition())))
       .withDerivePartition(_ => HashPartition())
+
+    if (!UseRoundRobin) {
+      baseOp.withLocationPreference(Some(GoToSpecificNode(nodeAddr))) // Use the actual `nodeAddr`
+    } else {
+      baseOp // Return without modifying location preference
+    }
   }
 
   override def operatorInfo: OperatorInfo =

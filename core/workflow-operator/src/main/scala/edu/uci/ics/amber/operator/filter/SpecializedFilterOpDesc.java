@@ -24,21 +24,49 @@ public class SpecializedFilterOpDesc extends FilterOpDesc {
 
     @JsonProperty(value = "predicates", required = true)
     @JsonPropertyDescription("multiple predicates in OR")
-    public java.util.List<edu.uci.ics.amber.operator.filter.FilterPredicate> predicates;
+    public java.util.List<FilterPredicate> predicates;
+
+    @JsonProperty(required = false)
+    @JsonSchemaTitle("nodeAddr")
+    @JsonSchemaInject(json = UIWidget.UIWidgetTextArea)
+    public String nodeAddr;
+
+    @JsonProperty(defaultValue = "true")
+    @JsonSchemaTitle("location preference(default)")
+    @JsonPropertyDescription("Whether use default RoundRobinPreference")
+    public Boolean UseRoundRobin;
 
     @Override
     public PhysicalOp getPhysicalOp(WorkflowIdentity workflowId, ExecutionIdentity executionId) {
-        return PhysicalOp.oneToOnePhysicalOp(
+        PhysicalOp baseOp = PhysicalOp.oneToOnePhysicalOp(
                         workflowId,
                         executionId,
                         operatorIdentifier(),
                         OpExecInitInfo.apply(
                                 (Function<Tuple2<Object, Object>, OperatorExecutor> & java.io.Serializable)
-                                        x -> new edu.uci.ics.amber.operator.filter.SpecializedFilterOpExec(this.predicates)
+                                        x -> new SpecializedFilterOpExec(this.predicates)
                         )
                 )
                 .withInputPorts(operatorInfo().inputPorts())
                 .withOutputPorts(operatorInfo().outputPorts());
+
+        if (Boolean.FALSE.equals(UseRoundRobin)) { // Ensure UseRoundRobin is not null
+            return baseOp.withLocationPreference(scala.Option.apply(new GoToSpecificNode(nodeAddr)));
+        }
+        else {
+            return baseOp;
+        }
+//        return PhysicalOp.oneToOnePhysicalOp(
+//                        workflowId,
+//                        executionId,
+//                        operatorIdentifier(),
+//                        OpExecInitInfo.apply(
+//                                (Function<Tuple2<Object, Object>, OperatorExecutor> & java.io.Serializable)
+//                                        x -> new SpecializedFilterOpExec(this.predicates)
+//                        )
+//                )
+//                .withInputPorts(operatorInfo().inputPorts())
+//                .withOutputPorts(operatorInfo().outputPorts());
     }
 
     @Override

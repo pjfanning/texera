@@ -39,8 +39,16 @@ object ExecutorDeployment {
         case PreferController =>
           addressInfo.controllerAddress
         case node: GoToSpecificNode =>
+          println("----------")
+          addressInfo.allAddresses.foreach(address => println("Address: " + address + "Address host: " + address.host.get))
+          println("----------")
           addressInfo.allAddresses.find(addr => addr.host.get == node.nodeAddr).get
         case RoundRobinPreference =>
+          println("++++++++++++")
+          println("worker id: " + workerId)
+          println("worker index: " + workerIndex)
+          addressInfo.allAddresses.foreach(address => println("Address: " + address + "Address host: " + address.host.get))
+          println("++++++++++++")
           assert(
             addressInfo.allAddresses.nonEmpty,
             "Execution failed to start, no available computation nodes"
