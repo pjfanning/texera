@@ -64,7 +64,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
           "min" -> doc.get("minValue").asInstanceOf[Number].doubleValue(),
           "max" -> doc.get("maxValue").asInstanceOf[Number].doubleValue(),
           "mean" -> doc.get("meanValue").asInstanceOf[Number].doubleValue(),
-          "count" -> doc.get("count").toString.toDouble
+          "count" -> doc.get("count").asInstanceOf[Number].doubleValue()
         )
         Some(field -> stats)
       } else {
@@ -76,7 +76,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
   /**
     * Calculate date statistics (min, max) for date fields.
     */
-  def calculateDateStats(): Map[String, Map[String, Date]] = {
+  def calculateDateStats(offset: Int): Map[String, Map[String, Any]] = {
     val dateFields = detectDateFields()
 
     dateFields.flatMap { field =>
@@ -86,8 +86,10 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
       val groupDoc = new Document("_id", null)
         .append("minValue", new Document("$min", "$" + field))
         .append("maxValue", new Document("$max", "$" + field))
+        .append("count", new Document("$sum", 1))
 
       val pipeline = Seq(
+        new Document("$skip", offset),
         new Document("$project", projection),
         new Document("$group", groupDoc)
       )
@@ -97,7 +99,8 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
         val doc = result.head
         val stats = Map(
           "min" -> doc.get("minValue").asInstanceOf[Date],
-          "max" -> doc.get("maxValue").asInstanceOf[Date]
+          "max" -> doc.get("maxValue").asInstanceOf[Date],
+          "count" -> doc.get("count").asInstanceOf[Number].intValue()
         )
         Some(field -> stats)
       } else {

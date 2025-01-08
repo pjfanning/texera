@@ -27,7 +27,7 @@ class MongoDocument[T >: Null <: AnyRef](
 
   var previousCount: mutable.Map[String, Int] = mutable.Map()
   var previousNumStats: mutable.Map[String, Map[String, Double]] = mutable.Map()
-  var previousDateStats: mutable.Map[String, (java.util.Date, java.util.Date)] = mutable.Map()
+  var previousDateStats: mutable.Map[String, Map[String, Date]] = mutable.Map()
   var previousCatStats: mutable.Map[String, Map[String, Int]] = mutable.Map()
 
   /**
@@ -154,9 +154,10 @@ class MongoDocument[T >: Null <: AnyRef](
 
     currentResult.keys.foreach(field => {
         val (prevMin, prevMax, prevMean) =
-          (previousNumStats.getOrElse(field, Map("min"->Double.MaxValue))("min"),
-            previousNumStats.getOrElse(field, Map("max"->Double.MinValue))("max"),
-            previousNumStats.getOrElse(field, Map("mean"->0.0))("mean"))
+          (previousNumStats.getOrElse(field, Map("min" -> Double.MaxValue))("min"),
+            previousNumStats.getOrElse(field, Map("max" -> Double.MinValue))("max"),
+            previousNumStats.getOrElse(field, Map("mean" -> 0.0))("mean"))
+
         val (minValue, maxValue, meanValue, count) =
           (currentResult(field)("min"), currentResult(field)("max"), currentResult(field)("mean"), currentResult(field)("count"))
 
@@ -172,7 +173,28 @@ class MongoDocument[T >: Null <: AnyRef](
     previousNumStats.toMap
   }
 
-  def getDateColStats: Map[String, Map[String, Date]] = collectionMgr.calculateDateStats()
+  def getDateColStats: Map[String, Map[String, Date]] = {
+    val offset: Int = previousCount.getOrElse("date_offset", 0)
+    val currentResult: Map[String, Map[String, Any]] = collectionMgr.calculateDateStats(offset)
+
+    currentResult.keys.foreach(field => {
+        val (prevMin, prevMax) =
+          (previousDateStats.getOrElse(field, Map("min" -> new java.util.Date(Long.MaxValue)))("min"),
+            previousDateStats.getOrElse(field, Map("max" -> new java.util.Date(Long.MinValue)))("max"))
+
+        val (minValue: java.util.Date, maxValue: java.util.Date, count: Int) =
+          (currentResult(field)("min"), currentResult(field)("max"), currentResult(field)("count"))
+
+        val newMin: java.util.Date = if (minValue.before(prevMin)) minValue else prevMin
+        val newMax: java.util.Date = if (maxValue.after(prevMax)) maxValue else prevMax
+
+      previousDateStats.update(field, Map("min" -> newMin, "max" -> newMax))
+      previousCount.update("date_offset", offset + count)
+      }
+    )
+
+    previousDateStats.toMap
+  }
 
   def getCategoricalStats: Map[String, Map[String, Any]] =
     collectionMgr.calculateCategoricalStats()
