@@ -112,53 +112,28 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
   /**
     * Calculate categorical statistics (value percentages) for categorical fields.
     */
-  def calculateCategoricalStats(): Map[String, Map[String, Any]] = {
+  def calculateCategoricalStats(offset: Int): (Map[String, Map[String, Int]], Boolean) = {
     val categoricalFields = detectCategoricalFields()
+    var reachedLimit: Boolean = false
 
-    categoricalFields.flatMap { field =>
-      val pipeline = Seq(
-        Aggregates.group("$" + field, com.mongodb.client.model.Accumulators.sum("count", 1)),
-        Aggregates.sort(Sorts.descending("count")),
-        Aggregates.limit(1000)
-      )
-
-      val result = collection.aggregate(pipeline.asJava).iterator().asScala.toList
-
-      if (result.nonEmpty) {
-        val counts: Map[String, Int] =
-          result.map(doc => doc.getString("_id") -> doc.getInteger("count").toInt).toMap
-        val total: Double = counts.values.map(_.toDouble).sum
-
-        // Extract the top two categories and calculate their percentages
-        val sortedCounts: Seq[(String, Int)] = counts.toSeq.sortBy(-_._2)
-        val firstCategory: Option[(String, Int)] = sortedCounts.headOption
-        val secondCategory: Option[(String, Int)] = sortedCounts.lift(1)
-        val otherTotal: Double = sortedCounts.drop(2).map(_._2.toDouble).sum
-
-        val stats: Map[String, Any] = Map(
-          "firstPercent" -> firstCategory
-            .map { case (_, count) => (count / total * 100) }
-            .getOrElse(0.0),
-          "secondPercent" -> secondCategory
-            .map { case (_, count) => (count / total * 100) }
-            .getOrElse(0.0),
-          "other" -> (otherTotal / total * 100),
-          "firstCat" -> firstCategory.map(_._1).getOrElse("None"),
-          "secondCat" -> secondCategory.map(_._1).getOrElse("None")
+    (categoricalFields.flatMap { field =>
+        val pipeline = Seq(
+          new Document("$skip", offset),
+          Aggregates.group("$" + field, com.mongodb.client.model.Accumulators.sum("count", 1)),
+          Aggregates.sort(Sorts.descending("count")),
+          Aggregates.limit(1000)
         )
 
-        Some(field -> stats)
+        val result = collection.aggregate(pipeline.asJava).iterator().asScala.toList
+        if (result.nonEmpty) {
+          val counts = result.map(doc => doc.getString("_id") -> doc.getInteger("count").toInt).toMap
+          reachedLimit = result.size >= 1000
+          Some(field -> counts)
       } else {
         None
       }
-    }.toMap
+    }.toMap, reachedLimit)
   }
-
-  /**
-   *  Return all field names, encapsulated in an array.
-   */
-  def getAllFields(): Array[Array[String]] =
-    Array(detectNumericFields().toArray, detectDateFields().toArray, detectCategoricalFields().toArray)
 
   /**
     * Detect numeric fields by sampling the first 10 documents.
