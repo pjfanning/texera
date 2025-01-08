@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.core.storage.util.mongo
 
+import com.mongodb.client.model.Aggregates.set
 import com.mongodb.client.model.{Aggregates, Sorts}
 import com.mongodb.client.{FindIterable, MongoCollection}
 import org.bson.Document
@@ -37,7 +38,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
   /**
     * Calculate numeric statistics (min, max, mean) for numeric fields.
     */
-  def calculateNumericStats(): Map[String, Map[String, Double]] = {
+  def calculateNumericStats(offset: Int): Map[String, Map[String, Double]] = {
     val numericFields = detectNumericFields()
 
     numericFields.flatMap { field =>
@@ -48,8 +49,10 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
         .append("minValue", new Document("$min", "$" + field))
         .append("maxValue", new Document("$max", "$" + field))
         .append("meanValue", new Document("$avg", "$" + field))
+        .append("count", new Document("$sum", 1))
 
       val pipeline = Seq(
+        new Document("$skip", offset),
         new Document("$project", projection),
         new Document("$group", groupDoc)
       )
@@ -60,7 +63,8 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
         val stats = Map(
           "min" -> doc.get("minValue").asInstanceOf[Number].doubleValue(),
           "max" -> doc.get("maxValue").asInstanceOf[Number].doubleValue(),
-          "mean" -> doc.get("meanValue").asInstanceOf[Number].doubleValue()
+          "mean" -> doc.get("meanValue").asInstanceOf[Number].doubleValue(),
+          "count" -> doc.get("count").toString.toDouble
         )
         Some(field -> stats)
       } else {
@@ -146,6 +150,12 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
       }
     }.toMap
   }
+
+  /**
+   *  Return all field names, encapsulated in an array.
+   */
+  def getAllFields(): Array[Array[String]] =
+    Array(detectNumericFields().toArray, detectDateFields().toArray, detectCategoricalFields().toArray)
 
   /**
     * Detect numeric fields by sampling the first 10 documents.

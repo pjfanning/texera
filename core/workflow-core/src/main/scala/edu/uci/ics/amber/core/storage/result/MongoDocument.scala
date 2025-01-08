@@ -9,6 +9,7 @@ import org.bson.Document
 
 import java.net.URI
 import java.util.Date
+import scala.collection.mutable
 
 /**
   * MongoDocument provides an implementation of VirtualDocument for MongoDB.
@@ -23,6 +24,11 @@ class MongoDocument[T >: Null <: AnyRef](
     var toDocument: T => Document,
     var fromDocument: Document => T
 ) extends VirtualDocument[T] {
+
+  var previousCount: mutable.Map[String, Int] = mutable.Map()
+  var previousNumStats: mutable.Map[String, Map[String, Double]] = mutable.Map()
+  var previousDateStats: mutable.Map[String, (java.util.Date, java.util.Date)] = mutable.Map()
+  var previousCatStats: mutable.Map[String, Map[String, Int]] = mutable.Map()
 
   /**
     * The batch size for committing items to the MongoDB collection.
@@ -142,8 +148,29 @@ class MongoDocument[T >: Null <: AnyRef](
     collectionMgr.getCount
   }
 
-  def getNumericColStats: Map[String, Map[String, Double]] =
-    collectionMgr.calculateNumericStats()
+  def getNumericColStats: Map[String, Map[String, Double]] = {
+    val offset: Int = previousCount.getOrElse("numeric_offset", 0)
+    val currentResult: Map[String, Map[String, Double]] = collectionMgr.calculateNumericStats(offset)
+
+    currentResult.keys.foreach(field => {
+        val (prevMin, prevMax, prevMean) =
+          (previousNumStats.getOrElse(field, Map("min"->Double.MaxValue))("min"),
+            previousNumStats.getOrElse(field, Map("max"->Double.MinValue))("max"),
+            previousNumStats.getOrElse(field, Map("mean"->0.0))("mean"))
+        val (minValue, maxValue, meanValue, count) =
+          (currentResult(field)("min"), currentResult(field)("max"), currentResult(field)("mean"), currentResult(field)("count"))
+
+        val newMin = Math.min(prevMin, minValue)
+        val newMax = Math.max(prevMax, maxValue)
+        val newMean = (prevMean * offset + meanValue * count) / (offset + count)
+
+        previousNumStats.update(field, Map("min" -> newMin, "max" -> newMax, "mean" -> newMean))
+        previousCount.update("numeric_offset", offset + count.toInt)
+      }
+    )
+
+    previousNumStats.toMap
+  }
 
   def getDateColStats: Map[String, Map[String, Date]] = collectionMgr.calculateDateStats()
 
