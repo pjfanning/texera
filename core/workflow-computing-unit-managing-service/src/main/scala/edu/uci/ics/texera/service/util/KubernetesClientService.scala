@@ -188,6 +188,9 @@ object KubernetesClientService {
                     // Mount the PVC directly to /core/amber/user-resources
                     new V1VolumeMount()
                       .name(podName + "-pvc")
+                      .mountPath("/core/amber/workflow-results"),
+                    new V1VolumeMount()
+                      .name("webserver-pvc")
                       .mountPath("/core/amber/user-resources")
                   )
                 )
