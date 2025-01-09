@@ -127,7 +127,29 @@ object KubernetesClientService {
       throw new Exception(s"Pod with cuid $cuid already exists")
     }
 
-    val pod: V1Pod = new V1Pod()
+    // Create the PVC
+    V1PersistentVolumeClaim pvc = new V1PersistentVolumeClaim()
+      .apiVersion("v1")
+      .kind("PersistentVolumeClaim")
+      .metadata(
+        new V1ObjectMeta()
+          .name(podName + "-pvc") // Unique PVC name based on the pod name
+          .namespace(poolNamespace)
+      )
+      .spec(
+        new V1PersistentVolumeClaimSpec()
+          .accessModes(util.List.of("ReadWriteOnce"))
+          .resources(
+            new V1ResourceRequirements()
+              .requests(
+                util.Map.of("storage", new Quantity("2Gi"))
+              )
+          )
+          .storageClassName("nfs-client") // NFS StorageClass
+      );
+    coreApi.createNamespacedPersistentVolumeClaim(poolNamespace, pvc).execute()
+    // Create the Pod
+    V1Pod pod = new V1Pod()
       .apiVersion("v1")
       .kind("Pod")
       .metadata(
@@ -161,11 +183,29 @@ object KubernetesClientService {
                     new V1EnvVar().name("JDBC_PASSWORD").value(StorageConfig.jdbcPassword)
                   )
                 )
+                .volumeMounts(
+                  util.List.of(
+                    // Mount the PVC directly to /core/amber/user-resources
+                    new V1VolumeMount()
+                      .name(podName + "-pvc")
+                      .mountPath("/core/amber/user-resources")
+                  )
+                )
+            )
+          )
+          .volumes(
+            util.List.of(
+              new V1Volume()
+                .name(podName + "-pvc") // Use the PVC claim name as the volume name
+                .persistentVolumeClaim(
+                  new V1PersistentVolumeClaimVolumeSource()
+                    .claimName(podName + "-pvc") // Reference the PVC claim name
+                )
             )
           )
           .hostname(podName)
           .subdomain(computeUnitServiceName)
-      )
+      );
 
     coreApi.createNamespacedPod(poolNamespace, pod).execute()
   }
