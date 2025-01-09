@@ -7,12 +7,12 @@ import config.WorkflowComputingUnitManagingServiceConf.{
   computeUnitServiceName
 }
 import edu.uci.ics.amber.core.storage.StorageConfig
-import io.kubernetes.client.openapi.apis.{AppsV1Api, CoreV1Api}
+import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models._
+import io.kubernetes.client.custom.Quantity
 import io.kubernetes.client.openapi.{ApiClient, Configuration}
 import io.kubernetes.client.util.Config
 
-import java.net.URI
 import java.util
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -128,7 +128,7 @@ object KubernetesClientService {
     }
 
     // Create the PVC
-    V1PersistentVolumeClaim pvc = new V1PersistentVolumeClaim()
+    val pvc = new V1PersistentVolumeClaim()
       .apiVersion("v1")
       .kind("PersistentVolumeClaim")
       .metadata(
@@ -140,7 +140,7 @@ object KubernetesClientService {
         new V1PersistentVolumeClaimSpec()
           .accessModes(util.List.of("ReadWriteOnce"))
           .resources(
-            new V1ResourceRequirements()
+            new V1VolumeResourceRequirements()
               .requests(
                 util.Map.of("storage", new Quantity("2Gi"))
               )
@@ -149,7 +149,7 @@ object KubernetesClientService {
       );
     coreApi.createNamespacedPersistentVolumeClaim(poolNamespace, pvc).execute()
     // Create the Pod
-    V1Pod pod = new V1Pod()
+    val pod = new V1Pod()
       .apiVersion("v1")
       .kind("Pod")
       .metadata(
