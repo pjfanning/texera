@@ -112,6 +112,54 @@ val arrowDependencies = Seq(
 libraryDependencies ++= arrowDependencies
 
 /////////////////////////////////////////////////////////////////////////////
+// Iceberg-related Dependencies
+/////////////////////////////////////////////////////////////////////////////
+val excludeJersey = ExclusionRule(organization = "com.sun.jersey")
+val excludeGlassfishJersey = ExclusionRule(organization = "org.glassfish.jersey")
+val excludeSlf4j = ExclusionRule(organization = "org.slf4j")
+val excludeJetty = ExclusionRule(organization = "org.eclipse.jetty")
+val excludeJsp = ExclusionRule(organization = "javax.servlet.jsp")
+val excludeXmlBind = ExclusionRule(organization = "javax.xml.bind")
+val excludeJackson = ExclusionRule(organization = "com.fasterxml.jackson.core")
+val excludeJacksonModule = ExclusionRule(organization = "com.fasterxml.jackson.module")
+
+libraryDependencies ++= Seq(
+  "org.apache.iceberg" % "iceberg-api" % "1.7.1",
+  "org.apache.iceberg" % "iceberg-parquet" % "1.7.1" excludeAll(
+    excludeJackson,
+    excludeJacksonModule
+  ),
+  "org.apache.iceberg" % "iceberg-core" % "1.7.1" excludeAll(
+    excludeJackson,
+    excludeJacksonModule
+  ),
+  "org.apache.iceberg" % "iceberg-data" % "1.7.1" excludeAll(
+    excludeJackson,
+    excludeJacksonModule
+  ),
+  "org.apache.hadoop" % "hadoop-common" % "3.3.1" excludeAll(
+    excludeXmlBind,
+    excludeGlassfishJersey,
+    excludeJersey,
+    excludeSlf4j,
+    excludeJetty,
+    excludeJsp,
+    excludeJackson,
+    excludeJacksonModule
+  ),
+  "org.apache.hadoop" % "hadoop-mapreduce-client-core" % "3.3.1" excludeAll(
+    excludeXmlBind,
+    excludeGlassfishJersey,
+    excludeJersey,
+    excludeSlf4j,
+    excludeJetty,
+    excludeJsp,
+    excludeJackson,
+    excludeJacksonModule
+  ),
+)
+
+/////////////////////////////////////////////////////////////////////////////
 // Additional Dependencies
 /////////////////////////////////////////////////////////////////////////////
 
