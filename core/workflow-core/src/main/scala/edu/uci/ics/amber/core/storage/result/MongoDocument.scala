@@ -151,25 +151,32 @@ class MongoDocument[T >: Null <: AnyRef](
 
   def getNumericColStats: Map[String, Map[String, Double]] = {
     val offset: Int = previousCount.getOrElse("numeric_offset", 0)
-    val currentResult: Map[String, Map[String, Double]] = collectionMgr.calculateNumericStats(offset)
+    val currentResult: Map[String, Map[String, Double]] =
+      collectionMgr.calculateNumericStats(offset)
 
     currentResult.keys.foreach(field => {
-        val (prevMin, prevMax, prevMean) =
-          (previousNumStats.getOrElse(field, Map("min" -> Double.MaxValue))("min"),
-            previousNumStats.getOrElse(field, Map("max" -> Double.MinValue))("max"),
-            previousNumStats.getOrElse(field, Map("mean" -> 0.0))("mean"))
+      val (prevMin, prevMax, prevMean) =
+        (
+          previousNumStats.getOrElse(field, Map("min" -> Double.MaxValue))("min"),
+          previousNumStats.getOrElse(field, Map("max" -> Double.MinValue))("max"),
+          previousNumStats.getOrElse(field, Map("mean" -> 0.0))("mean")
+        )
 
-        val (minValue, maxValue, meanValue, count) =
-          (currentResult(field)("min"), currentResult(field)("max"), currentResult(field)("mean"), currentResult(field)("count"))
+      val (minValue, maxValue, meanValue, count) =
+        (
+          currentResult(field)("min"),
+          currentResult(field)("max"),
+          currentResult(field)("mean"),
+          currentResult(field)("count")
+        )
 
-        val newMin = Math.min(prevMin, minValue)
-        val newMax = Math.max(prevMax, maxValue)
-        val newMean = (prevMean * offset + meanValue * count) / (offset + count)
+      val newMin = Math.min(prevMin, minValue)
+      val newMax = Math.max(prevMax, maxValue)
+      val newMean = (prevMean * offset + meanValue * count) / (offset + count)
 
-        previousNumStats.update(field, Map("min" -> newMin, "max" -> newMax, "mean" -> newMean))
-        previousCount.update("numeric_offset", offset + count.toInt)
-      }
-    )
+      previousNumStats.update(field, Map("min" -> newMin, "max" -> newMax, "mean" -> newMean))
+      previousCount.update("numeric_offset", offset + count.toInt)
+    })
 
     previousNumStats.toMap
   }
@@ -179,27 +186,30 @@ class MongoDocument[T >: Null <: AnyRef](
     val currentResult: Map[String, Map[String, Any]] = collectionMgr.calculateDateStats(offset)
 
     currentResult.keys.foreach(field => {
-        val (prevMin, prevMax) =
-          (previousDateStats.getOrElse(field, Map("min" -> new java.util.Date(Long.MaxValue)))("min"),
-            previousDateStats.getOrElse(field, Map("max" -> new java.util.Date(Long.MinValue)))("max"))
+      val (prevMin, prevMax) =
+        (
+          previousDateStats
+            .getOrElse(field, Map("min" -> new java.util.Date(Long.MaxValue)))("min"),
+          previousDateStats.getOrElse(field, Map("max" -> new java.util.Date(Long.MinValue)))("max")
+        )
 
-        val (minValue: java.util.Date, maxValue: java.util.Date, count: Int) =
-          (currentResult(field)("min"), currentResult(field)("max"), currentResult(field)("count"))
+      val (minValue: java.util.Date, maxValue: java.util.Date, count: Int) =
+        (currentResult(field)("min"), currentResult(field)("max"), currentResult(field)("count"))
 
-        val newMin: java.util.Date = if (minValue.before(prevMin)) minValue else prevMin
-        val newMax: java.util.Date = if (maxValue.after(prevMax)) maxValue else prevMax
+      val newMin: java.util.Date = if (minValue.before(prevMin)) minValue else prevMin
+      val newMax: java.util.Date = if (maxValue.after(prevMax)) maxValue else prevMax
 
       previousDateStats.update(field, Map("min" -> newMin, "max" -> newMax))
       previousCount.update("date_offset", offset + count)
-      }
-    )
+    })
 
     previousDateStats.toMap
   }
 
   def getCategoricalStats: Map[String, Map[String, Any]] = {
     val offset: Int = previousCount.getOrElse("category_offset", 0)
-    val (currentResult: Map[String, Map[String, Int]], ifReachedLimit: Boolean) = collectionMgr.calculateCategoricalStats(offset)
+    val (currentResult: Map[String, Map[String, Int]], ifReachedLimit: Boolean) =
+      collectionMgr.calculateCategoricalStats(offset)
     val result: mutable.Map[String, Map[String, Any]] = mutable.Map()
 
     currentResult.keys.foreach(field => {
@@ -212,7 +222,8 @@ class MongoDocument[T >: Null <: AnyRef](
           val prevCatCounts: Int = previousCatStats(field)(category)
           newCatCounts.put(category, prevCatCounts + currentResult(field)(category))
         } catch {
-          case e: NoSuchElementException => newCatCounts.put(category, 0 + currentResult(field)(category))
+          case e: NoSuchElementException =>
+            newCatCounts.put(category, 0 + currentResult(field)(category))
         }
       })
 

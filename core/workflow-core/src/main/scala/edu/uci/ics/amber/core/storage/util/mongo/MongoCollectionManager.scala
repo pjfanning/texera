@@ -1,6 +1,5 @@
 package edu.uci.ics.amber.core.storage.util.mongo
 
-import com.mongodb.client.model.Aggregates.set
 import com.mongodb.client.model.{Aggregates, Sorts}
 import com.mongodb.client.{FindIterable, MongoCollection}
 import org.bson.Document
@@ -116,7 +115,8 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
     val categoricalFields = detectCategoricalFields()
     var reachedLimit: Boolean = false
 
-    (categoricalFields.flatMap { field =>
+    (
+      categoricalFields.flatMap { field =>
         val pipeline = Seq(
           new Document("$skip", offset),
           Aggregates.group("$" + field, com.mongodb.client.model.Accumulators.sum("count", 1)),
@@ -126,13 +126,16 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
 
         val result = collection.aggregate(pipeline.asJava).iterator().asScala.toList
         if (result.nonEmpty) {
-          val counts = result.map(doc => doc.getString("_id") -> doc.getInteger("count").toInt).toMap
+          val counts =
+            result.map(doc => doc.getString("_id") -> doc.getInteger("count").toInt).toMap
           reachedLimit = result.size >= 1000
           Some(field -> counts)
-      } else {
-        None
-      }
-    }.toMap, reachedLimit)
+        } else {
+          None
+        }
+      }.toMap,
+      reachedLimit
+    )
   }
 
   /**
