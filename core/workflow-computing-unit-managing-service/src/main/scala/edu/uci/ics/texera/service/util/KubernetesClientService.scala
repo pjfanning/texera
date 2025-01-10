@@ -220,7 +220,7 @@ object KubernetesClientService {
     */
   def deletePod(podURI: String): Unit = {
     val cuid = parseCUIDFromURI(podURI)
-    coreApi.deleteCollectionNamespacedPersistentVolumeClaim(generatePodName(cuid) + "-pvc").execute()
+    coreApi.deleteNamespacedPersistentVolumeClaim(generatePodName(cuid) + "-pvc", poolNamespace).execute()
     coreApi.deleteNamespacedPod(generatePodName(cuid), poolNamespace).execute()
   }
 
