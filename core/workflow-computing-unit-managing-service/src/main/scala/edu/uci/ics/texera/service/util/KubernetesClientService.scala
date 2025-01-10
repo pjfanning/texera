@@ -194,6 +194,21 @@ object KubernetesClientService {
                       .mountPath("/core/amber/user-resources")
                   )
                 )
+                .resources(
+                  new V1ResourceRequirements()
+                    .limits(
+                      util.Map.of(
+                        "cpu", Quantity.fromString("6000m"),
+                        "memory", Quantity.fromString("16Gi")
+                      )
+                    )
+                    .requests(
+                      util.Map.of(
+                        "cpu", Quantity.fromString("6000m"),
+                        "memory", Quantity.fromString("16Gi")
+                      )
+                    )
+                )
             )
           )
           .volumes(
