@@ -1,6 +1,9 @@
 package edu.uci.ics.amber.core.storage
 
 import com.typesafe.config.{Config, ConfigFactory}
+import edu.uci.ics.amber.util.PathUtils.corePath
+
+import java.nio.file.Path
 
 object StorageConfig {
 
@@ -19,4 +22,15 @@ object StorageConfig {
   val jdbcUrl: String = conf.getString("storage.jdbc.url")
   val jdbcUsername: String = conf.getString("storage.jdbc.username")
   val jdbcPassword: String = conf.getString("storage.jdbc.password")
+
+  // Iceberg specifics
+  val icebergTableNamespace: String = conf.getString("storage.iceberg.table.namespace")
+  val icebergTableCommitBatchSize: Int = conf.getInt("storage.iceberg.table.commit.batch-size")
+  val icebergTableCommitNumRetries: Int = conf.getInt("storage.iceberg.table.commit.retry.num-retries")
+  val icebergTableCommitMinRetryWaitMs: Int = conf.getInt("storage.iceberg.table.commit.retry.min-wait-ms")
+  val icebergTableCommitMaxRetryWaitMs: Int = conf.getInt("storage.iceberg.table.commit.retry.max-wait-ms")
+
+  // File storage configurations
+  val fileStorageDirectoryPath: Path =
+    corePath.resolve("amber").resolve("user-resources").resolve("workflow-results")
 }
