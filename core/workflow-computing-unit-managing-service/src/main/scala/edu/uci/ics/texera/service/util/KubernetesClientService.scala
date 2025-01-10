@@ -203,6 +203,12 @@ object KubernetesClientService {
                 .persistentVolumeClaim(
                   new V1PersistentVolumeClaimVolumeSource()
                     .claimName(podName + "-pvc") // Reference the PVC claim name
+                ),
+              new V1Volume()
+                .name("webserver-pvc") // Use the PVC claim name as the volume name
+                .persistentVolumeClaim(
+                  new V1PersistentVolumeClaimVolumeSource()
+                    .claimName("webserver-pvc") // Reference the PVC claim name
                 )
             )
           )
