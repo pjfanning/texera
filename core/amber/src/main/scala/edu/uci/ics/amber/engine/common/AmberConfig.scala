@@ -34,48 +34,21 @@ object AmberConfig {
       "Timestamp unavailable"
   }
 
-  def getLatestCommitMessageFromMaster(): String = {
-    val repository = Git.open(new File(Utils.amberHomePath.getParent.getParent.toString)).getRepository
 
-    // Walk through the commit history of the current branch
-    val revWalk = new RevWalk(repository)
-    val branchHead = revWalk.parseCommit(repository.resolve("HEAD"))
-    revWalk.markStart(branchHead)
 
-    // Resolve the master branch and collect its history
-    val masterBranch = repository.resolve("refs/heads/master")
-    val masterRevWalk = new RevWalk(repository)
-    val masterCommit = masterRevWalk.parseCommit(masterBranch)
-    masterRevWalk.markStart(masterCommit)
-
-    // Collect all commit IDs from master into a set
-    val masterCommits = masterRevWalk.iterator().asScala.map(_.getId).toSet
-    masterRevWalk.close()
-
-    // Find the latest merge commit involving 'master'
-    val latestMergedMasterCommit = revWalk.iterator()
-      .asScala
-      .find { commit =>
-        commit.getParentCount > 1 && // It is a merge commit
-          masterCommits.contains(commit.getParent(1).getId) // Ensure the second parent is from master
-      }
-
-    val commitMessage = latestMergedMasterCommit match {
-      case Some(commit) =>
-        val masterParent = commit.getParent(1) // Second parent is the latest merged master commit
-        val commitMessage = masterParent.getFullMessage.split("\n").head
-        println(s"Latest Merged Master Commit Message: ${commitMessage}")
-        commitMessage
-      case None =>
-        println("No commits found from 'master' branch merged into the current branch.")
-        "Commit not found"
-    }
-
-    revWalk.close()
-    commitMessage
+  val latestCommitFromMaster = try {
+    // Read the timestamp string from the file
+    val source = Source.fromFile(Utils.amberHomePath.resolve("commit_title_before_merge.txt").toString)
+    val commitMsg = source.getLines().mkString
+    source.close()
+    // Print the timestamp
+    println(s"Commit message from file: $commitMsg")
+    commitMsg
+  } catch {
+    case e: Exception =>
+      println(s"An error occurred: ${e.getMessage}")
+      "Commit message unavailable"
   }
-
-  val latestCommitFromMaster = getLatestCommitMessageFromMaster()
 
   // perform lazy reload
   private def getConfSource: Config = {
