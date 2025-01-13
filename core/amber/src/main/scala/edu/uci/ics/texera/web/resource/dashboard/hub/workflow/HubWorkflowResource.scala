@@ -1,21 +1,19 @@
 package edu.uci.ics.texera.web.resource.dashboard.hub.workflow
 
 import edu.uci.ics.amber.core.storage.StorageConfig
+import edu.uci.ics.amber.engine.common.{AmberConfig, Utils}
+import edu.uci.ics.amber.util.PathUtils
 import edu.uci.ics.texera.dao.SqlServer
 import edu.uci.ics.texera.dao.jooq.generated.Tables._
 import edu.uci.ics.texera.dao.jooq.generated.tables.daos.WorkflowDao
 import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.{User, Workflow}
-import edu.uci.ics.texera.web.resource.dashboard.hub.workflow.HubWorkflowResource.{
-  fetchDashboardWorkflowsByWids,
-  recordUserActivity
-}
-import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource.{
-  DashboardWorkflow,
-  WorkflowWithPrivilege
-}
+import edu.uci.ics.texera.web.resource.dashboard.hub.workflow.HubWorkflowResource.{fetchDashboardWorkflowsByWids, recordUserActivity}
+import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource.{DashboardWorkflow, WorkflowWithPrivilege}
+import org.eclipse.jgit.api.Git
 import org.jooq.impl.DSL
 import org.jooq.types.UInteger
 
+import java.io.File
 import java.util
 import java.util.Collections
 import java.util.regex.Pattern
@@ -115,6 +113,20 @@ class HubWorkflowResource {
     .getInstance(StorageConfig.jdbcUrl, StorageConfig.jdbcUsername, StorageConfig.jdbcPassword)
     .createDSLContext()
   final private lazy val workflowDao = new WorkflowDao(context.configuration)
+
+  @GET
+  @Path("/git-describe")
+  @Produces(Array(MediaType.TEXT_PLAIN))
+  def getGitHead: String = {
+    AmberConfig.latestCommitFromMaster
+  }
+
+  @GET
+  @Path("/last-deploy")
+  @Produces(Array(MediaType.TEXT_PLAIN))
+  def getLastDeploy: String = {
+    AmberConfig.lastDeployTimestamp
+  }
 
   @GET
   @Path("/list")

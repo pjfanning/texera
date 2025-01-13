@@ -7,3 +7,15 @@ rm workflow-computing-unit-managing-service/target/universal/workflow-computing-
 
 unzip amber/target/universal/texera-0.1-SNAPSHOT.zip -d amber/target/
 rm amber/target/universal/texera-0.1-SNAPSHOT.zip
+
+
+# Define the output file
+output_file="amber/timestamp.txt"
+
+# Get the current timestamp
+current_timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+
+# Write the timestamp to the file
+echo "$current_timestamp" > "$output_file"
+
+echo "Timestamp written to $output_file"

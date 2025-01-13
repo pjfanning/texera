@@ -27,6 +27,14 @@ export class HubWorkflowService {
     return this.http.get<HubWorkflow[]>(`${this.BASE_URL}/list`);
   }
 
+  public getGitCommit(): Observable<string> {
+    return this.http.get<string>(`${this.BASE_URL}/git-describe`, { responseType: 'text' as 'json'});
+  }
+
+  public getLastDeploy(): Observable<string> {
+    return this.http.get<string>(`${this.BASE_URL}/last-deploy`, { responseType:'text' as 'json' });
+  }
+
   public getOwnerUser(wid: number): Observable<User> {
     const params = new HttpParams().set("wid", wid);
     return this.http.get<User>(`${this.BASE_URL}/owner_user/`, { params });

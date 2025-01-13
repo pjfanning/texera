@@ -16,6 +16,11 @@ import { DASHBOARD_HUB_WORKFLOW_RESULT } from "../../../app-routing.constant";
   styleUrls: ["./landing-page.component.scss"],
 })
 export class LandingPageComponent implements OnInit {
+  public deploymentCommit: string = 'Commit unavailable';
+  public commitPrefix: string = '';
+  public issueNumber: string = '';
+  public commitSuffix: string = '';
+  public lastDeployTime: string = "";
   public workflowCount: number = 0;
   public topLovedWorkflows: DashboardEntry[] = [];
   public topClonedWorkflows: DashboardEntry[] = [];
@@ -38,6 +43,20 @@ export class LandingPageComponent implements OnInit {
       workflows => (this.topClonedWorkflows = workflows),
       "Top Cloned Workflows"
     );
+    this.hubWorkflowService.getGitCommit().subscribe(commit =>{
+      // Split the text into parts
+      this.deploymentCommit = commit
+      const match = this.deploymentCommit.match(/(.*)(#\d+)(.*)/);
+      if (match) {
+        this.commitPrefix = match[1];
+        this.issueNumber = match[2];
+        this.commitSuffix = match[3];
+      } else {
+        this.commitPrefix = this.deploymentCommit;
+      }
+
+    })
+    this.hubWorkflowService.getLastDeploy().subscribe(deployTime => this.lastDeployTime = deployTime)
   }
 
   getWorkflowCount(): void {
