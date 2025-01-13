@@ -53,9 +53,4 @@ class IfOpDesc extends LogicalOp {
       ),
       outputPorts = List(OutputPort(PortIdentity(), "False"), OutputPort(PortIdentity(1), "True"))
     )
-
-  override def getOutputSchema(schemas: Array[Schema]): Schema = throw new NotImplementedError()
-
-  override def getOutputSchemas(schemas: Array[Schema]): Array[Schema] =
-    Array(schemas(1), schemas(1))
 }
