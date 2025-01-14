@@ -6,7 +6,8 @@ import edu.uci.ics.amber.core.tuple.{Tuple, TupleLike}
 import edu.uci.ics.amber.util.JSONUtils.objectMapper
 
 class DataToStateOpExec(descString: String) extends OperatorExecutor {
-  private val desc: DataToStateOpDesc = objectMapper.readValue(descString, classOf[DataToStateOpDesc])
+  private val desc: DataToStateOpDesc =
+    objectMapper.readValue(descString, classOf[DataToStateOpDesc])
   private var stateTuple: Option[Tuple] = None
 
   override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] = {

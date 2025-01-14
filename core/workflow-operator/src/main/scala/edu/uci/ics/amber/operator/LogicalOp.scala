@@ -63,6 +63,7 @@ import edu.uci.ics.amber.operator.source.sql.asterixdb.AsterixDBSourceOpDesc
 import edu.uci.ics.amber.operator.source.sql.mysql.MySQLSourceOpDesc
 import edu.uci.ics.amber.operator.source.sql.postgresql.PostgreSQLSourceOpDesc
 import edu.uci.ics.amber.operator.split.SplitOpDesc
+import edu.uci.ics.amber.operator.state.DataToStateOpDesc
 import edu.uci.ics.amber.operator.symmetricDifference.SymmetricDifferenceOpDesc
 import edu.uci.ics.amber.operator.typecasting.TypeCastingOpDesc
 import edu.uci.ics.amber.operator.udf.java.JavaUDFOpDesc
