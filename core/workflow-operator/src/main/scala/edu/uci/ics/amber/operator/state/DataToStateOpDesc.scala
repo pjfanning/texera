@@ -1,15 +1,14 @@
-package edu.uci.ics.texera.workflow.operators.controlBlock.state
+package edu.uci.ics.amber.operator.state
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
-import edu.uci.ics.amber.engine.common.model.tuple.Schema
-import edu.uci.ics.amber.engine.common.model.PhysicalOp
-import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
-import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
-import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
-import edu.uci.ics.texera.workflow.common.operators.LogicalOp
+import edu.uci.ics.amber.core.executor.OpExecWithClassName
+import edu.uci.ics.amber.core.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
+import edu.uci.ics.amber.core.workflow.{InputPort, OutputPort, PhysicalOp}
+import edu.uci.ics.amber.operator.LogicalOp
+import edu.uci.ics.amber.operator.metadata.{OperatorGroupConstants, OperatorInfo}
+import edu.uci.ics.amber.util.JSONUtils.objectMapper
 
 class DataToStateOpDesc extends LogicalOp {
   @JsonProperty(defaultValue = "false")
@@ -26,9 +25,10 @@ class DataToStateOpDesc extends LogicalOp {
         workflowId,
         executionId,
         operatorIdentifier,
-        OpExecInitInfo((_, _) => {
-          new DataToStateOpExec(passToAllDownstream.get)
-        })
+        OpExecWithClassName(
+          "edu.uci.ics.amber.operator.state.DataToStateOpExec",
+          objectMapper.writeValueAsString(this)
+        )
       )
       .withInputPorts(operatorInfo.inputPorts)
       .withOutputPorts(operatorInfo.outputPorts)
@@ -43,6 +43,4 @@ class DataToStateOpDesc extends LogicalOp {
       inputPorts = List(InputPort(displayName = "Data")),
       outputPorts = List(OutputPort(displayName = "State"))
     )
-
-  override def getOutputSchema(schemas: Array[Schema]): Schema = schemas(0)
 }
