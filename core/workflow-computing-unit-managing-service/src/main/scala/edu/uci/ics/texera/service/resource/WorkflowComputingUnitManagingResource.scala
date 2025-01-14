@@ -10,19 +10,16 @@ import edu.uci.ics.texera.service.resource.WorkflowComputingUnitManagingResource
   DashboardWorkflowComputingUnit,
   WorkflowComputingUnitCreationParams,
   WorkflowComputingUnitTerminationParams,
+  TerminationResponse,
   context
 }
 import edu.uci.ics.texera.service.util.KubernetesClientService
-import io.kubernetes.client.openapi.models.V1Pod
 import jakarta.ws.rs._
-import jakarta.ws.rs.core.{MediaType, Response}
+import jakarta.ws.rs.core.MediaType
 import org.jooq.DSLContext
 import org.jooq.types.UInteger
 
-import java.net.URI
 import java.sql.Timestamp
-import scala.collection.mutable.ListBuffer
-import scala.jdk.CollectionConverters.{CollectionHasAsScala, IterableHasAsJava}
 
 object WorkflowComputingUnitManagingResource {
 
@@ -39,6 +36,8 @@ object WorkflowComputingUnitManagingResource {
       uri: String,
       status: String
   )
+
+  case class TerminationResponse(message: String, uri: String)
 }
 
 @Produces(Array(MediaType.APPLICATION_JSON))
@@ -131,7 +130,7 @@ class WorkflowComputingUnitManagingResource {
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/terminate")
-  def terminateComputingUnit(param: WorkflowComputingUnitTerminationParams): Response = {
+  def terminateComputingUnit(param: WorkflowComputingUnitTerminationParams): TerminationResponse = {
     // Attempt to delete the pod using the provided URI
     val podURI = param.uri
     KubernetesClientService.deletePod(podURI)
@@ -146,7 +145,6 @@ class WorkflowComputingUnitManagingResource {
       cuDao.update(units)
     }
 
-    Response.ok(s"Successfully terminated compute unit with URI $podURI").build()
-
+    TerminationResponse(s"Successfully terminated compute unit with URI $podURI", podURI)
   }
 }
