@@ -58,10 +58,25 @@ export class AuthService {
    * It will automatically login, save the user account inside and trigger userChangeEvent when success
 
    */
+  // public googleAuth(credential: string): Observable<Readonly<{ accessToken: string }>> {
+  //   console.log("in google auth +" + credential)
+  //   return this.http.post<Readonly<{ accessToken: string }>>(
+  //     `${AppSettings.getApiEndpoint()}/${AuthService.GOOGLE_LOGIN_ENDPOINT}`,
+  //     `${credential}`
+  //   );
+  // }
   public googleAuth(credential: string): Observable<Readonly<{ accessToken: string }>> {
+    console.log("in google auth: " + credential);
+
     return this.http.post<Readonly<{ accessToken: string }>>(
       `${AppSettings.getApiEndpoint()}/${AuthService.GOOGLE_LOGIN_ENDPOINT}`,
-      `${credential}`
+      credential,
+      {
+        headers: {
+          'Content-Type': 'text/plain',
+          'Accept': 'application/json',
+        },
+      }
     );
   }
 

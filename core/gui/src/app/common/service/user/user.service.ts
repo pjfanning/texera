@@ -37,6 +37,7 @@ export class UserService {
   }
 
   public googleLogin(credential: string): Observable<void> {
+    console.log("ingoogle login +" + credential);
     return this.authService.googleAuth(credential).pipe(map(({ accessToken }) => this.handleAccessToken(accessToken)));
   }
 

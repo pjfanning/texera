@@ -46,6 +46,7 @@ class GoogleAuthResource {
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/login")
   def login(credential: String): TokenIssueResponse = {
+    println(credential)
     if (!AmberConfig.isUserSystemEnabled)
       throw new NotAcceptableException("User System is disabled on the backend!")
     val idToken =
