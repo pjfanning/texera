@@ -1,28 +1,28 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.workflow
 
+import edu.uci.ics.amber.core.storage.StorageConfig
 import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayDestination, ReplayLogRecord}
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
-import edu.uci.ics.amber.engine.common.virtualidentity.{ChannelMarkerIdentity, ExecutionIdentity}
-import edu.uci.ics.texera.web.SqlServer
+import edu.uci.ics.amber.core.virtualidentity.{ChannelMarkerIdentity, ExecutionIdentity}
+import edu.uci.ics.texera.dao.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.Tables.{
+import edu.uci.ics.texera.dao.jooq.generated.Tables.{
   USER,
   WORKFLOW_EXECUTIONS,
   WORKFLOW_RUNTIME_STATISTICS,
   WORKFLOW_VERSION
 }
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
+import edu.uci.ics.texera.dao.jooq.generated.tables.daos.{
   WorkflowExecutionsDao,
   WorkflowRuntimeStatisticsDao
 }
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{
+import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.{
   WorkflowExecutions,
   WorkflowRuntimeStatistics
 }
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource._
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService
 import io.dropwizard.auth.Auth
-import org.jooq.impl.DSL._
 import org.jooq.types.{UInteger, ULong}
 
 import java.net.URI
@@ -36,7 +36,9 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.ListHasAsScala
 
 object WorkflowExecutionsResource {
-  final private lazy val context = SqlServer.createDSLContext()
+  final private lazy val context = SqlServer
+    .getInstance(StorageConfig.jdbcUrl, StorageConfig.jdbcUsername, StorageConfig.jdbcPassword)
+    .createDSLContext()
   final private lazy val executionsDao = new WorkflowExecutionsDao(context.configuration)
   final private lazy val workflowRuntimeStatisticsDao = new WorkflowRuntimeStatisticsDao(
     context.configuration
@@ -67,6 +69,7 @@ object WorkflowExecutionsResource {
 
   /**
     * This function retrieves the latest execution id of a workflow
+    *
     * @param wid workflow id
     * @return UInteger
     */
@@ -92,6 +95,7 @@ object WorkflowExecutionsResource {
       eId: UInteger,
       vId: UInteger,
       userName: String,
+      googleAvatar: String,
       status: Byte,
       result: String,
       startingTime: Timestamp,
@@ -123,7 +127,9 @@ case class ExecutionGroupBookmarkRequest(
     eIds: Array[UInteger],
     isBookmarked: Boolean
 )
+
 case class ExecutionGroupDeleteRequest(wid: UInteger, eIds: Array[UInteger])
+
 case class ExecutionRenameRequest(wid: UInteger, eId: UInteger, executionName: String)
 
 @Produces(Array(MediaType.APPLICATION_JSON))
@@ -187,12 +193,8 @@ class WorkflowExecutionsResource {
         .select(
           WORKFLOW_EXECUTIONS.EID,
           WORKFLOW_EXECUTIONS.VID,
-          field(
-            context
-              .select(USER.NAME)
-              .from(USER)
-              .where(WORKFLOW_EXECUTIONS.UID.eq(USER.UID))
-          ),
+          USER.NAME,
+          USER.GOOGLE_AVATAR,
           WORKFLOW_EXECUTIONS.STATUS,
           WORKFLOW_EXECUTIONS.RESULT,
           WORKFLOW_EXECUTIONS.STARTING_TIME,
@@ -204,6 +206,8 @@ class WorkflowExecutionsResource {
         .from(WORKFLOW_EXECUTIONS)
         .join(WORKFLOW_VERSION)
         .on(WORKFLOW_VERSION.VID.eq(WORKFLOW_EXECUTIONS.VID))
+        .join(USER)
+        .on(WORKFLOW_EXECUTIONS.UID.eq(USER.UID))
         .where(WORKFLOW_VERSION.WID.eq(wid))
         .fetchInto(classOf[WorkflowExecutionEntry])
         .asScala

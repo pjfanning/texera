@@ -1,12 +1,13 @@
 package edu.uci.ics.texera.web.service
 
 import com.typesafe.scalalogging.LazyLogging
+import edu.uci.ics.amber.core.workflow.WorkflowContext
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.architecture.rpc.controlcommands.EmptyRequest
 import edu.uci.ics.amber.engine.architecture.rpc.controlreturns.WorkflowAggregatedState._
 import edu.uci.ics.amber.engine.common.Utils
 import edu.uci.ics.amber.engine.common.client.AmberClient
-import edu.uci.ics.amber.engine.common.model.WorkflowContext
+import edu.uci.ics.amber.engine.common.executionruntimestate.ExecutionMetadataStore
 import edu.uci.ics.texera.web.model.websocket.event.{
   TexeraWebSocketEvent,
   WorkflowErrorEvent,
@@ -15,9 +16,8 @@ import edu.uci.ics.texera.web.model.websocket.event.{
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.storage.ExecutionStateStore
 import edu.uci.ics.texera.web.storage.ExecutionStateStore.updateWorkflowState
-import edu.uci.ics.amber.engine.common.workflowruntimestate.ExecutionMetadataStore
-import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, WebsocketInput}
-import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, WorkflowCompiler}
+import edu.uci.ics.texera.web.{ComputingUnitMaster, SubscriptionManager, WebsocketInput}
+import edu.uci.ics.texera.workflow.{LogicalPlan, WorkflowCompiler}
 
 import java.net.URI
 import scala.collection.mutable
@@ -87,16 +87,17 @@ class WorkflowExecutionService(
   var executionConsoleService: ExecutionConsoleService = _
 
   def executeWorkflow(): Unit = {
-    workflow = new WorkflowCompiler(workflowContext).compile(
-      request.logicalPlan,
-      resultService.opResultStorage,
-      executionStateStore
-    )
+    try {
+      workflow = new WorkflowCompiler(workflowContext)
+        .compile(request.logicalPlan)
+    } catch {
+      case err: Throwable =>
+        errorHandler(err)
+    }
 
-    client = TexeraWebApplication.createAmberRuntime(
+    client = ComputingUnitMaster.createAmberRuntime(
       workflowContext,
       workflow.physicalPlan,
-      resultService.opResultStorage,
       controllerConfig,
       errorHandler
     )
@@ -113,7 +114,7 @@ class WorkflowExecutionService(
     executionConsoleService = new ExecutionConsoleService(client, executionStateStore, wsInput)
 
     logger.info("Starting the workflow execution.")
-    resultService.attachToExecution(executionStateStore, workflow.logicalPlan, client)
+    resultService.attachToExecution(executionStateStore, workflow.physicalPlan, client)
     executionStateStore.metadataStore.updateState(metadataStore =>
       updateWorkflowState(READY, metadataStore)
         .withFatalErrors(Seq.empty)
