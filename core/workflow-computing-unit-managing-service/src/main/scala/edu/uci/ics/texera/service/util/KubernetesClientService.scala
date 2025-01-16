@@ -175,6 +175,7 @@ object KubernetesClientService {
               new V1Container()
                 .name("computing-unit-master")
                 .image(computeUnitImageName)
+                .imagePullPolicy("Always")
                 .ports(util.List.of(new V1ContainerPort().containerPort(computeUnitPortNumber)))
                 .env(
                   util.List.of(
