@@ -2,11 +2,12 @@ package edu.uci.ics.amber.core.storage
 
 import edu.uci.ics.amber.core.storage.model.{
   DatasetFileDocument,
+  LakeFSFileDocument,
   ReadonlyLocalFileDocument,
   ReadonlyVirtualDocument,
   VirtualDocument
 }
-import FileResolver.DATASET_FILE_URI_SCHEME
+import FileResolver.{DATASET_FILE_URI_SCHEME, LAKEFS_FILE_URI_SCHEME}
 import edu.uci.ics.amber.core.storage.VFSResourceType.{MATERIALIZED_RESULT, RESULT}
 import edu.uci.ics.amber.core.storage.VFSURIFactory.{VFS_FILE_URI_SCHEME, decodeURI}
 import edu.uci.ics.amber.core.storage.result.iceberg.IcebergDocument
@@ -33,6 +34,9 @@ object DocumentFactory {
     fileUri.getScheme match {
       case DATASET_FILE_URI_SCHEME =>
         new DatasetFileDocument(fileUri)
+
+      case LAKEFS_FILE_URI_SCHEME =>
+        new LakeFSFileDocument(fileUri)
 
       case "file" =>
         new ReadonlyLocalFileDocument(fileUri)

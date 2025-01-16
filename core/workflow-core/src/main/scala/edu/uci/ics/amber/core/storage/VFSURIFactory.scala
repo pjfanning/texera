@@ -1,9 +1,12 @@
 package edu.uci.ics.amber.core.storage
 
 import edu.uci.ics.amber.core.storage.VFSResourceType.{MATERIALIZED_RESULT, RESULT}
-import edu.uci.ics.amber.core.virtualidentity.{ExecutionIdentity, OperatorIdentity, WorkflowIdentity}
+import edu.uci.ics.amber.core.virtualidentity.{
+  ExecutionIdentity,
+  OperatorIdentity,
+  WorkflowIdentity
+}
 import edu.uci.ics.amber.core.workflow.PortIdentity
-import io.lakefs.clients.sdk.model.ObjectStats
 
 import java.net.URI
 
