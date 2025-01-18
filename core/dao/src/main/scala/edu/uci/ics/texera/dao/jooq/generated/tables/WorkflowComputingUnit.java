@@ -15,6 +15,7 @@ import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
@@ -34,7 +35,7 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class WorkflowComputingUnit extends TableImpl<WorkflowComputingUnitRecord> {
 
-    private static final long serialVersionUID = -1444685935;
+    private static final long serialVersionUID = -1011820662;
 
     /**
      * The reference instance of <code>texera_db.workflow_computing_unit</code>
@@ -62,7 +63,7 @@ public class WorkflowComputingUnit extends TableImpl<WorkflowComputingUnitRecord
     /**
      * The column <code>texera_db.workflow_computing_unit.cuid</code>.
      */
-    public final TableField<WorkflowComputingUnitRecord, UInteger> CUID = createField(DSL.name("cuid"), org.jooq.impl.SQLDataType.INTEGERUNSIGNED.nullable(false), this, "");
+    public final TableField<WorkflowComputingUnitRecord, UInteger> CUID = createField(DSL.name("cuid"), org.jooq.impl.SQLDataType.INTEGERUNSIGNED.nullable(false).identity(true), this, "");
 
     /**
      * The column <code>texera_db.workflow_computing_unit.creation_time</code>.
@@ -114,7 +115,12 @@ public class WorkflowComputingUnit extends TableImpl<WorkflowComputingUnitRecord
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.WORKFLOW_COMPUTING_UNIT_PRIMARY, Indexes.WORKFLOW_COMPUTING_UNIT_UID);
+        return Arrays.<Index>asList(Indexes.WORKFLOW_COMPUTING_UNIT_PRIMARY);
+    }
+
+    @Override
+    public Identity<WorkflowComputingUnitRecord, UInteger> getIdentity() {
+        return Keys.IDENTITY_WORKFLOW_COMPUTING_UNIT;
     }
 
     @Override
@@ -125,15 +131,6 @@ public class WorkflowComputingUnit extends TableImpl<WorkflowComputingUnitRecord
     @Override
     public List<UniqueKey<WorkflowComputingUnitRecord>> getKeys() {
         return Arrays.<UniqueKey<WorkflowComputingUnitRecord>>asList(Keys.KEY_WORKFLOW_COMPUTING_UNIT_PRIMARY);
-    }
-
-    @Override
-    public List<ForeignKey<WorkflowComputingUnitRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<WorkflowComputingUnitRecord, ?>>asList(Keys.WORKFLOW_COMPUTING_UNIT_IBFK_1);
-    }
-
-    public User user() {
-        return new User(this, Keys.WORKFLOW_COMPUTING_UNIT_IBFK_1);
     }
 
     @Override

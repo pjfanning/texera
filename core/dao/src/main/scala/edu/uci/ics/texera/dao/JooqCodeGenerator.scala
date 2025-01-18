@@ -2,12 +2,8 @@ package edu.uci.ics.texera.dao
 
 import org.jooq.codegen.GenerationTool
 import org.jooq.meta.jaxb.{Configuration, Jdbc}
-import org.yaml.snakeyaml.Yaml
-
-import java.io.InputStream
+import com.typesafe.config.{Config, ConfigFactory}
 import java.nio.file.{Files, Path}
-import java.util.{Map => JMap}
-import scala.jdk.CollectionConverters._
 
 object JooqCodeGenerator {
   @throws[Exception]
@@ -17,38 +13,33 @@ object JooqCodeGenerator {
       Path.of("dao").resolve("src").resolve("main").resolve("resources").resolve("jooq-conf.xml")
     val jooqConfig: Configuration = GenerationTool.load(Files.newInputStream(jooqXmlPath))
 
-    // Load YAML configuration
-    val yamlConfPath: Path = Path
+    // Load .conf configuration
+    val confPath: Path = Path
       .of("workflow-core")
       .resolve("src")
       .resolve("main")
       .resolve("resources")
-      .resolve("storage-config.yaml")
-    val yaml = new Yaml
-    val inputStream: InputStream = Files.newInputStream(yamlConfPath)
+      .resolve("storage.conf")
+    val conf: Config = ConfigFactory.parseFile(confPath.toFile)
 
-    val conf: Map[String, Any] =
-      yaml.load(inputStream).asInstanceOf[JMap[String, Any]].asScala.toMap
+    // Resolve placeholders in the configuration file
+    val resolvedConf: Config = conf.resolve()
 
-    val jdbcConfig = conf("storage")
-      .asInstanceOf[JMap[String, Any]]
-      .asScala("jdbc")
-      .asInstanceOf[JMap[String, Any]]
-      .asScala
+    // Get JDBC configuration from .conf file
+    val jdbcUsername = resolvedConf.getString("storage.jdbc.username")
+    val jdbcPassword = resolvedConf.getString("storage.jdbc.password")
+    val jdbcUrl = resolvedConf.getString("storage.jdbc.url")
 
     // Set JDBC configuration for jOOQ
     val jooqJdbcConfig = new Jdbc
     jooqJdbcConfig.setDriver("com.mysql.cj.jdbc.Driver")
-    jooqJdbcConfig.setUrl(jdbcConfig("url").toString)
-    jooqJdbcConfig.setUsername(jdbcConfig("username").toString)
-    jooqJdbcConfig.setPassword(jdbcConfig("password").toString)
+    jooqJdbcConfig.setUrl(jdbcUrl)
+    jooqJdbcConfig.setUsername(jdbcUsername)
+    jooqJdbcConfig.setPassword(jdbcPassword)
 
     jooqConfig.setJdbc(jooqJdbcConfig)
 
     // Generate the code
     GenerationTool.generate(jooqConfig)
-
-    // Close input stream
-    inputStream.close()
   }
 }
