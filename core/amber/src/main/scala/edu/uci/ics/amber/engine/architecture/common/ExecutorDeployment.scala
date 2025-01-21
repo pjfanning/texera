@@ -2,29 +2,25 @@ package edu.uci.ics.amber.engine.architecture.common
 
 import akka.actor.{Address, Deploy}
 import akka.remote.RemoteScope
-import edu.uci.ics.amber.core.workflow.{PhysicalOp, PreferController, RoundRobinPreference}
+import edu.uci.ics.amber.core.workflow.{PhysicalOp, PreferController, RoundRobinPreference, GoToSpecificNode}
 import edu.uci.ics.amber.engine.architecture.controller.execution.OperatorExecution
 import edu.uci.ics.amber.engine.architecture.deploysemantics.AddressInfo
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
 import edu.uci.ics.amber.engine.architecture.scheduling.config.OperatorConfig
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  FaultToleranceConfig,
-  StateRestoreConfig,
-  WorkerReplayInitialization
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{FaultToleranceConfig, StateRestoreConfig, WorkerReplayInitialization}
 import edu.uci.ics.amber.util.VirtualIdentityUtils
 
 object ExecutorDeployment {
 
   def createWorkers(
-      op: PhysicalOp,
-      controllerActorService: AkkaActorService,
-      operatorExecution: OperatorExecution,
-      operatorConfig: OperatorConfig,
-      stateRestoreConfig: Option[StateRestoreConfig],
-      replayLoggingConfig: Option[FaultToleranceConfig]
-  ): Unit = {
+                     op: PhysicalOp,
+                     controllerActorService: AkkaActorService,
+                     operatorExecution: OperatorExecution,
+                     operatorConfig: OperatorConfig,
+                     stateRestoreConfig: Option[StateRestoreConfig],
+                     replayLoggingConfig: Option[FaultToleranceConfig]
+                   ): Unit = {
 
     val addressInfo = AddressInfo(
       controllerActorService.getClusterNodeAddresses,
@@ -38,7 +34,19 @@ object ExecutorDeployment {
       val preferredAddress: Address = locationPreference match {
         case PreferController =>
           addressInfo.controllerAddress
+        case node: GoToSpecificNode =>
+          println("---------++")
+          println("worker id: " + workerId)
+          println("worker index: " + workerIndex)
+          addressInfo.allAddresses.foreach(address => println("Address: " + address + "Address host: " + address.host.get))
+          println("---------++")
+          addressInfo.allAddresses.find(addr => addr.host.get == node.nodeAddr).get
         case RoundRobinPreference =>
+          println("+++++")
+          println("worker id: " + workerId)
+          println("worker index: " + workerIndex)
+          addressInfo.allAddresses.foreach(address => println("Address: " + address + "Address host: " + address.host.get))
+          println("+++++")
           assert(
             addressInfo.allAddresses.nonEmpty,
             "Execution failed to start, no available computation nodes"

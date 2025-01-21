@@ -8,7 +8,7 @@ import edu.uci.ics.amber.clustering.ClusterListener
 import edu.uci.ics.amber.engine.architecture.messaginglayer.DeadLetterMonitorActor
 
 import java.io.{BufferedReader, InputStreamReader}
-import java.net.URL
+import java.net.{InetAddress, URL}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.FiniteDuration
 
@@ -26,7 +26,7 @@ object AmberRuntime {
   }
 
   def scheduleRecurringCallThroughActorSystem(initialDelay: FiniteDuration, delay: FiniteDuration)(
-      call: => Unit
+    call: => Unit
   ): Cancellable = {
     _actorSystem.scheduler.scheduleWithFixedDelay(initialDelay, delay)(() => call)
   }
@@ -35,7 +35,8 @@ object AmberRuntime {
     try {
       val query = new URL("http://checkip.amazonaws.com")
       val in = new BufferedReader(new InputStreamReader(query.openStream()))
-      in.readLine()
+      //      in.readLine()
+      InetAddress.getLocalHost().getHostAddress()
     } catch {
       case e: Exception => throw e
     }
@@ -50,8 +51,10 @@ object AmberRuntime {
     val masterConfig = ConfigFactory
       .parseString(s"""
         akka.remote.artery.canonical.port = 2552
-        akka.remote.artery.canonical.hostname = $localIpAddress
-        akka.cluster.seed-nodes = [ "akka://Amber@$localIpAddress:2552" ]
+        akka.remote.artery.canonical.hostname = "44.218.250.138"
+        akka.remote.artery.bind.hostname = $localIpAddress
+        akka.remote.artery.bind.port = 2552
+        akka.cluster.seed-nodes = [ "akka://Amber@44.218.250.138:2552" ]
         """)
       .withFallback(akkaConfig)
     AmberConfig.masterNodeAddr = createMasterAddress(localIpAddress)
@@ -70,9 +73,11 @@ object AmberRuntime {
     }
     val workerConfig = ConfigFactory
       .parseString(s"""
-        akka.remote.artery.canonical.hostname = $localIpAddress
+        akka.remote.artery.canonical.hostname = "44.218.250.138"
         akka.remote.artery.canonical.port = 0
-        akka.cluster.seed-nodes = [ "akka://Amber@$addr:2552" ]
+        akka.remote.artery.bind.hostname = $localIpAddress
+        akka.remote.artery.bind.port = 0
+        akka.cluster.seed-nodes = [ "akka://Amber@44.218.250.138:2552" ]
         """)
       .withFallback(akkaConfig)
     AmberConfig.masterNodeAddr = createMasterAddress(addr)
