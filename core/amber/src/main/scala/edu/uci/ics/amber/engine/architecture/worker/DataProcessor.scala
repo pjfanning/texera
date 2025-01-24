@@ -216,18 +216,18 @@ class DataProcessor(
       case MarkerFrame(marker) =>
         marker match {
           case StartOfIteration() =>
-            processEndOfInputChannel(portId.id)
+
 
             executor match {
               case loopStartExecutor: LoopStartOpExec =>
                 if (loopStartExecutor.checkCondition()){
+                  processEndOfInputChannel(portId.id)
                   outputManager.emitMarker(EndOfIteration(actorId))
                 }
                 else{
                   outputManager.finalizeOutput()
                 }
               case _ =>
-
             }
           case EndOfIteration(startWorkerId) =>
             if (executor.isInstanceOf[LoopEndOpExec]){
@@ -237,6 +237,8 @@ class DataProcessor(
               )
             }
             else{
+              executor.reset()
+              processEndOfInputChannel(portId.id)
               outputManager.emitMarker(EndOfIteration(startWorkerId))
             }
 
