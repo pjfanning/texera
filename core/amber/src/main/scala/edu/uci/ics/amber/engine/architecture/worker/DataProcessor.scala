@@ -172,6 +172,8 @@ class DataProcessor(
           asyncRPCClient.mkContext(CONTROLLER)
         )
       case schemaEnforceable: SchemaEnforceable =>
+
+        println("data:",statisticsManager.getOutputTupleCount,schemaEnforceable)
         if (outputPortOpt.isEmpty) {
           statisticsManager.increaseOutputTupleCount(outputManager.getSingleOutputPortIdentity)
         } else {
@@ -199,6 +201,7 @@ class DataProcessor(
   ): Unit = {
     val dataProcessingStartTime = System.nanoTime()
     val portId = this.inputGateway.getChannel(channelId).getPortId
+    println("dp:",executor, dataPayload)
     dataPayload match {
       case DataFrame(tuples) =>
         stateManager.conditionalTransitTo(
@@ -225,7 +228,7 @@ class DataProcessor(
                   outputManager.emitMarker(EndOfIteration(actorId))
                 }
                 else{
-                  outputManager.finalizeOutput()
+                  outputManager.finalizeOutput() // fix here
                 }
               case _ =>
             }
