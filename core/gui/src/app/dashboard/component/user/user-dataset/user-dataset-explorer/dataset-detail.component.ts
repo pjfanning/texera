@@ -12,6 +12,7 @@ import { formatSize } from "src/app/common/util/size-formatter.util";
 import { DASHBOARD_USER_DATASET } from "../../../../../app-routing.constant";
 import { UserService } from "../../../../../common/service/user/user.service";
 import { User } from "../../../../../common/type/user";
+import { isDefined } from "../../../../../common/util/predicate";
 
 @UntilDestroy()
 @Component({
@@ -102,8 +103,6 @@ export class DatasetDetailComponent implements OnInit {
           this.isLiked = isLiked;
         });
     }
-    console.log("in init: " + this.isLiked);
-
     if (this.did != null) {
       this.datasetService
         .getLikeCount(this.did)
@@ -285,21 +284,21 @@ export class DatasetDetailComponent implements OnInit {
     return count.toString();
   }
 
-  toggleLike(datasetId: number | undefined, userId: number | undefined): void {
-    if (datasetId === undefined || userId === undefined) {
+  toggleLike(): void {
+    const userId = this.currentUser?.uid;
+    if (!isDefined(userId) || !isDefined(this.did)) {
       return;
     }
 
     if (this.isLiked) {
-      console.log("in if statement: should be true" + this.isLiked);
       this.datasetService
-        .postUnlikeDataset(datasetId, userId)
+        .postUnlikeDataset(this.did, userId)
         .pipe(untilDestroyed(this))
         .subscribe((success: boolean) => {
           if (success) {
             this.isLiked = false;
             this.datasetService
-              .getLikeCount(datasetId)
+              .getLikeCount(this.did!)
               .pipe(untilDestroyed(this))
               .subscribe((count: number) => {
                 this.likeCount = count;
@@ -307,16 +306,14 @@ export class DatasetDetailComponent implements OnInit {
           }
         });
     } else {
-      console.log("in if statement: should be false" + this.isLiked);
-
       this.datasetService
-        .postLikeDataset(datasetId, userId)
+        .postLikeDataset(this.did, userId)
         .pipe(untilDestroyed(this))
         .subscribe((success: boolean) => {
           if (success) {
             this.isLiked = true;
             this.datasetService
-              .getLikeCount(datasetId)
+              .getLikeCount(this.did!)
               .pipe(untilDestroyed(this))
               .subscribe((count: number) => {
                 this.likeCount = count;

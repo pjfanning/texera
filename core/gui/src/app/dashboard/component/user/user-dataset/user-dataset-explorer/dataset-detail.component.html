@@ -23,7 +23,7 @@
         class="like-button"
         title="Like"
         [disabled]="!isLogin"
-        (click)="toggleLike(did, this.currentUser?.uid)">
+        (click)="toggleLike()">
         <i
           nz-icon
           [nzType]="'like'"
