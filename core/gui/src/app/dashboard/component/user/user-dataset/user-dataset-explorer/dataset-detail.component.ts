@@ -61,16 +61,7 @@ export class DatasetDetailComponent implements OnInit {
       .subscribe(() => {
         this.isLogin = this.userService.isLogin();
       });
-    if(this.did != undefined && this.currentUser?.uid != undefined) {
-      this.datasetService
-        .isDatasetLiked(this.did, this.currentUser?.uid)
-        .pipe(untilDestroyed(this))
-        .subscribe((isLiked: boolean) => {
-          this.isLiked = isLiked;
-        });
-    }
   }
-
 
   // item for control the resizeable sider
   MAX_SIDER_WIDTH = 600;
@@ -102,6 +93,17 @@ export class DatasetDetailComponent implements OnInit {
         untilDestroyed(this)
       )
       .subscribe();
+
+    if (this.did != undefined && this.currentUser?.uid != undefined) {
+      this.datasetService
+        .isDatasetLiked(this.did, this.currentUser?.uid)
+        .pipe(untilDestroyed(this))
+        .subscribe((isLiked: boolean) => {
+          this.isLiked = isLiked;
+        });
+    }
+    console.log("in init: " + this.isLiked);
+
     if (this.did != null) {
       this.datasetService
         .getLikeCount(this.did)
@@ -282,12 +284,14 @@ export class DatasetDetailComponent implements OnInit {
     }
     return count.toString();
   }
+
   toggleLike(datasetId: number | undefined, userId: number | undefined): void {
     if (datasetId === undefined || userId === undefined) {
       return;
     }
 
     if (this.isLiked) {
+      console.log("in if statement: should be true" + this.isLiked);
       this.datasetService
         .postUnlikeDataset(datasetId, userId)
         .pipe(untilDestroyed(this))
@@ -303,6 +307,8 @@ export class DatasetDetailComponent implements OnInit {
           }
         });
     } else {
+      console.log("in if statement: should be false" + this.isLiked);
+
       this.datasetService
         .postLikeDataset(datasetId, userId)
         .pipe(untilDestroyed(this))

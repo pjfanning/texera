@@ -8,14 +8,29 @@
       style="padding-top: 20px"
       nzDescription="{{datasetDescription}}"></nz-card-meta>
     <div
-      style="padding-top: 30px"
-      *ngIf="!(userDatasetAccessLevel === 'NONE')">
+      class="workflow-panel"
+      style="padding-top: 30px">
       <nz-switch
         [ngModel]="datasetIsPublic"
         (ngModelChange)="onPublicStatusChange($event)"
         [nzDisabled]="userDatasetAccessLevel !== 'WRITE'"
+        *ngIf="!(userDatasetAccessLevel === 'NONE')"
         nzCheckedChildren="public"
         nzUnCheckedChildren="private"></nz-switch>
+      <button
+        nz-button
+        nzType="text"
+        class="like-button"
+        title="Like"
+        [disabled]="!isLogin"
+        (click)="toggleLike(did, this.currentUser?.uid)">
+        <i
+          nz-icon
+          [nzType]="'like'"
+          [ngClass]="{liked: isLiked}">
+        </i>
+        <span>{{ formatCount(likeCount) }}</span>
+      </button>
     </div>
   </nz-card>
 </div>
@@ -39,25 +54,6 @@
               {{ formatSize(currentFileSize) }}
             </span>
           </h3>
-        </div>
-        <div
-          nz-col
-          nzFlex="0"
-          class="resource-info">
-          <button
-            nz-button
-            nzType="default"
-            class="like-button"
-            title="Like"
-            [disabled]="!isLogin"
-            (click)="toggleLike(did, this.currentUser?.uid)">
-            <i
-              nz-icon
-              [nzType]="'like'"
-              [ngClass]="{liked: isLiked}">
-            </i>
-            <span>{{ formatCount(likeCount) }}</span>
-          </button>
         </div>
         <div style="display: flex">
           <button

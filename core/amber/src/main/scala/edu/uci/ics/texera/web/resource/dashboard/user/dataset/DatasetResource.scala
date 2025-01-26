@@ -1,7 +1,10 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.dataset
 
 import edu.uci.ics.amber.core.storage.{DocumentFactory, FileResolver, StorageConfig}
-import edu.uci.ics.amber.core.storage.util.dataset.{GitVersionControlLocalFileStorage, PhysicalFileNode}
+import edu.uci.ics.amber.core.storage.util.dataset.{
+  GitVersionControlLocalFileStorage,
+  PhysicalFileNode
+}
 import edu.uci.ics.amber.engine.common.Utils.withTransaction
 import edu.uci.ics.amber.util.PathUtils
 import edu.uci.ics.texera.dao.SqlServer
@@ -12,8 +15,17 @@ import edu.uci.ics.texera.dao.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.dao.jooq.generated.tables.DatasetUserAccess.DATASET_USER_ACCESS
 import edu.uci.ics.texera.dao.jooq.generated.tables.DatasetVersion.DATASET_VERSION
 import edu.uci.ics.texera.dao.jooq.generated.tables.User.USER
-import edu.uci.ics.texera.dao.jooq.generated.tables.daos.{DatasetDao, DatasetUserAccessDao, DatasetVersionDao}
-import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess, DatasetVersion, User}
+import edu.uci.ics.texera.dao.jooq.generated.tables.daos.{
+  DatasetDao,
+  DatasetUserAccessDao,
+  DatasetVersionDao
+}
+import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.{
+  Dataset,
+  DatasetUserAccess,
+  DatasetVersion,
+  User
+}
 import edu.uci.ics.texera.web.resource.dashboard.hub.workflow.HubWorkflowResource.recordUserActivity
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource._
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{context, _}
@@ -951,6 +963,112 @@ class DatasetResource {
     records.getValues(DATASET_USER_ACCESS.UID)
   }
 
+  @GET
+  @Path("/isLiked")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def isLiked(
+      @QueryParam("datasetId") datasetId: UInteger,
+      @QueryParam("userId") userId: UInteger
+  ): Boolean = {
+    println("dataset Id = " + datasetId)
+    println("user id = " + userId)
+    val existingLike = context
+      .selectFrom(DATASET_USER_LIKES)
+      .where(
+        DATASET_USER_LIKES.UID
+          .eq(userId)
+          .and(DATASET_USER_LIKES.DID.eq(datasetId))
+      )
+      .fetchOne()
+
+    existingLike != null
+  }
+
+  @POST
+  @Path("/like")
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  def likeWorkflow(likeRequest: Array[UInteger]): Boolean = {
+    if (likeRequest.length != 2) {
+      return false
+    }
+
+    val datasetId = likeRequest(0)
+    val userId = likeRequest(1)
+
+    val existingLike = context
+      .selectFrom(DATASET_USER_LIKES)
+      .where(
+        DATASET_USER_LIKES.UID
+          .eq(userId)
+          .and(DATASET_USER_LIKES.DID.eq(datasetId))
+      )
+      .fetchOne()
+
+    if (existingLike == null) {
+      context
+        .insertInto(DATASET_USER_LIKES)
+        .set(DATASET_USER_LIKES.UID, userId)
+        .set(DATASET_USER_LIKES.DID, datasetId)
+        .execute()
+
+      true
+    } else {
+      false
+    }
+  }
+
+  @POST
+  @Path("/unlike")
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  def unlikeWorkflow(
+      likeRequest: Array[UInteger]
+  ): Boolean = {
+    if (likeRequest.length != 2) {
+      return false
+    }
+
+    val datasetId = likeRequest(0)
+    val userId = likeRequest(1)
+
+    val existingLike = context
+      .selectFrom(DATASET_USER_LIKES)
+      .where(
+        DATASET_USER_LIKES.UID
+          .eq(userId)
+          .and(DATASET_USER_LIKES.DID.eq(datasetId))
+      )
+      .fetchOne()
+
+    if (existingLike != null) {
+      context
+        .deleteFrom(DATASET_USER_LIKES)
+        .where(
+          DATASET_USER_LIKES.UID
+            .eq(userId)
+            .and(DATASET_USER_LIKES.DID.eq(datasetId))
+        )
+        .execute()
+      true
+    } else {
+      false
+    }
+  }
+
+  @GET
+  @Path("/likeCount")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getLikeCount(
+      @QueryParam("did") did: UInteger
+  ): Int = {
+    val likeCount = context
+      .selectCount()
+      .from(DATASET_USER_LIKES)
+      .where(DATASET_USER_LIKES.DID.eq(did))
+      .fetchOne(0, classOf[Int])
+
+    likeCount
+  }
+
   private def fetchDatasetVersions(ctx: DSLContext, did: UInteger): List[DatasetVersion] = {
     ctx
       .selectFrom(DATASET_VERSION)
@@ -1008,110 +1126,5 @@ class DatasetResource {
     val dashboardDataset = getDashboardDataset(ctx, did, uid, isPublic)
     val size = calculateDatasetVersionSize(did)
     dashboardDataset.copy(size = size)
-  }
-
-  @GET
-  @Path("/isLiked")
-  @Produces(Array(MediaType.APPLICATION_JSON))
-  def isLiked(
-               @QueryParam("datasetId") datasetId: UInteger,
-               @QueryParam("userId") userId: UInteger
-             ): Boolean = {
-    val existingLike = context
-      .selectFrom(DATASET_USER_LIKES)
-      .where(
-        DATASET_USER_LIKES.UID
-          .eq(userId)
-          .and(DATASET_USER_LIKES.DID.eq(datasetId))
-      )
-      .fetchOne()
-
-    existingLike != null
-  }
-
-  @POST
-  @Path("/like")
-  @Consumes(Array(MediaType.APPLICATION_JSON))
-  def likeWorkflow(@Context request: HttpServletRequest, likeRequest: Array[UInteger]): Boolean = {
-    if (likeRequest.length != 2) {
-      return false
-    }
-
-    val datasetId = likeRequest(0)
-    val userId = likeRequest(1)
-
-    val existingLike = context
-      .selectFrom(DATASET_USER_LIKES)
-      .where(
-        DATASET_USER_LIKES.UID
-          .eq(userId)
-          .and(DATASET_USER_LIKES.DID.eq(datasetId))
-      )
-      .fetchOne()
-
-    if (existingLike == null) {
-      context
-        .insertInto(DATASET_USER_LIKES)
-        .set(DATASET_USER_LIKES.UID, userId)
-        .set(DATASET_USER_LIKES.DID, datasetId)
-        .execute()
-
-      true
-    } else {
-      false
-    }
-  }
-
-  @POST
-  @Path("/unlike")
-  @Consumes(Array(MediaType.APPLICATION_JSON))
-  def unlikeWorkflow(
-                      @Context request: HttpServletRequest,
-                      likeRequest: Array[UInteger]
-                    ): Boolean = {
-    if (likeRequest.length != 2) {
-      return false
-    }
-
-    val datasetId = likeRequest(0)
-    val userId = likeRequest(1)
-
-    val existingLike = context
-      .selectFrom(DATASET_USER_LIKES)
-      .where(
-        DATASET_USER_LIKES.UID
-          .eq(userId)
-          .and(DATASET_USER_LIKES.DID.eq(datasetId))
-      )
-      .fetchOne()
-
-    if (existingLike != null) {
-      context
-        .deleteFrom(DATASET_USER_LIKES)
-        .where(
-          DATASET_USER_LIKES.UID
-            .eq(userId)
-            .and(DATASET_USER_LIKES.DID.eq(datasetId))
-        )
-        .execute()
-      true
-    } else {
-      false
-    }
-  }
-
-  @GET
-  @Path("/likeCount")
-  @Produces(Array(MediaType.APPLICATION_JSON))
-  def getLikeCount(
-                    @QueryParam("did") did: UInteger
-    ): Int = {
-    val likeCount = context
-      .selectCount()
-      .from(DATASET_USER_LIKES)
-      .where(DATASET_USER_LIKES.DID.eq(did))
-      .fetchOne(0, classOf[Int])
-
-    likeCount
   }
 }
