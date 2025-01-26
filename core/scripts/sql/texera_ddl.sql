@@ -268,10 +268,9 @@ CREATE TABLE IF NOT EXISTS dataset_user_likes
     FOREIGN KEY (`did`) REFERENCES `dataset` (`did`) ON DELETE CASCADE
     ) ENGINE = INNODB;
 
-CREATE TABLE IF NOT EXISTS dataset_view_count
-(
-    did INT UNSIGNED NOT NULL,
-    view_count INT UNSIGNED NOT NULL DEFAULT 0,
-    PRIMARY KEY (did),
-    FOREIGN KEY (did) REFERENCES dataset (did) ON DELETE CASCADE
+CREATE TABLE IF NOT EXISTS `dataset_view_count` (
+    `did` INT UNSIGNED NOT NULL,
+    `view_count` INT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (`did`),
+    FOREIGN KEY (`did`) REFERENCES `dataset` (`did`) ON DELETE CASCADE
     ) ENGINE = INNODB;
