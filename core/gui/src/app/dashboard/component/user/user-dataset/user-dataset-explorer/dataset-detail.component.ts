@@ -41,6 +41,9 @@ export class DatasetDetailComponent implements OnInit {
   public versionCreatorBaseVersion: DatasetVersion | undefined;
   public isLogin: boolean = this.userService.isLogin();
 
+  public isLiked: boolean = false;
+  public likeCount: number = 0;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -87,6 +90,14 @@ export class DatasetDetailComponent implements OnInit {
         untilDestroyed(this)
       )
       .subscribe();
+    if (this.did != null) {
+      this.datasetService
+        .getLikeCount(this.did)
+        .pipe(untilDestroyed(this))
+        .subscribe(count => {
+          this.likeCount = count;
+        });
+    }
   }
 
   renderDatasetViewSider() {
@@ -252,4 +263,11 @@ export class DatasetDetailComponent implements OnInit {
 
   // alias for formatSize
   formatSize = formatSize;
+
+  formatCount(count: number): string {
+    if (count >= 1000) {
+      return (count / 1000).toFixed(1) + "k";
+    }
+    return count.toString();
+  }
 }

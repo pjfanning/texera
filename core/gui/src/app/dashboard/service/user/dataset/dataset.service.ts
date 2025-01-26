@@ -25,6 +25,7 @@ export const DEFAULT_DATASET_NAME = "Untitled dataset";
 export const DATASET_PUBLIC_VERSION_BASE_URL = "publicVersion";
 export const DATASET_PUBLIC_VERSION_RETRIEVE_LIST_URL = DATASET_PUBLIC_VERSION_BASE_URL + "/list";
 export const DATASET_GET_OWNERS_URL = DATASET_BASE_URL + "/datasetUserAccess";
+export const DATASET_LIKE_COUNT_URL = DATASET_BASE_URL + "/likeCount";
 
 @Injectable({
   providedIn: "root",
@@ -194,5 +195,9 @@ export class DatasetService {
 
   public getDatasetOwners(did: number): Observable<number[]> {
     return this.http.get<number[]>(`${AppSettings.getApiEndpoint()}/${DATASET_GET_OWNERS_URL}?did=${did}`);
+  }
+
+  public getLikeCount(did: number): Observable<number> {
+    return this.http.get<number>(`${AppSettings.getApiEndpoint()}/${DATASET_LIKE_COUNT_URL}?did=${did}`);
   }
 }
