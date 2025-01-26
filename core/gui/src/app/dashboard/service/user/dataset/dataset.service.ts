@@ -25,6 +25,8 @@ export const DEFAULT_DATASET_NAME = "Untitled dataset";
 export const DATASET_PUBLIC_VERSION_BASE_URL = "publicVersion";
 export const DATASET_PUBLIC_VERSION_RETRIEVE_LIST_URL = DATASET_PUBLIC_VERSION_BASE_URL + "/list";
 export const DATASET_GET_OWNERS_URL = DATASET_BASE_URL + "/datasetUserAccess";
+export const DATASET_VIEW_DATASET_URL = DATASET_BASE_URL + "/view";
+export const DATASET_GET_VIEW_DATASET_URL = DATASET_BASE_URL + "/viewCount";
 
 @Injectable({
   providedIn: "root",
@@ -194,5 +196,13 @@ export class DatasetService {
 
   public getDatasetOwners(did: number): Observable<number[]> {
     return this.http.get<number[]>(`${AppSettings.getApiEndpoint()}/${DATASET_GET_OWNERS_URL}?did=${did}`);
+  }
+
+  public postDatasetViewCount(datasetId: number, userId: number): Observable<number> {
+    return this.http.post<number>(`${AppSettings.getApiEndpoint()}/${DATASET_VIEW_DATASET_URL}`, [datasetId, userId]);
+  }
+
+  public getDatasetViewCount(datasetId: number): Observable<number> {
+    return this.http.get<number>(`${AppSettings.getApiEndpoint()}/${DATASET_GET_VIEW_DATASET_URL}/${datasetId}`);
   }
 }

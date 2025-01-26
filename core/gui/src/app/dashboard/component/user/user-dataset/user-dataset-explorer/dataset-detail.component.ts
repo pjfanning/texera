@@ -5,12 +5,15 @@ import { DatasetService } from "../../../../service/user/dataset/dataset.service
 import { NzResizeEvent } from "ng-zorro-antd/resizable";
 import { DatasetFileNode, getFullPathFromDatasetFileNode } from "../../../../../common/type/datasetVersionFileTree";
 import { DatasetVersion } from "../../../../../common/type/dataset";
-import { switchMap } from "rxjs/operators";
+import { switchMap, throttleTime } from "rxjs/operators";
 import { NotificationService } from "../../../../../common/service/notification/notification.service";
 import { DownloadService } from "../../../../service/user/download/download.service";
 import { formatSize } from "src/app/common/util/size-formatter.util";
 import { DASHBOARD_USER_DATASET } from "../../../../../app-routing.constant";
 import { UserService } from "../../../../../common/service/user/user.service";
+
+export const THROTTLE_TIME_MS = 1000;
+
 
 @UntilDestroy()
 @Component({
@@ -40,6 +43,9 @@ export class DatasetDetailComponent implements OnInit {
   public isCreatingDataset: boolean = false;
   public versionCreatorBaseVersion: DatasetVersion | undefined;
   public isLogin: boolean = this.userService.isLogin();
+  public currentUid: number | undefined;
+  public viewCount: number = 0;
+  public displayPreciseViewCount = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -53,6 +59,7 @@ export class DatasetDetailComponent implements OnInit {
       .userChanged()
       .pipe(untilDestroyed(this))
       .subscribe(() => {
+        this.currentUid = this.userService.getCurrentUser()?.uid
         this.isLogin = this.userService.isLogin();
       });
   }
@@ -87,6 +94,16 @@ export class DatasetDetailComponent implements OnInit {
         untilDestroyed(this)
       )
       .subscribe();
+
+    if (this.did != undefined){
+      this.datasetService
+        .postDatasetViewCount(this.did, this.currentUid ? this.currentUid : 0)
+        .pipe(throttleTime(THROTTLE_TIME_MS))
+        .pipe(untilDestroyed(this))
+        .subscribe(count => {
+          this.viewCount = count;
+        })
+    }
   }
 
   renderDatasetViewSider() {
@@ -252,4 +269,15 @@ export class DatasetDetailComponent implements OnInit {
 
   // alias for formatSize
   formatSize = formatSize;
+
+  formatViewCount(count: number): string {
+    if (!this.displayPreciseViewCount && count >= 1000) {
+      return (count / 1000).toFixed(1) + "k";
+    }
+    return count.toString();
+  }
+
+  changeViewDisplayStyle() {
+    this.displayPreciseViewCount = !this.displayPreciseViewCount;
+  }
 }

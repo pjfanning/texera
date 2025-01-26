@@ -14,6 +14,7 @@ import edu.uci.ics.texera.dao.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.dao.jooq.generated.tables.DatasetUserAccess.DATASET_USER_ACCESS
 import edu.uci.ics.texera.dao.jooq.generated.tables.DatasetVersion.DATASET_VERSION
 import edu.uci.ics.texera.dao.jooq.generated.tables.User.USER
+import edu.uci.ics.texera.dao.jooq.generated.tables.DatasetViewCount.DATASET_VIEW_COUNT
 import edu.uci.ics.texera.dao.jooq.generated.tables.daos.{
   DatasetDao,
   DatasetUserAccessDao,
@@ -958,6 +959,47 @@ class DatasetResource {
       .fetch()
 
     records.getValues(DATASET_USER_ACCESS.UID)
+  }
+
+  @POST
+  @Path("/view")
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  def viewDataset(viewRequest: Array[UInteger]): Int = {
+    val datasetId = viewRequest(0)
+    val userId = viewRequest(1)
+
+    context
+      .insertInto(DATASET_VIEW_COUNT)
+      .set(DATASET_VIEW_COUNT.DID, datasetId)
+      .set(DATASET_VIEW_COUNT.VIEW_COUNT, UInteger.valueOf(1))
+      .onDuplicateKeyUpdate()
+      .set(DATASET_VIEW_COUNT.VIEW_COUNT, DATASET_VIEW_COUNT.VIEW_COUNT.add(1))
+      .execute()
+
+    context
+      .select(DATASET_VIEW_COUNT.VIEW_COUNT)
+      .from(DATASET_VIEW_COUNT)
+      .where(DATASET_VIEW_COUNT.DID.eq(datasetId))
+      .fetchOneInto(classOf[Int])
+  }
+
+  @GET
+  @Path("/viewCount/{did}")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getDatasetViewCount(@PathParam("did") did: UInteger): Int = {
+
+    context
+      .insertInto(DATASET_VIEW_COUNT)
+      .set(DATASET_VIEW_COUNT.DID, did)
+      .set(DATASET_VIEW_COUNT.VIEW_COUNT, UInteger.valueOf(0))
+      .onDuplicateKeyIgnore()
+      .execute()
+
+    context
+      .select(DATASET_VIEW_COUNT.VIEW_COUNT)
+      .from(DATASET_VIEW_COUNT)
+      .where(DATASET_VIEW_COUNT.DID.eq(did))
+      .fetchOneInto(classOf[Int])
   }
 
   private def fetchDatasetVersions(ctx: DSLContext, did: UInteger): List[DatasetVersion] = {

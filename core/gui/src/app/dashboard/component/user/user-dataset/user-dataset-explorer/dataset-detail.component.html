@@ -8,14 +8,29 @@
       style="padding-top: 20px"
       nzDescription="{{datasetDescription}}"></nz-card-meta>
     <div
-      style="padding-top: 30px"
-      *ngIf="!(userDatasetAccessLevel === 'NONE')">
+      style="padding-top: 30px">
       <nz-switch
         [ngModel]="datasetIsPublic"
         (ngModelChange)="onPublicStatusChange($event)"
         [nzDisabled]="userDatasetAccessLevel !== 'WRITE'"
+        *ngIf="!(userDatasetAccessLevel === 'NONE')"
         nzCheckedChildren="public"
         nzUnCheckedChildren="private"></nz-switch>
+
+      <button
+        nz-button
+        nzType="text"
+        class="dropdown-item like-button"
+        title="View"
+        (click)="changeViewDisplayStyle()">
+        <i
+          nz-icon
+          [nzType]="'eye'"
+          class="like-icon">
+        </i>
+        <span>{{ formatViewCount(viewCount) }}</span>
+
+      </button>
     </div>
   </nz-card>
 </div>
