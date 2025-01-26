@@ -29,6 +29,8 @@ export const DATASET_LIKE_COUNT_URL = DATASET_BASE_URL + "/likeCount";
 export const DATASET_IS_LIKE_URL = DATASET_BASE_URL + "/isLiked";
 export const DATASET_LIKE_URL = DATASET_BASE_URL + "/like";
 export const DATASET_UNLIKE_URL = DATASET_BASE_URL + "/unlike";
+export const DATASET_VIEW_DATASET_URL = DATASET_BASE_URL + "/view";
+export const DATASET_GET_VIEW_DATASET_URL = DATASET_BASE_URL + "/viewCount";
 
 @Injectable({
   providedIn: "root",
@@ -216,5 +218,13 @@ export class DatasetService {
 
   public getLikeCount(did: number): Observable<number> {
     return this.http.get<number>(`${AppSettings.getApiEndpoint()}/${DATASET_LIKE_COUNT_URL}?did=${did}`);
+  }
+
+  public postDatasetViewCount(datasetId: number, userId: number): Observable<number> {
+    return this.http.post<number>(`${AppSettings.getApiEndpoint()}/${DATASET_VIEW_DATASET_URL}`, [datasetId, userId]);
+  }
+
+  public getDatasetViewCount(datasetId: number): Observable<number> {
+    return this.http.get<number>(`${AppSettings.getApiEndpoint()}/${DATASET_GET_VIEW_DATASET_URL}/${datasetId}`);
   }
 }

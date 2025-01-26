@@ -5,14 +5,15 @@ import { DatasetService } from "../../../../service/user/dataset/dataset.service
 import { NzResizeEvent } from "ng-zorro-antd/resizable";
 import { DatasetFileNode, getFullPathFromDatasetFileNode } from "../../../../../common/type/datasetVersionFileTree";
 import { DatasetVersion } from "../../../../../common/type/dataset";
-import { switchMap } from "rxjs/operators";
+import { switchMap, throttleTime } from "rxjs/operators";
 import { NotificationService } from "../../../../../common/service/notification/notification.service";
 import { DownloadService } from "../../../../service/user/download/download.service";
 import { formatSize } from "src/app/common/util/size-formatter.util";
 import { DASHBOARD_USER_DATASET } from "../../../../../app-routing.constant";
 import { UserService } from "../../../../../common/service/user/user.service";
-import { User } from "../../../../../common/type/user";
 import { isDefined } from "../../../../../common/util/predicate";
+
+export const THROTTLE_TIME_MS = 1000;
 
 @UntilDestroy()
 @Component({
@@ -45,7 +46,9 @@ export class DatasetDetailComponent implements OnInit {
 
   public isLiked: boolean = false;
   public likeCount: number = 0;
-  protected currentUser: User | undefined;
+  public currentUid: number | undefined
+  public viewCount: number = 0;
+  public displayPreciseViewCount = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -55,11 +58,11 @@ export class DatasetDetailComponent implements OnInit {
     private downloadService: DownloadService,
     private userService: UserService
   ) {
-    this.currentUser = this.userService.getCurrentUser();
     this.userService
       .userChanged()
       .pipe(untilDestroyed(this))
       .subscribe(() => {
+        this.currentUid = this.userService.getCurrentUser()?.uid;
         this.isLogin = this.userService.isLogin();
       });
   }
@@ -95,22 +98,35 @@ export class DatasetDetailComponent implements OnInit {
       )
       .subscribe();
 
-    if (this.did != undefined && this.currentUser?.uid != undefined) {
-      this.datasetService
-        .isDatasetLiked(this.did, this.currentUser?.uid)
-        .pipe(untilDestroyed(this))
-        .subscribe((isLiked: boolean) => {
-          this.isLiked = isLiked;
-        });
+    if (!isDefined(this.did)){
+      return;
     }
-    if (this.did != null) {
-      this.datasetService
-        .getLikeCount(this.did)
-        .pipe(untilDestroyed(this))
-        .subscribe(count => {
-          this.likeCount = count;
-        });
+
+    this.datasetService
+      .getLikeCount(this.did)
+      .pipe(untilDestroyed(this))
+      .subscribe(count => {
+        this.likeCount = count;
+      });
+
+    this.datasetService
+      .postDatasetViewCount(this.did, this.currentUid ? this.currentUid : 0)
+      .pipe(throttleTime(THROTTLE_TIME_MS))
+      .pipe(untilDestroyed(this))
+      .subscribe(count => {
+        this.viewCount = count;
+      })
+
+    if (!isDefined(this.currentUid)) {
+      return;
     }
+
+    this.datasetService
+      .isDatasetLiked(this.did, this.currentUid)
+      .pipe(untilDestroyed(this))
+      .subscribe((isLiked: boolean) => {
+        this.isLiked = isLiked;
+      });
   }
 
   renderDatasetViewSider() {
@@ -285,7 +301,7 @@ export class DatasetDetailComponent implements OnInit {
   }
 
   toggleLike(): void {
-    const userId = this.currentUser?.uid;
+    const userId = this.currentUid;
     if (!isDefined(userId) || !isDefined(this.did)) {
       return;
     }
@@ -321,5 +337,16 @@ export class DatasetDetailComponent implements OnInit {
           }
         });
     }
+  }
+
+  formatViewCount(count: number): string {
+    if (!this.displayPreciseViewCount && count >= 1000) {
+      return (count / 1000).toFixed(1) + "k";
+    }
+    return count.toString();
+  }
+
+  changeViewDisplayStyle() {
+    this.displayPreciseViewCount = !this.displayPreciseViewCount;
   }
 }

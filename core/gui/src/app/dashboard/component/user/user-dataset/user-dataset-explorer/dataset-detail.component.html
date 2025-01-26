@@ -20,6 +20,19 @@
       <button
         nz-button
         nzType="text"
+        class="dropdown-item like-button"
+        title="View"
+        (click)="changeViewDisplayStyle()">
+        <i
+          nz-icon
+          [nzType]="'eye'"
+          class="like-icon">
+        </i>
+        <span>{{ formatViewCount(viewCount) }}</span>
+      </button>
+      <button
+        nz-button
+        nzType="text"
         class="like-button"
         title="Like"
         [disabled]="!isLogin"
