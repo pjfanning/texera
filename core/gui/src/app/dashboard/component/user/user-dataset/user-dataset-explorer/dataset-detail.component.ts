@@ -11,6 +11,7 @@ import { DownloadService } from "../../../../service/user/download/download.serv
 import { formatSize } from "src/app/common/util/size-formatter.util";
 import { DASHBOARD_USER_DATASET } from "../../../../../app-routing.constant";
 import { UserService } from "../../../../../common/service/user/user.service";
+import { User } from "../../../../../common/type/user";
 
 @UntilDestroy()
 @Component({
@@ -41,6 +42,10 @@ export class DatasetDetailComponent implements OnInit {
   public versionCreatorBaseVersion: DatasetVersion | undefined;
   public isLogin: boolean = this.userService.isLogin();
 
+  public isLiked: boolean = false;
+  public likeCount: number = 0;
+  protected currentUser: User | undefined;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -49,13 +54,23 @@ export class DatasetDetailComponent implements OnInit {
     private downloadService: DownloadService,
     private userService: UserService
   ) {
+    this.currentUser = this.userService.getCurrentUser();
     this.userService
       .userChanged()
       .pipe(untilDestroyed(this))
       .subscribe(() => {
         this.isLogin = this.userService.isLogin();
       });
+    if(this.did != undefined && this.currentUser?.uid != undefined) {
+      this.datasetService
+        .isDatasetLiked(this.did, this.currentUser?.uid)
+        .pipe(untilDestroyed(this))
+        .subscribe((isLiked: boolean) => {
+          this.isLiked = isLiked;
+        });
+    }
   }
+
 
   // item for control the resizeable sider
   MAX_SIDER_WIDTH = 600;
@@ -87,6 +102,14 @@ export class DatasetDetailComponent implements OnInit {
         untilDestroyed(this)
       )
       .subscribe();
+    if (this.did != null) {
+      this.datasetService
+        .getLikeCount(this.did)
+        .pipe(untilDestroyed(this))
+        .subscribe(count => {
+          this.likeCount = count;
+        });
+    }
   }
 
   renderDatasetViewSider() {
@@ -252,4 +275,48 @@ export class DatasetDetailComponent implements OnInit {
 
   // alias for formatSize
   formatSize = formatSize;
+
+  formatCount(count: number): string {
+    if (count >= 1000) {
+      return (count / 1000).toFixed(1) + "k";
+    }
+    return count.toString();
+  }
+  toggleLike(datasetId: number | undefined, userId: number | undefined): void {
+    if (datasetId === undefined || userId === undefined) {
+      return;
+    }
+
+    if (this.isLiked) {
+      this.datasetService
+        .postUnlikeDataset(datasetId, userId)
+        .pipe(untilDestroyed(this))
+        .subscribe((success: boolean) => {
+          if (success) {
+            this.isLiked = false;
+            this.datasetService
+              .getLikeCount(datasetId)
+              .pipe(untilDestroyed(this))
+              .subscribe((count: number) => {
+                this.likeCount = count;
+              });
+          }
+        });
+    } else {
+      this.datasetService
+        .postLikeDataset(datasetId, userId)
+        .pipe(untilDestroyed(this))
+        .subscribe((success: boolean) => {
+          if (success) {
+            this.isLiked = true;
+            this.datasetService
+              .getLikeCount(datasetId)
+              .pipe(untilDestroyed(this))
+              .subscribe((count: number) => {
+                this.likeCount = count;
+              });
+          }
+        });
+    }
+  }
 }
