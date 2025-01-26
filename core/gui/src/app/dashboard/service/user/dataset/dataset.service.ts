@@ -26,6 +26,11 @@ export const DATASET_PUBLIC_VERSION_BASE_URL = "publicVersion";
 export const DATASET_PUBLIC_VERSION_RETRIEVE_LIST_URL = DATASET_PUBLIC_VERSION_BASE_URL + "/list";
 export const DATASET_GET_OWNERS_URL = DATASET_BASE_URL + "/datasetUserAccess";
 export const DATASET_LIKE_COUNT_URL = DATASET_BASE_URL + "/likeCount";
+export const DATASET_IS_LIKE_URL = DATASET_BASE_URL + "/isLike";
+export const DATASET_LIKE_URL = DATASET_BASE_URL + "/like";
+export const DATASET_UNLIKE_URL = DATASET_BASE_URL + "/unlike";
+
+
 
 @Injectable({
   providedIn: "root",
@@ -195,6 +200,20 @@ export class DatasetService {
 
   public getDatasetOwners(did: number): Observable<number[]> {
     return this.http.get<number[]>(`${AppSettings.getApiEndpoint()}/${DATASET_GET_OWNERS_URL}?did=${did}`);
+  }
+
+  public isDatasetLiked(datasetId: number, userId: number): Observable<boolean> {
+    return this.http.get<boolean>(`${AppSettings.getApiEndpoint()}/${DATASET_IS_LIKE_URL}`, {
+      params: { did: datasetId.toString(), uid: userId.toString() },
+    });
+  }
+
+  public postLikeDataset(datasetId: number, userId: number): Observable<boolean> {
+    return this.http.post<boolean>(`${AppSettings.getApiEndpoint()}/${DATASET_LIKE_URL}`, [datasetId, userId]);
+  }
+
+  public postUnlikeDataset(datasetId: number, userId: number): Observable<boolean> {
+    return this.http.post<boolean>(`${AppSettings.getApiEndpoint()}/${DATASET_UNLIKE_URL}`, [datasetId, userId]);
   }
 
   public getLikeCount(did: number): Observable<number> {
