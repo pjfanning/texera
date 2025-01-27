@@ -7,6 +7,9 @@ import { Observable } from "rxjs";
 import { DashboardDataset } from "../../../type/dashboard-dataset.interface";
 import { FileUploadItem } from "../../../type/dashboard-file.interface";
 import { DatasetFileNode } from "../../../../common/type/datasetVersionFileTree";
+import { RepositoriesService, RepositoryCreation, Repository } from "lakefs"
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
+import { FinalizeHandlerArguments, FinalizeRequestMiddleware, HttpRequest } from '@aws-sdk/types';
 
 export const DATASET_BASE_URL = "dataset";
 export const DATASET_CREATE_URL = DATASET_BASE_URL + "/create";
@@ -26,11 +29,67 @@ export const DATASET_PUBLIC_VERSION_BASE_URL = "publicVersion";
 export const DATASET_PUBLIC_VERSION_RETRIEVE_LIST_URL = DATASET_PUBLIC_VERSION_BASE_URL + "/list";
 export const DATASET_GET_OWNERS_URL = DATASET_BASE_URL + "/datasetUserAccess";
 
+const LAKEFS_ACCESS_KEY = "AKIAIOSFOLKFSSAMPLES"
+const LAKEFS_SECRET_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+
 @Injectable({
   providedIn: "root",
 })
 export class DatasetService {
-  constructor(private http: HttpClient) {}
+  private s3Client: S3Client;
+
+  constructor(private http: HttpClient, private repositoriesService: RepositoriesService) {
+    this.repositoriesService.configuration.username = LAKEFS_ACCESS_KEY;
+    this.repositoriesService.configuration.password = LAKEFS_SECRET_KEY;
+
+    this.s3Client = new S3Client({
+      region: 'us-east-2',
+      endpoint: 'http://localhost:4200/s3',
+      credentials: {
+        accessKeyId: LAKEFS_ACCESS_KEY,
+        secretAccessKey: LAKEFS_SECRET_KEY
+      },
+      forcePathStyle: true,
+      requestChecksumCalculation: "WHEN_REQUIRED"
+    });
+  }
+
+  public createDatasetLakefs(
+    repoName: string
+  ): Observable<Repository> {
+    const repositoryData: RepositoryCreation = {
+      name: "example-repo-1",
+      storage_namespace: 's3://lakefs-test-1',
+      default_branch: 'main'
+    };
+
+    return this.repositoriesService.createRepository(repositoryData, false);
+  }
+
+  public uploadFileS3(
+    repo: string,
+    branch: string,
+    key: string, 
+    file: File
+  ) {
+    const commandParams = {
+      Bucket: repo,
+      Key: branch + "/" + key, // File path
+      Body: file, // File content
+      ContentType: file.type
+    }
+
+    const command = new PutObjectCommand(commandParams);
+
+    this.s3Client
+      .send(command)
+      .then((data) => {
+        console.log("File uploaded successfully:", data);
+      })
+      .catch((error) => {
+        console.error("Error uploading to LakeFS:", error);
+      });
+  }
 
   public createDataset(
     dataset: Dataset,
@@ -44,8 +103,19 @@ export class DatasetService {
     formData.append("initialVersionName", initialVersionName);
 
     filesToBeUploaded.forEach(file => {
+      console.log("this is the file " + file.name);
       formData.append(`file:upload:${file.name}`, file.file);
+      this.uploadFileS3('example-repo-1', "main", file.name, file.file);
     });
+
+    // this.createDatasetLakefs(dataset.name).subscribe({
+    //   next: (repository) => {
+    //     console.log('Repository' + initialVersionName + 'created successfully:', repository);
+    //   },
+    //   error: (err) => {
+    //     console.error('Error creating repository:', err);
+    //   }
+    // });
 
     return this.http.post<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_CREATE_URL}`, formData);
   }
