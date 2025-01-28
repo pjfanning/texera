@@ -337,7 +337,7 @@ class ExecutionResultService(
 
             // Retrieve the mode of the specified output port
             val mode = physicalPlan
-              .getPhysicalOpsOfLogicalOp(opId)
+              .getPhysicalOpsOfLogicalOp(opId.get)
               .flatMap(_.outputPorts.get(storagePortId.get))
               .map(_._1.mode)
               .head
@@ -346,7 +346,7 @@ class ExecutionResultService(
               if (mode == OutputMode.SET_SNAPSHOT) {
                 UUID.randomUUID.toString
               } else ""
-            (opId, OperatorResultMetadata(count, changeDetector))
+            (opId.get, OperatorResultMetadata(count, changeDetector))
           })
           .toMap
       }

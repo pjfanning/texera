@@ -127,13 +127,14 @@ object WorkflowExecutionsResource {
 
   case class WorkflowRuntimeStatistics(
       operatorId: String,
+      timestamp: Timestamp,
       inputTupleCount: ULong,
       outputTupleCount: ULong,
-      timestamp: Timestamp,
       dataProcessingTime: ULong,
       controlProcessingTime: ULong,
       idleTime: ULong,
-      numWorkers: UInteger
+      numWorkers: UInteger,
+      status: Int
   )
 }
 
@@ -247,7 +248,8 @@ class WorkflowExecutionsResource {
         OPERATOR_RUNTIME_STATISTICS.DATA_PROCESSING_TIME,
         OPERATOR_RUNTIME_STATISTICS.CONTROL_PROCESSING_TIME,
         OPERATOR_RUNTIME_STATISTICS.IDLE_TIME,
-        OPERATOR_RUNTIME_STATISTICS.NUM_WORKERS
+        OPERATOR_RUNTIME_STATISTICS.NUM_WORKERS,
+        OPERATOR_RUNTIME_STATISTICS.STATUS
       )
       .from(OPERATOR_RUNTIME_STATISTICS)
       .join(OPERATOR_EXECUTIONS)

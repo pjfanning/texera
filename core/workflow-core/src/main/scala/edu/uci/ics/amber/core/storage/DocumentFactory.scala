@@ -7,7 +7,11 @@ import edu.uci.ics.amber.core.storage.model.{
   VirtualDocument
 }
 import FileResolver.DATASET_FILE_URI_SCHEME
-import edu.uci.ics.amber.core.storage.VFSResourceType.{MATERIALIZED_RESULT, RESULT}
+import edu.uci.ics.amber.core.storage.VFSResourceType.{
+  MATERIALIZED_RESULT,
+  RESULT,
+  RUNTIME_STATISTICS
+}
 import edu.uci.ics.amber.core.storage.VFSURIFactory.{VFS_FILE_URI_SCHEME, decodeURI}
 import edu.uci.ics.amber.core.storage.result.iceberg.IcebergDocument
 import edu.uci.ics.amber.core.tuple.{Schema, Tuple}
@@ -57,7 +61,7 @@ object DocumentFactory {
         val (_, _, _, _, resourceType) = decodeURI(uri)
 
         resourceType match {
-          case RESULT | MATERIALIZED_RESULT =>
+          case RESULT | MATERIALIZED_RESULT | RUNTIME_STATISTICS =>
             val storageKey = sanitizeURIPath(uri)
 
             StorageConfig.resultStorageMode.toLowerCase match {
@@ -116,7 +120,7 @@ object DocumentFactory {
         val (_, _, _, _, resourceType) = decodeURI(uri)
 
         resourceType match {
-          case RESULT | MATERIALIZED_RESULT =>
+          case RESULT | MATERIALIZED_RESULT | RUNTIME_STATISTICS =>
             val storageKey = sanitizeURIPath(uri)
 
             StorageConfig.resultStorageMode.toLowerCase match {

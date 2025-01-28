@@ -2,6 +2,9 @@ package edu.uci.ics.texera.web.service
 
 import com.google.protobuf.timestamp.Timestamp
 import com.typesafe.scalalogging.LazyLogging
+import edu.uci.ics.amber.core.storage.model.BufferedItemWriter
+import edu.uci.ics.amber.core.storage.{DocumentFactory, VFSURIFactory}
+import edu.uci.ics.amber.core.tuple.{Attribute, AttributeType, Schema, Tuple}
 import edu.uci.ics.amber.engine.architecture.controller.{
   ExecutionStatsUpdate,
   FatalError,
@@ -23,30 +26,84 @@ import edu.uci.ics.amber.error.ErrorUtils.{getOperatorFromActorIdOpt, getStackTr
 import edu.uci.ics.amber.core.workflowruntimestate.FatalErrorType.EXECUTION_FAILURE
 import edu.uci.ics.amber.core.workflowruntimestate.WorkflowFatalError
 import edu.uci.ics.texera.web.SubscriptionManager
-import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.OperatorRuntimeStatistics
 import edu.uci.ics.texera.web.model.websocket.event.{
   ExecutionDurationUpdateEvent,
   OperatorAggregatedMetrics,
   OperatorStatisticsUpdateEvent,
   WorkerAssignmentUpdateEvent
 }
-import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource
 import edu.uci.ics.texera.web.storage.ExecutionStateStore
 import edu.uci.ics.texera.web.storage.ExecutionStateStore.updateWorkflowState
-import org.jooq.types.{UInteger, ULong}
+import edu.uci.ics.amber.core.workflow.WorkflowContext
 
 import java.time.Instant
-import java.util
 import java.util.concurrent.Executors
 
 class ExecutionStatsService(
     client: AmberClient,
     stateStore: ExecutionStateStore,
-    operatorIdToExecutionId: Map[String, ULong]
+    workflowContext: WorkflowContext
 ) extends SubscriptionManager
     with LazyLogging {
-  private val metricsPersistThread = Executors.newSingleThreadExecutor()
-  private var lastPersistedMetrics: Map[String, OperatorMetrics] = Map()
+  private val metricsPersistThread = if (AmberConfig.isUserSystemEnabled) {
+    Some(Executors.newSingleThreadExecutor())
+  } else {
+    None
+  }
+
+  private var lastPersistedMetrics: Option[Map[String, OperatorMetrics]] =
+    if (AmberConfig.isUserSystemEnabled) {
+      Some(Map())
+    } else {
+      None
+    }
+
+  private val runtimeStatisticsSchema = if (AmberConfig.isUserSystemEnabled) {
+    Some(
+      new Schema(
+        new Attribute("operatorId", AttributeType.STRING),
+        new Attribute("time", AttributeType.TIMESTAMP),
+        new Attribute("inputTupleCnt", AttributeType.LONG),
+        new Attribute("outputTupleCnt", AttributeType.LONG),
+        new Attribute("dataProcessingTime", AttributeType.LONG),
+        new Attribute("controlProcessingTime", AttributeType.LONG),
+        new Attribute("idleTime", AttributeType.LONG),
+        new Attribute("numWorkers", AttributeType.INTEGER),
+        new Attribute("status", AttributeType.INTEGER)
+      )
+    )
+  } else {
+    None
+  }
+
+  private val identifier = if (AmberConfig.isUserSystemEnabled) {
+    Some(s"runtime_statistics_${workflowContext.executionId.id}")
+  } else {
+    None
+  }
+
+  private val uri = if (AmberConfig.isUserSystemEnabled) {
+    Some(
+      VFSURIFactory.createRuntimeStatisticsURI(
+        workflowContext.workflowId,
+        workflowContext.executionId
+      )
+    )
+  } else {
+    None
+  }
+
+  private val writer = if (AmberConfig.isUserSystemEnabled) {
+    Some(
+      DocumentFactory
+        .createDocument(uri.get, runtimeStatisticsSchema.get)
+        .writer(identifier.get)
+        .asInstanceOf[BufferedItemWriter[Tuple]]
+    )
+  } else {
+    None
+  }
+
   registerCallbacks()
 
   addSubscription(
@@ -129,10 +186,12 @@ class ExecutionStatsService(
             statsStore.withOperatorInfo(evt.operatorMetrics)
           }
           if (AmberConfig.isUserSystemEnabled) {
-            metricsPersistThread.execute(() => {
-              storeRuntimeStatistics(computeStatsDiff(evt.operatorMetrics))
-              lastPersistedMetrics = evt.operatorMetrics
-            })
+            metricsPersistThread.foreach { thread =>
+              thread.execute(() => {
+                storeRuntimeStatistics(computeStatsDiff(evt.operatorMetrics))
+                lastPersistedMetrics = Some(evt.operatorMetrics)
+              })
+            }
           }
         })
     )
@@ -150,20 +209,20 @@ class ExecutionStatsService(
     var metricsMap = newMetrics
 
     // Find keys present in newState.operatorInfo but not in oldState.operatorInfo
-    val newKeys = newMetrics.keys.toSet diff lastPersistedMetrics.keys.toSet
+    val newKeys = newMetrics.keys.toSet diff lastPersistedMetrics.getOrElse(Map()).keys.toSet
     for (key <- newKeys) {
-      lastPersistedMetrics = lastPersistedMetrics + (key -> defaultMetrics)
+      lastPersistedMetrics = Some(lastPersistedMetrics.getOrElse(Map()) + (key -> defaultMetrics))
     }
 
     // Find keys present in oldState.operatorInfo but not in newState.operatorInfo
-    val oldKeys = lastPersistedMetrics.keys.toSet diff newMetrics.keys.toSet
+    val oldKeys = lastPersistedMetrics.getOrElse(Map()).keys.toSet diff newMetrics.keys.toSet
     for (key <- oldKeys) {
-      metricsMap = metricsMap + (key -> lastPersistedMetrics(key))
+      metricsMap = metricsMap + (key -> lastPersistedMetrics.getOrElse(Map())(key))
     }
 
     metricsMap.keys.map { key =>
       val newMetrics = metricsMap(key)
-      val oldMetrics = lastPersistedMetrics(key)
+      val oldMetrics = lastPersistedMetrics.getOrElse(Map())(key)
       val res = OperatorMetrics(
         newMetrics.operatorState,
         OperatorStatistics(
@@ -201,33 +260,24 @@ class ExecutionStatsService(
       operatorStatistics: scala.collection.immutable.Map[String, OperatorMetrics]
   ): Unit = {
     try {
-      val runtimeStatsList: util.ArrayList[OperatorRuntimeStatistics] =
-        new util.ArrayList[OperatorRuntimeStatistics]()
-
-      for ((operatorId, stat) <- operatorStatistics) {
-        // Create and populate the operator runtime statistics entry
-        val runtimeStats = new OperatorRuntimeStatistics()
-        runtimeStats.setOperatorExecutionId(operatorIdToExecutionId(operatorId))
-        runtimeStats.setInputTupleCnt(
-          ULong.valueOf(stat.operatorStatistics.inputCount.map(_.tupleCount).sum)
-        )
-        runtimeStats.setOutputTupleCnt(
-          ULong.valueOf(stat.operatorStatistics.outputCount.map(_.tupleCount).sum)
-        )
-        runtimeStats.setStatus(maptoStatusCode(stat.operatorState))
-        runtimeStats.setDataProcessingTime(
-          ULong.valueOf(stat.operatorStatistics.dataProcessingTime)
-        )
-        runtimeStats.setControlProcessingTime(
-          ULong.valueOf(stat.operatorStatistics.controlProcessingTime)
-        )
-        runtimeStats.setIdleTime(ULong.valueOf(stat.operatorStatistics.idleTime))
-        runtimeStats.setNumWorkers(UInteger.valueOf(stat.operatorStatistics.numWorkers))
-        runtimeStatsList.add(runtimeStats)
+      operatorStatistics.foreach {
+        case (operatorId, stat) =>
+          val runtimeStats = new Tuple(
+            runtimeStatisticsSchema.get,
+            Array(
+              operatorId,
+              new java.sql.Timestamp(System.currentTimeMillis()),
+              stat.operatorStatistics.inputCount.map(_.tupleCount).sum,
+              stat.operatorStatistics.outputCount.map(_.tupleCount).sum,
+              stat.operatorStatistics.dataProcessingTime,
+              stat.operatorStatistics.controlProcessingTime,
+              stat.operatorStatistics.idleTime,
+              stat.operatorStatistics.numWorkers,
+              maptoStatusCode(stat.operatorState).toInt
+            )
+          )
+          writer.foreach(_.putOne(runtimeStats))
       }
-
-      // Insert into operator_runtime_statistics table
-      WorkflowExecutionsResource.insertOperatorRuntimeStatistics(runtimeStatsList)
     } catch {
       case err: Throwable => logger.error("error occurred when storing runtime statistics", err)
     }

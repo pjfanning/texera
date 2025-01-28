@@ -23,7 +23,7 @@ object VFSURIFactory {
   def decodeURI(uri: URI): (
       WorkflowIdentity,
       ExecutionIdentity,
-      OperatorIdentity,
+      Option[OperatorIdentity],
       Option[PortIdentity],
       VFSResourceType.Value
   ) = {
@@ -43,7 +43,11 @@ object VFSURIFactory {
 
     val workflowId = WorkflowIdentity(extractValue("wid").toLong)
     val executionId = ExecutionIdentity(extractValue("eid").toLong)
-    val operatorId = OperatorIdentity(extractValue("opid"))
+
+    val operatorId = segments.indexOf("opid") match {
+      case -1  => None
+      case idx => Some(OperatorIdentity(extractValue("opid")))
+    }
 
     val portIdentity: Option[PortIdentity] = segments.indexOf("pid") match {
       case -1 => None
@@ -81,7 +85,7 @@ object VFSURIFactory {
       RESULT,
       workflowId,
       executionId,
-      operatorId,
+      Some(operatorId),
       Some(portIdentity)
     )
   }
@@ -99,8 +103,24 @@ object VFSURIFactory {
       MATERIALIZED_RESULT,
       workflowId,
       executionId,
-      operatorId,
+      Some(operatorId),
       Some(portIdentity)
+    )
+  }
+
+  /**
+    * Create a URI pointing to runtime statistics
+    */
+  def createRuntimeStatisticsURI(
+      workflowId: WorkflowIdentity,
+      executionId: ExecutionIdentity
+  ): URI = {
+    createVFSURI(
+      VFSResourceType.RUNTIME_STATISTICS,
+      workflowId,
+      executionId,
+      None,
+      None
     )
   }
 
@@ -119,7 +139,7 @@ object VFSURIFactory {
       resourceType: VFSResourceType.Value,
       workflowId: WorkflowIdentity,
       executionId: ExecutionIdentity,
-      operatorId: OperatorIdentity,
+      operatorId: Option[OperatorIdentity],
       portIdentity: Option[PortIdentity] = None
   ): URI = {
 
@@ -131,8 +151,19 @@ object VFSURIFactory {
       )
     }
 
-    val baseUri =
-      s"$VFS_FILE_URI_SCHEME:///wid/${workflowId.id}/eid/${executionId.id}/opid/${operatorId.id}"
+    if (
+      resourceType == VFSResourceType.RUNTIME_STATISTICS && (operatorId.isDefined || portIdentity.isDefined)
+    ) {
+      throw new IllegalArgumentException(
+        "Runtime statistics URI should not contain operatorId or portIdentity."
+      )
+    }
+
+    val baseUri = operatorId match {
+      case Some(opId) =>
+        s"$VFS_FILE_URI_SCHEME:///wid/${workflowId.id}/eid/${executionId.id}/opid/${opId.id}"
+      case None => s"$VFS_FILE_URI_SCHEME:///wid/${workflowId.id}/eid/${executionId.id}"
+    }
 
     val uriWithPort = portIdentity match {
       case Some(port) =>
