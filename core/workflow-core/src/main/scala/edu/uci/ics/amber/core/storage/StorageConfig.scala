@@ -73,6 +73,12 @@ object StorageConfig {
     .asInstanceOf[Map[String, Any]]("namespace")
     .asInstanceOf[String]
 
+  val icebergTableExecutionNamespace: String = conf("storage")
+    .asInstanceOf[Map[String, Any]]("iceberg")
+    .asInstanceOf[Map[String, Any]]("table")
+    .asInstanceOf[Map[String, Any]]("execution-namespace")
+    .asInstanceOf[String]
+
   val icebergTableCommitBatchSize: Int = conf("storage")
     .asInstanceOf[Map[String, Any]]("iceberg")
     .asInstanceOf[Map[String, Any]]("table")

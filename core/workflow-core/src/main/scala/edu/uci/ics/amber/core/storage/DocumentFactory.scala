@@ -28,6 +28,63 @@ object DocumentFactory {
 
   private def sanitizeURIPath(uri: URI): String = uri.getPath.stripPrefix("/").replace("/", "_")
 
+  private def createIcebergDocument(
+      namespace: String,
+      storageKey: String,
+      schema: Schema
+  ): IcebergDocument[Tuple] = {
+    val icebergSchema = IcebergUtil.toIcebergSchema(schema)
+    IcebergUtil.createTable(
+      IcebergCatalogInstance.getInstance(),
+      namespace,
+      storageKey,
+      icebergSchema,
+      overrideIfExists = true
+    )
+    val serde: (IcebergSchema, Tuple) => Record = IcebergUtil.toGenericRecord
+    val deserde: (IcebergSchema, Record) => Tuple = (_, record) =>
+      IcebergUtil.fromRecord(record, schema)
+
+    new IcebergDocument[Tuple](
+      namespace,
+      storageKey,
+      icebergSchema,
+      serde,
+      deserde
+    )
+  }
+
+  private def loadIcebergDocument(
+      namespace: String,
+      storageKey: String
+  ): (IcebergDocument[Tuple], Option[Schema]) = {
+    val table = IcebergUtil
+      .loadTableMetadata(
+        IcebergCatalogInstance.getInstance(),
+        namespace,
+        storageKey
+      )
+      .getOrElse(
+        throw new IllegalArgumentException("No storage is found for the given URI")
+      )
+
+    val amberSchema = IcebergUtil.fromIcebergSchema(table.schema())
+    val serde: (IcebergSchema, Tuple) => Record = IcebergUtil.toGenericRecord
+    val deserde: (IcebergSchema, Record) => Tuple = (_, record) =>
+      IcebergUtil.fromRecord(record, amberSchema)
+
+    (
+      new IcebergDocument[Tuple](
+        namespace,
+        storageKey,
+        table.schema(),
+        serde,
+        deserde
+      ),
+      Some(amberSchema)
+    )
+  }
+
   /**
     * Open a document specified by the uri for read purposes only.
     * @param fileUri the uri of the document
@@ -59,33 +116,27 @@ object DocumentFactory {
     uri.getScheme match {
       case VFS_FILE_URI_SCHEME =>
         val (_, _, _, _, resourceType) = decodeURI(uri)
+        val storageKey = sanitizeURIPath(uri)
 
         resourceType match {
-          case RESULT | MATERIALIZED_RESULT | RUNTIME_STATISTICS =>
-            val storageKey = sanitizeURIPath(uri)
-
+          case RESULT | MATERIALIZED_RESULT =>
             StorageConfig.resultStorageMode.toLowerCase match {
               case ICEBERG =>
-                val icebergSchema = IcebergUtil.toIcebergSchema(schema)
-                IcebergUtil.createTable(
-                  IcebergCatalogInstance.getInstance(),
-                  StorageConfig.icebergTableNamespace,
-                  storageKey,
-                  icebergSchema,
-                  overrideIfExists = true
+                createIcebergDocument(StorageConfig.icebergTableNamespace, storageKey, schema)
+              case _ =>
+                throw new IllegalArgumentException(
+                  s"Storage mode '${StorageConfig.resultStorageMode}' is not supported"
                 )
-                val serde: (IcebergSchema, Tuple) => Record = IcebergUtil.toGenericRecord
-                val deserde: (IcebergSchema, Record) => Tuple = (_, record) =>
-                  IcebergUtil.fromRecord(record, schema)
+            }
 
-                new IcebergDocument[Tuple](
-                  StorageConfig.icebergTableNamespace,
+          case RUNTIME_STATISTICS =>
+            StorageConfig.resultStorageMode.toLowerCase match {
+              case ICEBERG =>
+                createIcebergDocument(
+                  StorageConfig.icebergTableExecutionNamespace,
                   storageKey,
-                  icebergSchema,
-                  serde,
-                  deserde
+                  schema
                 )
-
               case _ =>
                 throw new IllegalArgumentException(
                   s"Storage mode '${StorageConfig.resultStorageMode}' is not supported"
@@ -120,36 +171,25 @@ object DocumentFactory {
         val (_, _, _, _, resourceType) = decodeURI(uri)
 
         resourceType match {
-          case RESULT | MATERIALIZED_RESULT | RUNTIME_STATISTICS =>
+          case RESULT | MATERIALIZED_RESULT =>
             val storageKey = sanitizeURIPath(uri)
 
             StorageConfig.resultStorageMode.toLowerCase match {
               case ICEBERG =>
-                val table = IcebergUtil
-                  .loadTableMetadata(
-                    IcebergCatalogInstance.getInstance(),
-                    StorageConfig.icebergTableNamespace,
-                    storageKey
-                  )
-                  .getOrElse(
-                    throw new IllegalArgumentException("No storage is found for the given URI")
-                  )
+                loadIcebergDocument(StorageConfig.icebergTableNamespace, storageKey)
 
-                val amberSchema = IcebergUtil.fromIcebergSchema(table.schema())
-                val serde: (IcebergSchema, Tuple) => Record = IcebergUtil.toGenericRecord
-                val deserde: (IcebergSchema, Record) => Tuple = (_, record) =>
-                  IcebergUtil.fromRecord(record, amberSchema)
-
-                (
-                  new IcebergDocument[Tuple](
-                    StorageConfig.icebergTableNamespace,
-                    storageKey,
-                    table.schema(),
-                    serde,
-                    deserde
-                  ),
-                  Some(amberSchema)
+              case _ =>
+                throw new IllegalArgumentException(
+                  s"Storage mode '${StorageConfig.resultStorageMode}' is not supported"
                 )
+            }
+
+          case RUNTIME_STATISTICS =>
+            val storageKey = sanitizeURIPath(uri)
+
+            StorageConfig.resultStorageMode.toLowerCase match {
+              case ICEBERG =>
+                loadIcebergDocument(StorageConfig.icebergTableExecutionNamespace, storageKey)
 
               case _ =>
                 throw new IllegalArgumentException(

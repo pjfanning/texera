@@ -1,27 +1,26 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.workflow
 
-import edu.uci.ics.amber.core.storage.StorageConfig
+import edu.uci.ics.amber.core.storage.{DocumentFactory, StorageConfig, VFSURIFactory}
+import edu.uci.ics.amber.core.tuple.Tuple
 import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayDestination, ReplayLogRecord}
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
-import edu.uci.ics.amber.core.virtualidentity.{ChannelMarkerIdentity, ExecutionIdentity}
+import edu.uci.ics.amber.core.virtualidentity.{
+  ChannelMarkerIdentity,
+  ExecutionIdentity,
+  WorkflowIdentity
+}
 import edu.uci.ics.texera.dao.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.dao.jooq.generated.Tables.{
-  USER,
-  WORKFLOW_EXECUTIONS,
-  OPERATOR_EXECUTIONS,
-  OPERATOR_RUNTIME_STATISTICS,
-  WORKFLOW_VERSION
-}
+import edu.uci.ics.texera.dao.jooq.generated.Tables.{USER, WORKFLOW_EXECUTIONS, WORKFLOW_VERSION}
 import edu.uci.ics.texera.dao.jooq.generated.tables.daos.{
   OperatorExecutionsDao,
   OperatorRuntimeStatisticsDao,
   WorkflowExecutionsDao
 }
 import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.{
-  WorkflowExecutions,
   OperatorExecutions,
-  OperatorRuntimeStatistics
+  OperatorRuntimeStatistics,
+  WorkflowExecutions
 }
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource._
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService
@@ -239,37 +238,32 @@ class WorkflowExecutionsResource {
       @PathParam("wid") wid: UInteger,
       @PathParam("eid") eid: UInteger
   ): List[WorkflowRuntimeStatistics] = {
-    context
-      .select(
-        OPERATOR_EXECUTIONS.OPERATOR_ID,
-        OPERATOR_RUNTIME_STATISTICS.INPUT_TUPLE_CNT,
-        OPERATOR_RUNTIME_STATISTICS.OUTPUT_TUPLE_CNT,
-        OPERATOR_RUNTIME_STATISTICS.TIME,
-        OPERATOR_RUNTIME_STATISTICS.DATA_PROCESSING_TIME,
-        OPERATOR_RUNTIME_STATISTICS.CONTROL_PROCESSING_TIME,
-        OPERATOR_RUNTIME_STATISTICS.IDLE_TIME,
-        OPERATOR_RUNTIME_STATISTICS.NUM_WORKERS,
-        OPERATOR_RUNTIME_STATISTICS.STATUS
-      )
-      .from(OPERATOR_RUNTIME_STATISTICS)
-      .join(OPERATOR_EXECUTIONS)
-      .on(
-        OPERATOR_RUNTIME_STATISTICS.OPERATOR_EXECUTION_ID.eq(
-          OPERATOR_EXECUTIONS.OPERATOR_EXECUTION_ID
+    // Create URI for runtime statistics
+    val uri = VFSURIFactory.createRuntimeStatisticsURI(
+      WorkflowIdentity(wid.longValue()),
+      ExecutionIdentity(eid.longValue())
+    )
+
+    // Create document factory
+    val document = DocumentFactory.openDocument(uri)
+
+    // Read all records from Iceberg and convert to WorkflowRuntimeStatistics
+    document._1
+      .get()
+      .map(tuple => {
+        val record = tuple.asInstanceOf[Tuple]
+        WorkflowRuntimeStatistics(
+          operatorId = record.getField(0).asInstanceOf[String],
+          timestamp = record.getField(1).asInstanceOf[Timestamp],
+          inputTupleCount = ULong.valueOf(record.getField(2).asInstanceOf[Long]),
+          outputTupleCount = ULong.valueOf(record.getField(3).asInstanceOf[Long]),
+          dataProcessingTime = ULong.valueOf(record.getField(4).asInstanceOf[Long]),
+          controlProcessingTime = ULong.valueOf(record.getField(5).asInstanceOf[Long]),
+          idleTime = ULong.valueOf(record.getField(6).asInstanceOf[Long]),
+          numWorkers = UInteger.valueOf(record.getField(7).asInstanceOf[Int]),
+          status = record.getField(8).asInstanceOf[Int]
         )
-      )
-      .join(WORKFLOW_EXECUTIONS)
-      .on(OPERATOR_EXECUTIONS.WORKFLOW_EXECUTION_ID.eq(WORKFLOW_EXECUTIONS.EID))
-      .join(WORKFLOW_VERSION)
-      .on(WORKFLOW_EXECUTIONS.VID.eq(WORKFLOW_VERSION.VID))
-      .where(
-        WORKFLOW_VERSION.WID
-          .eq(wid)
-          .and(WORKFLOW_EXECUTIONS.EID.eq(eid))
-      )
-      .orderBy(OPERATOR_RUNTIME_STATISTICS.TIME, OPERATOR_EXECUTIONS.OPERATOR_ID)
-      .fetchInto(classOf[WorkflowRuntimeStatistics])
-      .asScala
+      })
       .toList
   }
 

@@ -15,6 +15,7 @@ storage:
         password: "password" # replace with actual password
     table:
       namespace: "operator-port-result"
+      execution-namespace: "execution"
       commit:
         batch-size: 4096 # decide the buffer size of our IcebergTableWriter
         retry:

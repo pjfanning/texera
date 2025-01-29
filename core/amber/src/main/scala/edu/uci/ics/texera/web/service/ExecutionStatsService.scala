@@ -94,12 +94,12 @@ class ExecutionStatsService(
   }
 
   private val writer = if (AmberConfig.isUserSystemEnabled) {
-    Some(
-      DocumentFactory
-        .createDocument(uri.get, runtimeStatisticsSchema.get)
-        .writer(identifier.get)
-        .asInstanceOf[BufferedItemWriter[Tuple]]
-    )
+    val w = DocumentFactory
+      .createDocument(uri.get, runtimeStatisticsSchema.get)
+      .writer(identifier.get)
+      .asInstanceOf[BufferedItemWriter[Tuple]]
+    w.open()
+    Some(w)
   } else {
     None
   }
@@ -278,6 +278,7 @@ class ExecutionStatsService(
           )
           writer.foreach(_.putOne(runtimeStats))
       }
+      writer.foreach(_.close())
     } catch {
       case err: Throwable => logger.error("error occurred when storing runtime statistics", err)
     }
