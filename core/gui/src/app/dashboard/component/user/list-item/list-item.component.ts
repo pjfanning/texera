@@ -90,7 +90,7 @@ export class ListItemComponent implements OnInit, OnChanges {
     if (this.entry.type === "workflow") {
       if (typeof this.entry.id === "number") {
         this.disableDelete = !this.entry.workflow.isOwner;
-        this.hubWorkflowService
+        this.workflowPersistService
           .getWorkflowOwners(this.entry.id)
           .pipe(untilDestroyed(this))
           .subscribe((data: number[]) => {

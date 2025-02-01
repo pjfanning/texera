@@ -8,7 +8,6 @@ import { Workflow } from "../../../../common/type/workflow";
 import { isDefined } from "../../../../common/util/predicate";
 import { HubWorkflowService } from "../../../service/workflow/hub-workflow.service";
 import { Role, User } from "src/app/common/type/user";
-import { Location } from "@angular/common";
 import { NotificationService } from "../../../../common/service/notification/notification.service";
 import { WorkflowPersistService } from "../../../../common/service/workflow-persist/workflow-persist.service";
 import { NZ_MODAL_DATA } from "ng-zorro-antd/modal";
@@ -45,7 +44,6 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
     private notificationService: NotificationService,
     private hubWorkflowService: HubWorkflowService,
     private workflowPersistService: WorkflowPersistService,
-    private location: Location,
     @Optional() @Inject(NZ_MODAL_DATA) public input: { wid: number } | undefined
   ) {
     this.wid = input?.wid; //Accessing from the pop up. getting wid from the @Input
@@ -86,19 +84,19 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
       .subscribe(count => {
         this.viewCount = count;
       });
-    this.hubWorkflowService
+    this.workflowPersistService
       .getOwnerUser(this.wid)
       .pipe(untilDestroyed(this))
       .subscribe(owner => {
         this.ownerName = owner.name;
       });
-    this.hubWorkflowService
+    this.workflowPersistService
       .getWorkflowName(this.wid)
       .pipe(untilDestroyed(this))
       .subscribe(workflowName => {
         this.workflowName = workflowName;
       });
-    this.hubWorkflowService
+    this.workflowPersistService
       .getWorkflowDescription(this.wid)
       .pipe(untilDestroyed(this))
       .subscribe(workflowDescription => {
@@ -150,7 +148,7 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
           },
         });
     } else {
-      this.hubWorkflowService
+      this.workflowPersistService
         .retrievePublicWorkflow(wid)
         .pipe(untilDestroyed(this))
         .subscribe({

@@ -3,16 +3,12 @@ package edu.uci.ics.texera.web.resource.dashboard.hub.workflow
 import edu.uci.ics.amber.core.storage.StorageConfig
 import edu.uci.ics.texera.dao.SqlServer
 import edu.uci.ics.texera.dao.jooq.generated.Tables._
-import edu.uci.ics.texera.dao.jooq.generated.tables.daos.WorkflowDao
-import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.{User, Workflow}
+import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.Workflow
 import edu.uci.ics.texera.web.resource.dashboard.hub.workflow.HubWorkflowResource.{
   fetchDashboardWorkflowsByWids,
   recordUserActivity
 }
-import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource.{
-  DashboardWorkflow,
-  WorkflowWithPrivilege
-}
+import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource.DashboardWorkflow
 import org.jooq.impl.DSL
 import org.jooq.types.UInteger
 
@@ -114,16 +110,6 @@ class HubWorkflowResource {
   final private lazy val context = SqlServer
     .getInstance(StorageConfig.jdbcUrl, StorageConfig.jdbcUsername, StorageConfig.jdbcPassword)
     .createDSLContext()
-  final private lazy val workflowDao = new WorkflowDao(context.configuration)
-
-  @GET
-  @Path("/list")
-  def getWorkflowList: util.List[Workflow] = {
-    context
-      .select()
-      .from(WORKFLOW)
-      .fetchInto(classOf[Workflow])
-  }
 
   @GET
   @Path("/count")
@@ -132,72 +118,6 @@ class HubWorkflowResource {
       .from(WORKFLOW)
       .where(WORKFLOW.IS_PUBLIC.eq(1.toByte))
       .fetchOne(0, classOf[Integer])
-  }
-
-  @GET
-  @Path("/owner_user")
-  def getOwnerUser(@QueryParam("wid") wid: UInteger): User = {
-    context
-      .select(
-        USER.UID,
-        USER.NAME,
-        USER.EMAIL,
-        USER.PASSWORD,
-        USER.GOOGLE_ID,
-        USER.ROLE,
-        USER.GOOGLE_AVATAR
-      )
-      .from(WORKFLOW_OF_USER)
-      .join(USER)
-      .on(WORKFLOW_OF_USER.UID.eq(USER.UID))
-      .where(WORKFLOW_OF_USER.WID.eq(wid))
-      .fetchOneInto(classOf[User])
-  }
-
-  @GET
-  @Path("/workflow_name")
-  def getWorkflowName(@QueryParam("wid") wid: UInteger): String = {
-    context
-      .select(
-        WORKFLOW.NAME
-      )
-      .from(WORKFLOW)
-      .where(WORKFLOW.WID.eq(wid))
-      .fetchOneInto(classOf[String])
-  }
-
-  @GET
-  @Path("/public/{wid}")
-  def retrievePublicWorkflow(
-      @PathParam("wid") wid: UInteger
-  ): WorkflowWithPrivilege = {
-    val workflow = workflowDao.ctx
-      .selectFrom(WORKFLOW)
-      .where(WORKFLOW.WID.eq(wid))
-      .and(WORKFLOW.IS_PUBLIC.isTrue)
-      .fetchOne()
-    WorkflowWithPrivilege(
-      workflow.getName,
-      workflow.getDescription,
-      workflow.getWid,
-      workflow.getContent,
-      workflow.getCreationTime,
-      workflow.getLastModifiedTime,
-      workflow.getIsPublic,
-      readonly = true
-    )
-  }
-
-  @GET
-  @Path("/workflow_description")
-  def getWorkflowDescription(@QueryParam("wid") wid: UInteger): String = {
-    context
-      .select(
-        WORKFLOW.DESCRIPTION
-      )
-      .from(WORKFLOW)
-      .where(WORKFLOW.WID.eq(wid))
-      .fetchOneInto(classOf[String])
   }
 
   @GET
@@ -336,8 +256,6 @@ class HubWorkflowResource {
       .asScala
       .toSeq
 
-    println(fetchDashboardWorkflowsByWids(topLovedWorkflowsWids))
-
     fetchDashboardWorkflowsByWids(topLovedWorkflowsWids)
   }
 
@@ -357,8 +275,6 @@ class HubWorkflowResource {
       .fetchInto(classOf[UInteger])
       .asScala
       .toSeq
-
-    println(fetchDashboardWorkflowsByWids(topClonedWorkflowsWids))
 
     fetchDashboardWorkflowsByWids(topClonedWorkflowsWids)
   }
@@ -403,19 +319,5 @@ class HubWorkflowResource {
       .from(WORKFLOW_VIEW_COUNT)
       .where(WORKFLOW_VIEW_COUNT.WID.eq(wid))
       .fetchOneInto(classOf[Int])
-  }
-
-  @GET
-  @Path("/workflowUserAccess")
-  def workflowUserAccess(
-      @QueryParam("wid") wid: UInteger
-  ): util.List[UInteger] = {
-    val records = context
-      .select(WORKFLOW_USER_ACCESS.UID)
-      .from(WORKFLOW_USER_ACCESS)
-      .where(WORKFLOW_USER_ACCESS.WID.eq(wid))
-      .fetch()
-
-    records.getValues(WORKFLOW_USER_ACCESS.UID)
   }
 }
