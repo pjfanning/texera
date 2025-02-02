@@ -20,9 +20,9 @@ class ResultResource extends LazyLogging {
   @POST
   @Path("/export")
   def exportResult(
-                    request: ResultExportRequest,
-                    @Auth user: SessionUser
-                  ): Response = {
+      request: ResultExportRequest,
+      @Auth user: SessionUser
+  ): Response = {
     try {
       if (request.destination == "local") {
         // CASE A: multiple operators => produce ZIP
@@ -42,7 +42,7 @@ class ResultResource extends LazyLogging {
           val finalFileName = zipFileNameOpt.getOrElse("operators.zip")
           return Response
             .ok(zipStream, "application/zip")
-            .header("Content-Disposition", s"attachment; filename=\"$finalFileName\"")
+            .header("Content-Disposition", "attachment; filename=\"" + finalFileName + "\"")
             .build()
         }
 
@@ -71,7 +71,7 @@ class ResultResource extends LazyLogging {
         val finalFileName = fileNameOpt.getOrElse("download.dat")
         Response
           .ok(streamingOutput, MediaType.APPLICATION_OCTET_STREAM)
-          .header("Content-Disposition", s"attachment; filename=\"$finalFileName\"")
+          .header("Content-Disposition", "attachment; filename=\"" + finalFileName + "\"")
           .build()
 
       } else {

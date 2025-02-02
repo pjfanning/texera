@@ -53,9 +53,7 @@ export class ResultExportationComponent implements OnInit {
   }
 
   updateOutputType(): void {
-    const highlightedOperatorIds = this.workflowActionService
-      .getJointGraphWrapper()
-      .getCurrentHighlightedOperatorIDs();
+    const highlightedOperatorIds = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
 
     if (highlightedOperatorIds.length === 0) {
       // No operators highlighted

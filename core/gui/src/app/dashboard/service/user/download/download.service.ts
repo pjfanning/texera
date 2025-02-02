@@ -115,32 +115,24 @@ export class DownloadService {
       destination,
     };
     if (destination === "local") {
-      return this.http.post(
-        `${AppSettings.getApiEndpoint()}/${EXPORT_BASE_URL}`,
-        requestBody,
-        {
-          responseType: "blob" as const,
-          observe: "response",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/octet-stream",
-          },
-        }
-      );
+      return this.http.post(`${AppSettings.getApiEndpoint()}/${EXPORT_BASE_URL}`, requestBody, {
+        responseType: "blob" as const,
+        observe: "response",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/octet-stream",
+        },
+      });
     } else {
       // dataset => return JSON
-      return this.http.post<any>(
-        `${AppSettings.getApiEndpoint()}/${EXPORT_BASE_URL}`,
-        requestBody,
-        {
-          responseType: "json" as const,
-          observe: "response",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
+      return this.http.post<any>(`${AppSettings.getApiEndpoint()}/${EXPORT_BASE_URL}`, requestBody, {
+        responseType: "json" as const,
+        observe: "response",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
     }
   }
 

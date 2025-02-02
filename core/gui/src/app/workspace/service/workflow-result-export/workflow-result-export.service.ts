@@ -196,8 +196,9 @@ export class WorkflowResultExportService {
             }
           }
         },
-        error: err => {
-          this.notificationService.error(`An error happened in exporting operator results: ${err?.error?.error || err}`);
+        error: (err: unknown) => {
+          const errorMessage = (err as any)?.error?.error || (err as any)?.error || err;
+          this.notificationService.error(`An error happened in exporting operator results: ${errorMessage}`);
         },
       });
   }
