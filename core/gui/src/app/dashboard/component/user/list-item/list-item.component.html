@@ -144,13 +144,13 @@
       nzFlex="0"
       class="resource-info">
       <button
-        *ngIf="!isPrivateSearch && entry.type==='workflow'"
+        *ngIf="!isPrivateSearch && (entry.type==='workflow' || entry.type==='dataset')"
         nz-button
         nzType="default"
         class="like-button"
         title="Like"
         [disabled]="!currentUid"
-        (click)="toggleLike(this.entry.id, this.currentUid); $event.stopPropagation()"
+        (click)="toggleLike(this.entry.id, currentUid); $event.stopPropagation()"
         [attr.disabled]="!currentUid ? true : null">
         <i
           nz-icon

@@ -134,6 +134,12 @@ export class ListItemComponent implements OnInit, OnChanges {
             }
             setTimeout(() => this.cdr.detectChanges(), 0);
           });
+        this.datasetService
+          .getLikeCount(this.entry.id)
+          .pipe(untilDestroyed(this))
+          .subscribe(count => {
+            this.likeCount = count;
+          });
         this.iconType = "database";
       }
     } else if (this.entry.type === "file") {
@@ -146,13 +152,25 @@ export class ListItemComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.initializeEntry();
-    if (this.entry.id !== undefined && this.currentUid !== undefined) {
-      this.hubWorkflowService
-        .isWorkflowLiked(this.entry.id, this.currentUid)
-        .pipe(untilDestroyed(this))
-        .subscribe((isLiked: boolean) => {
-          this.isLiked = isLiked;
-        });
+    if(this.entry.type === "workflow") {
+      if (this.entry.id !== undefined && this.currentUid !== undefined) {
+        this.hubWorkflowService
+          .isWorkflowLiked(this.entry.id, this.currentUid)
+          .pipe(untilDestroyed(this))
+          .subscribe((isLiked: boolean) => {
+            this.isLiked = isLiked;
+          });
+      }
+    }
+    else if(this.entry.type === "dataset") {
+      if (this.entry.id !== undefined && this.currentUid !== undefined) {
+        this.datasetService
+          .isDatasetLiked(this.entry.id, this.currentUid)
+          .pipe(untilDestroyed(this))
+          .subscribe((isLiked: boolean) => {
+            this.isLiked = isLiked;
+          });
+      }
     }
   }
 
@@ -160,13 +178,25 @@ export class ListItemComponent implements OnInit, OnChanges {
     if (changes["entry"]) {
       this.initializeEntry();
     }
-    if (this.entry.id !== undefined && this.currentUid !== undefined) {
-      this.hubWorkflowService
-        .isWorkflowLiked(this.entry.id, this.currentUid)
-        .pipe(untilDestroyed(this))
-        .subscribe((isLiked: boolean) => {
-          this.isLiked = isLiked;
-        });
+    if(this.entry.type === "workflow") {
+      if (this.entry.id !== undefined && this.currentUid !== undefined) {
+        this.hubWorkflowService
+          .isWorkflowLiked(this.entry.id, this.currentUid)
+          .pipe(untilDestroyed(this))
+          .subscribe((isLiked: boolean) => {
+            this.isLiked = isLiked;
+          });
+      }
+    }
+    else if(this.entry.type === "dataset") {
+      if (this.entry.id !== undefined && this.currentUid !== undefined) {
+        this.datasetService
+          .isDatasetLiked(this.entry.id, this.currentUid)
+          .pipe(untilDestroyed(this))
+          .subscribe((isLiked: boolean) => {
+            this.isLiked = isLiked;
+          });
+      }
     }
   }
 
@@ -374,41 +404,77 @@ export class ListItemComponent implements OnInit, OnChanges {
     }
   }
 
-  toggleLike(workflowId: number | undefined, userId: number | undefined): void {
-    if (workflowId === undefined || userId === undefined) {
-      return;
-    }
-
-    if (this.isLiked) {
-      this.hubWorkflowService
-        .postUnlikeWorkflow(workflowId, userId)
-        .pipe(untilDestroyed(this))
-        .subscribe((success: boolean) => {
-          if (success) {
-            this.isLiked = false;
-            this.hubWorkflowService
-              .getLikeCount(workflowId)
-              .pipe(untilDestroyed(this))
-              .subscribe((count: number) => {
-                this.likeCount = count;
-              });
-          }
-        });
-    } else {
-      this.hubWorkflowService
-        .postLikeWorkflow(workflowId, userId)
-        .pipe(untilDestroyed(this))
-        .subscribe((success: boolean) => {
-          if (success) {
-            this.isLiked = true;
-            this.hubWorkflowService
-              .getLikeCount(workflowId)
-              .pipe(untilDestroyed(this))
-              .subscribe((count: number) => {
-                this.likeCount = count;
-              });
-          }
-        });
+  toggleLike(id: number | undefined, userId: number | undefined): void {
+    if (this.entry.type === "workflow") {
+      if (id === undefined || userId === undefined) {
+        return;
+      }
+      if (this.isLiked) {
+        this.hubWorkflowService
+          .postUnlikeWorkflow(id, userId)
+          .pipe(untilDestroyed(this))
+          .subscribe((success: boolean) => {
+            if (success) {
+              this.isLiked = false;
+              this.hubWorkflowService
+                .getLikeCount(id)
+                .pipe(untilDestroyed(this))
+                .subscribe((count: number) => {
+                  this.likeCount = count;
+                });
+            }
+          });
+      } else {
+        this.hubWorkflowService
+          .postLikeWorkflow(id, userId)
+          .pipe(untilDestroyed(this))
+          .subscribe((success: boolean) => {
+            if (success) {
+              this.isLiked = true;
+              this.hubWorkflowService
+                .getLikeCount(id)
+                .pipe(untilDestroyed(this))
+                .subscribe((count: number) => {
+                  this.likeCount = count;
+                });
+            }
+          });
+      }
+    } else if(this.entry.type === "dataset"){
+      if (id === undefined || userId === undefined) {
+        return;
+      }
+      if (this.isLiked) {
+        this.datasetService
+          .postUnlikeDataset(id, userId)
+          .pipe(untilDestroyed(this))
+          .subscribe((success: boolean) => {
+            if (success) {
+              this.isLiked = false;
+              this.datasetService
+                .getLikeCount(id!)
+                .pipe(untilDestroyed(this))
+                .subscribe((count: number) => {
+                  this.likeCount = count;
+                });
+            }
+          });
+      } else {
+        this.datasetService
+          .postLikeDataset(id, userId)
+          .pipe(untilDestroyed(this))
+          .subscribe((success: boolean) => {
+            if (success) {
+              this.isLiked = true;
+              this.datasetService
+                .getLikeCount(id!)
+                .pipe(untilDestroyed(this))
+                .subscribe((count: number) => {
+                  this.likeCount = count;
+                });
+            }
+          });
+      }
     }
   }
 
