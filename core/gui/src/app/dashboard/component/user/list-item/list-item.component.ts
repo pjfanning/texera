@@ -381,7 +381,7 @@ export class ListItemComponent implements OnInit, OnChanges {
 
     if (this.isLiked) {
       this.hubWorkflowService
-        .postUnlikeWorkflow(workflowId, userId)
+        .postUnlikeWorkflow(workflowId, userId, this.entry.type)
         .pipe(untilDestroyed(this))
         .subscribe((success: boolean) => {
           if (success) {
@@ -396,7 +396,7 @@ export class ListItemComponent implements OnInit, OnChanges {
         });
     } else {
       this.hubWorkflowService
-        .postLikeWorkflow(workflowId, userId)
+        .postLikeWorkflow(workflowId, userId, this.entry.type)
         .pipe(untilDestroyed(this))
         .subscribe((success: boolean) => {
           if (success) {

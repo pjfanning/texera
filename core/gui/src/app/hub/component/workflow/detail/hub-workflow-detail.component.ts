@@ -78,7 +78,7 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
         this.cloneCount = count;
       });
     this.hubWorkflowService
-      .postViewWorkflow(this.wid, this.currentUser?.uid ?? 0)
+      .postViewWorkflow(this.wid, this.currentUser?.uid ?? 0, "workflow")
       .pipe(throttleTime(THROTTLE_TIME_MS))
       .pipe(untilDestroyed(this))
       .subscribe(count => {
@@ -191,7 +191,7 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
 
     if (this.isLiked) {
       this.hubWorkflowService
-        .postUnlikeWorkflow(this.wid, userId)
+        .postUnlikeWorkflow(this.wid, userId, "workflow")
         .pipe(untilDestroyed(this))
         .subscribe((success: boolean) => {
           if (success) {
@@ -209,7 +209,7 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy, OnI
         });
     } else {
       this.hubWorkflowService
-        .postLikeWorkflow(this.wid, userId)
+        .postLikeWorkflow(this.wid, userId, "workflow")
         .pipe(untilDestroyed(this))
         .subscribe((success: boolean) => {
           if (success) {

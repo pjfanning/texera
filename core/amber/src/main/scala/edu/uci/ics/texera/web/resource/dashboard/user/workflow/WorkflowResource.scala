@@ -475,7 +475,7 @@ class WorkflowResource extends LazyLogging {
       sessionUser
     )
 
-    recordUserActivity(request, sessionUser.getUid, wid, "clone")
+    recordUserActivity(request, sessionUser.getUid, wid, "workflow", "clone")
 
     val existingCloneRecord = context
       .selectFrom(WORKFLOW_USER_CLONES)

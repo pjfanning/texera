@@ -6,7 +6,10 @@ import edu.uci.ics.texera.dao.jooq.generated.Tables._
 import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.Workflow
 import edu.uci.ics.texera.web.resource.dashboard.hub.workflow.HubWorkflowResource.{
   fetchDashboardWorkflowsByWids,
-  recordUserActivity
+  isLiked,
+  recordUserActivity,
+  userRequest,
+  validateEntityType
 }
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource.DashboardWorkflow
 import org.jooq.impl.DSL
@@ -21,6 +24,8 @@ import javax.ws.rs.core.{Context, MediaType}
 import scala.jdk.CollectionConverters._
 
 object HubWorkflowResource {
+  case class userRequest(workflowId: UInteger, userId: UInteger, entityType: String)
+
   final private lazy val context = SqlServer
     .getInstance(StorageConfig.jdbcUrl, StorageConfig.jdbcUsername, StorageConfig.jdbcPassword)
     .createDSLContext()
@@ -79,27 +84,46 @@ object HubWorkflowResource {
   def recordUserActivity(
       request: HttpServletRequest,
       userId: UInteger = UInteger.valueOf(0),
-      workflowId: UInteger,
+      entityId: UInteger,
+      entityType: String,
       action: String
   ): Unit = {
+    validateEntityType(entityType)
+
     val userIp = request.getRemoteAddr()
-    //    println(s"User IP from getRemoteAddr: $userIp")
+
+    val query = context
+      .insertInto(USER_ACTIVITY)
+      .set(USER_ACTIVITY.UID, userId)
+      .set(USER_ACTIVITY.ID, entityId)
+      .set(USER_ACTIVITY.TYPE, entityType)
+      .set(USER_ACTIVITY.ACTIVATE, action)
 
     if (ipv4Pattern.matcher(userIp).matches()) {
-      context
-        .insertInto(WORKFLOW_USER_ACTIVITY)
-        .set(WORKFLOW_USER_ACTIVITY.UID, userId)
-        .set(WORKFLOW_USER_ACTIVITY.WID, workflowId)
-        .set(WORKFLOW_USER_ACTIVITY.IP, userIp)
-        .set(WORKFLOW_USER_ACTIVITY.ACTIVATE, action)
-        .execute()
-    } else {
-      context
-        .insertInto(WORKFLOW_USER_ACTIVITY)
-        .set(WORKFLOW_USER_ACTIVITY.UID, userId)
-        .set(WORKFLOW_USER_ACTIVITY.WID, workflowId)
-        .set(WORKFLOW_USER_ACTIVITY.ACTIVATE, action)
-        .execute()
+      query.set(USER_ACTIVITY.IP, userIp)
+    }
+
+    query.execute()
+  }
+
+  def isLiked(userId: UInteger, workflowId: UInteger): Boolean = {
+    context
+      .selectFrom(WORKFLOW_USER_LIKES)
+      .where(
+        WORKFLOW_USER_LIKES.UID
+          .eq(userId)
+          .and(WORKFLOW_USER_LIKES.WID.eq(workflowId))
+      )
+      .fetchOne() != null
+  }
+
+  def validateEntityType(entityType: String): Unit = {
+    val allowedTypes = Set("workflow", "dataset")
+
+    if (!allowedTypes.contains(entityType)) {
+      throw new IllegalArgumentException(
+        s"Invalid entity type: $entityType. Allowed types: ${allowedTypes.mkString(", ")}."
+      )
     }
   }
 }
@@ -127,46 +151,30 @@ class HubWorkflowResource {
       @QueryParam("workflowId") workflowId: UInteger,
       @QueryParam("userId") userId: UInteger
   ): Boolean = {
-    val existingLike = context
-      .selectFrom(WORKFLOW_USER_LIKES)
-      .where(
-        WORKFLOW_USER_LIKES.UID
-          .eq(userId)
-          .and(WORKFLOW_USER_LIKES.WID.eq(workflowId))
-      )
-      .fetchOne()
-
-    existingLike != null
+    isLiked(userId, workflowId)
   }
 
   @POST
   @Path("/like")
   @Consumes(Array(MediaType.APPLICATION_JSON))
-  def likeWorkflow(@Context request: HttpServletRequest, likeRequest: Array[UInteger]): Boolean = {
-    if (likeRequest.length != 2) {
-      return false
-    }
+  def likeWorkflow(
+      @Context request: HttpServletRequest,
+      likeRequest: userRequest
+  ): Boolean = {
+    val workflowId = likeRequest.workflowId
+    val userId = likeRequest.userId
+    val entityType = likeRequest.entityType
 
-    val workflowId = likeRequest(0)
-    val userId = likeRequest(1)
+    validateEntityType(entityType)
 
-    val existingLike = context
-      .selectFrom(WORKFLOW_USER_LIKES)
-      .where(
-        WORKFLOW_USER_LIKES.UID
-          .eq(userId)
-          .and(WORKFLOW_USER_LIKES.WID.eq(workflowId))
-      )
-      .fetchOne()
-
-    if (existingLike == null) {
+    if (!isLiked(userId, workflowId)) {
       context
         .insertInto(WORKFLOW_USER_LIKES)
         .set(WORKFLOW_USER_LIKES.UID, userId)
         .set(WORKFLOW_USER_LIKES.WID, workflowId)
         .execute()
 
-      recordUserActivity(request, userId, workflowId, "like")
+      recordUserActivity(request, userId, workflowId, entityType, "like")
       true
     } else {
       false
@@ -178,25 +186,15 @@ class HubWorkflowResource {
   @Consumes(Array(MediaType.APPLICATION_JSON))
   def unlikeWorkflow(
       @Context request: HttpServletRequest,
-      likeRequest: Array[UInteger]
+      unlikeRequest: userRequest
   ): Boolean = {
-    if (likeRequest.length != 2) {
-      return false
-    }
+    val workflowId = unlikeRequest.workflowId
+    val userId = unlikeRequest.userId
+    val entityType = unlikeRequest.entityType
 
-    val workflowId = likeRequest(0)
-    val userId = likeRequest(1)
+    validateEntityType(entityType)
 
-    val existingLike = context
-      .selectFrom(WORKFLOW_USER_LIKES)
-      .where(
-        WORKFLOW_USER_LIKES.UID
-          .eq(userId)
-          .and(WORKFLOW_USER_LIKES.WID.eq(workflowId))
-      )
-      .fetchOne()
-
-    if (existingLike != null) {
+    if (isLiked(userId, workflowId)) {
       context
         .deleteFrom(WORKFLOW_USER_LIKES)
         .where(
@@ -206,7 +204,7 @@ class HubWorkflowResource {
         )
         .execute()
 
-      recordUserActivity(request, userId, workflowId, "unlike")
+      recordUserActivity(request, userId, workflowId, entityType, "unlike")
       true
     } else {
       false
@@ -282,10 +280,16 @@ class HubWorkflowResource {
   @POST
   @Path("/view")
   @Consumes(Array(MediaType.APPLICATION_JSON))
-  def viewWorkflow(@Context request: HttpServletRequest, viewRequest: Array[UInteger]): Int = {
+  def viewWorkflow(
+      @Context request: HttpServletRequest,
+      viewRequest: userRequest
+  ): Int = {
 
-    val workflowId = viewRequest(0)
-    val userId = viewRequest(1)
+    val workflowId = viewRequest.workflowId
+    val userId = viewRequest.userId
+    val entityType = viewRequest.entityType
+
+    validateEntityType(entityType)
 
     context
       .insertInto(WORKFLOW_VIEW_COUNT)
@@ -294,7 +298,7 @@ class HubWorkflowResource {
       .onDuplicateKeyUpdate()
       .set(WORKFLOW_VIEW_COUNT.VIEW_COUNT, WORKFLOW_VIEW_COUNT.VIEW_COUNT.add(1))
       .execute()
-    recordUserActivity(request, userId, workflowId, "view")
+    recordUserActivity(request, userId, workflowId, entityType, "view")
     context
       .select(WORKFLOW_VIEW_COUNT.VIEW_COUNT)
       .from(WORKFLOW_VIEW_COUNT)

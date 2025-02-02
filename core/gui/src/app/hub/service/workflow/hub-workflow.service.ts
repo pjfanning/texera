@@ -1,4 +1,4 @@
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { AppSettings } from "../../../common/app-setting";
@@ -28,12 +28,18 @@ export class HubWorkflowService {
     });
   }
 
-  public postLikeWorkflow(workflowId: number, userId: number): Observable<boolean> {
-    return this.http.post<boolean>(`${this.BASE_URL}/like`, [workflowId, userId]);
+  public postLikeWorkflow(workflowId: number, userId: number, entityType: string): Observable<boolean> {
+    const body = { workflowId, userId, entityType };
+    return this.http.post<boolean>(`${this.BASE_URL}/like`, body, {
+      headers: new HttpHeaders({ "Content-Type": "application/json" }),
+    });
   }
 
-  public postUnlikeWorkflow(workflowId: number, userId: number): Observable<boolean> {
-    return this.http.post<boolean>(`${this.BASE_URL}/unlike`, [workflowId, userId]);
+  public postUnlikeWorkflow(workflowId: number, userId: number, entityType: string): Observable<boolean> {
+    const body = { workflowId, userId, entityType };
+    return this.http.post<boolean>(`${this.BASE_URL}/unlike`, body, {
+      headers: new HttpHeaders({ "Content-Type": "application/json" }),
+    });
   }
 
   public getLikeCount(wid: number): Observable<number> {
@@ -52,8 +58,11 @@ export class HubWorkflowService {
     return this.http.get<DashboardWorkflow[]>(`${this.BASE_URL}/topClonedWorkflows`);
   }
 
-  public postViewWorkflow(workflowId: number, userId: number): Observable<number> {
-    return this.http.post<number>(`${this.BASE_URL}/view`, [workflowId, userId]);
+  public postViewWorkflow(workflowId: number, userId: number, entityType: string): Observable<number> {
+    const body = { workflowId, userId, entityType };
+    return this.http.post<number>(`${this.BASE_URL}/view`, body, {
+      headers: new HttpHeaders({ "Content-Type": "application/json" }),
+    });
   }
 
   public getViewCount(wid: number): Observable<number> {
