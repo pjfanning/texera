@@ -1,12 +1,12 @@
-package edu.uci.ics.texera.web.resource.dashboard.hub.workflow
+package edu.uci.ics.texera.web.resource.dashboard.hub
 
 import edu.uci.ics.amber.core.storage.StorageConfig
 import edu.uci.ics.texera.dao.SqlServer
 import edu.uci.ics.texera.dao.jooq.generated.Tables._
 import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.Workflow
-import edu.uci.ics.texera.web.resource.dashboard.hub.workflow.HubWorkflowResource.{
+import HubResource.{
   fetchDashboardWorkflowsByWids,
-  isLiked,
+  isLikedHelper,
   recordUserActivity,
   userRequest,
   validateEntityType
@@ -23,8 +23,8 @@ import javax.ws.rs._
 import javax.ws.rs.core.{Context, MediaType}
 import scala.jdk.CollectionConverters._
 
-object HubWorkflowResource {
-  case class userRequest(workflowId: UInteger, userId: UInteger, entityType: String)
+object HubResource {
+  case class userRequest(entityId: UInteger, userId: UInteger, entityType: String)
 
   final private lazy val context = SqlServer
     .getInstance(StorageConfig.jdbcUrl, StorageConfig.jdbcUsername, StorageConfig.jdbcPassword)
@@ -106,13 +106,20 @@ object HubWorkflowResource {
     query.execute()
   }
 
-  def isLiked(userId: UInteger, workflowId: UInteger): Boolean = {
+  def isLikedHelper(userId: UInteger, workflowId: UInteger, entityType: String): Boolean = {
+    validateEntityType(entityType)
+
+    val (table, uidColumn, idColumn) = entityType match {
+      case "workflow" => (WORKFLOW_USER_LIKES, WORKFLOW_USER_LIKES.UID, WORKFLOW_USER_LIKES.WID)
+      case _          => return false
+    }
+
     context
-      .selectFrom(WORKFLOW_USER_LIKES)
+      .selectFrom(table)
       .where(
-        WORKFLOW_USER_LIKES.UID
+        uidColumn
           .eq(userId)
-          .and(WORKFLOW_USER_LIKES.WID.eq(workflowId))
+          .and(idColumn.eq(workflowId))
       )
       .fetchOne() != null
   }
@@ -126,21 +133,59 @@ object HubWorkflowResource {
       )
     }
   }
+
+  def recordCloneActivity(
+      request: HttpServletRequest,
+      userId: UInteger,
+      entityId: UInteger,
+      entityType: String
+  ): Unit = {
+    validateEntityType(entityType)
+    recordUserActivity(request, userId, entityId, entityType, "clone")
+
+    val (table, idColumn) = entityType match {
+      case "workflow" => (WORKFLOW_USER_CLONES, WORKFLOW_USER_CLONES.WID)
+      case _          => return
+    }
+
+    val existingCloneRecord = context
+      .selectFrom(table)
+      .where(table.UID.eq(userId))
+      .and(idColumn.eq(entityId))
+      .fetchOne()
+
+    if (existingCloneRecord == null) {
+      context
+        .insertInto(table)
+        .set(table.UID, userId)
+        .set(idColumn, entityId)
+        .execute()
+    }
+  }
 }
 
 @Produces(Array(MediaType.APPLICATION_JSON))
-@Path("/hub/workflow")
-class HubWorkflowResource {
+@Path("/hub")
+class HubResource {
   final private lazy val context = SqlServer
     .getInstance(StorageConfig.jdbcUrl, StorageConfig.jdbcUsername, StorageConfig.jdbcPassword)
     .createDSLContext()
 
   @GET
   @Path("/count")
-  def getPublishedWorkflowCount: Integer = {
-    context.selectCount
-      .from(WORKFLOW)
-      .where(WORKFLOW.IS_PUBLIC.eq(1.toByte))
+  def getPublishedWorkflowCount(@QueryParam("entityType") entityType: String): Integer = {
+    validateEntityType(entityType)
+
+    val (table, isPublicColumn) = entityType match {
+      case "workflow" => (WORKFLOW, WORKFLOW.IS_PUBLIC)
+      case "dataset"  => (DATASET, DATASET.IS_PUBLIC)
+      case _          => return 0
+    }
+
+    context
+      .selectCount()
+      .from(table)
+      .where(isPublicColumn.eq(1.toByte))
       .fetchOne(0, classOf[Integer])
   }
 
@@ -149,9 +194,10 @@ class HubWorkflowResource {
   @Produces(Array(MediaType.APPLICATION_JSON))
   def isLiked(
       @QueryParam("workflowId") workflowId: UInteger,
-      @QueryParam("userId") userId: UInteger
+      @QueryParam("userId") userId: UInteger,
+      @QueryParam("entityType") entityType: String
   ): Boolean = {
-    isLiked(userId, workflowId)
+    isLikedHelper(userId, workflowId, entityType)
   }
 
   @POST
@@ -161,20 +207,25 @@ class HubWorkflowResource {
       @Context request: HttpServletRequest,
       likeRequest: userRequest
   ): Boolean = {
-    val workflowId = likeRequest.workflowId
+    val entityId = likeRequest.entityId
     val userId = likeRequest.userId
     val entityType = likeRequest.entityType
 
     validateEntityType(entityType)
 
-    if (!isLiked(userId, workflowId)) {
+    val (table, uidColumn, idColumn) = entityType match {
+      case "workflow" => (WORKFLOW_USER_LIKES, WORKFLOW_USER_LIKES.UID, WORKFLOW_USER_LIKES.WID)
+      case _          => return false
+    }
+
+    if (!isLikedHelper(userId, entityId, entityType)) {
       context
-        .insertInto(WORKFLOW_USER_LIKES)
-        .set(WORKFLOW_USER_LIKES.UID, userId)
-        .set(WORKFLOW_USER_LIKES.WID, workflowId)
+        .insertInto(table)
+        .set(uidColumn, userId)
+        .set(idColumn, entityId)
         .execute()
 
-      recordUserActivity(request, userId, workflowId, entityType, "like")
+      recordUserActivity(request, userId, entityId, entityType, "like")
       true
     } else {
       false
@@ -188,23 +239,28 @@ class HubWorkflowResource {
       @Context request: HttpServletRequest,
       unlikeRequest: userRequest
   ): Boolean = {
-    val workflowId = unlikeRequest.workflowId
+    val entityId = unlikeRequest.entityId
     val userId = unlikeRequest.userId
     val entityType = unlikeRequest.entityType
 
     validateEntityType(entityType)
 
-    if (isLiked(userId, workflowId)) {
+    val (table, uidColumn, idColumn) = entityType match {
+      case "workflow" => (WORKFLOW_USER_LIKES, WORKFLOW_USER_LIKES.UID, WORKFLOW_USER_LIKES.WID)
+      case _          => return false
+    }
+
+    if (isLikedHelper(userId, entityId, entityType)) {
       context
-        .deleteFrom(WORKFLOW_USER_LIKES)
+        .deleteFrom(table)
         .where(
-          WORKFLOW_USER_LIKES.UID
+          uidColumn
             .eq(userId)
-            .and(WORKFLOW_USER_LIKES.WID.eq(workflowId))
+            .and(idColumn.eq(entityId))
         )
         .execute()
 
-      recordUserActivity(request, userId, workflowId, entityType, "unlike")
+      recordUserActivity(request, userId, entityId, entityType, "unlike")
       true
     } else {
       false
@@ -212,29 +268,116 @@ class HubWorkflowResource {
   }
 
   @GET
-  @Path("/likeCount/{wid}")
+  @Path("/likeCount")
   @Produces(Array(MediaType.APPLICATION_JSON))
-  def getLikeCount(@PathParam("wid") wid: UInteger): Int = {
+  def getLikeCount(
+      @QueryParam("entityId") entityId: UInteger,
+      @QueryParam("entityType") entityType: String
+  ): Int = {
+    validateEntityType(entityType)
+
+    val (table, idColumn) = entityType match {
+      case "workflow" => (WORKFLOW_USER_LIKES, WORKFLOW_USER_LIKES.WID)
+      case _          => return 0
+    }
+
     val likeCount = context
       .selectCount()
-      .from(WORKFLOW_USER_LIKES)
-      .where(WORKFLOW_USER_LIKES.WID.eq(wid))
+      .from(table)
+      .where(idColumn.eq(entityId))
       .fetchOne(0, classOf[Int])
 
     likeCount
   }
 
   @GET
-  @Path("/cloneCount/{wid}")
+  @Path("/cloneCount")
   @Produces(Array(MediaType.APPLICATION_JSON))
-  def getCloneCount(@PathParam("wid") wid: UInteger): Int = {
+  def getCloneCount(
+      @QueryParam("entityId") entityId: UInteger,
+      @QueryParam("entityType") entityType: String
+  ): Int = {
+    validateEntityType(entityType)
+
+    val (table, idColumn) = entityType match {
+      case "workflow" => (WORKFLOW_USER_CLONES, WORKFLOW_USER_CLONES.WID)
+      case _          => return 0
+    }
+
     val cloneCount = context
       .selectCount()
-      .from(WORKFLOW_USER_CLONES)
-      .where(WORKFLOW_USER_CLONES.WID.eq(wid))
+      .from(table)
+      .where(idColumn.eq(entityId))
       .fetchOne(0, classOf[Int])
 
     cloneCount
+  }
+
+  @POST
+  @Path("/view")
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  def viewWorkflow(
+      @Context request: HttpServletRequest,
+      viewRequest: userRequest
+  ): Int = {
+
+    val entityID = viewRequest.entityId
+    val userId = viewRequest.userId
+    val entityType = viewRequest.entityType
+
+    validateEntityType(entityType)
+
+    val (table, idColumn, viewCountColumn) = entityType match {
+      case "workflow" =>
+        (WORKFLOW_VIEW_COUNT, WORKFLOW_VIEW_COUNT.WID, WORKFLOW_VIEW_COUNT.VIEW_COUNT)
+      case _ => return 0
+    }
+
+    context
+      .insertInto(table)
+      .set(idColumn, entityID)
+      .set(viewCountColumn, UInteger.valueOf(1))
+      .onDuplicateKeyUpdate()
+      .set(viewCountColumn, viewCountColumn.add(1))
+      .execute()
+
+    recordUserActivity(request, userId, entityID, entityType, "view")
+
+    context
+      .select(viewCountColumn)
+      .from(table)
+      .where(idColumn.eq(entityID))
+      .fetchOneInto(classOf[Int])
+  }
+
+  @GET
+  @Path("/viewCount")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getViewCount(
+      @QueryParam("entityId") entityId: UInteger,
+      @QueryParam("entityType") entityType: String
+  ): Int = {
+
+    validateEntityType(entityType)
+
+    val (table, idColumn, viewCountColumn) = entityType match {
+      case "workflow" =>
+        (WORKFLOW_VIEW_COUNT, WORKFLOW_VIEW_COUNT.WID, WORKFLOW_VIEW_COUNT.VIEW_COUNT)
+      case _ => return 0
+    }
+
+    context
+      .insertInto(table)
+      .set(idColumn, entityId)
+      .set(viewCountColumn, UInteger.valueOf(0))
+      .onDuplicateKeyIgnore()
+      .execute()
+
+    context
+      .select(viewCountColumn)
+      .from(table)
+      .where(idColumn.eq(entityId))
+      .fetchOneInto(classOf[Int])
   }
 
   @GET
@@ -275,53 +418,5 @@ class HubWorkflowResource {
       .toSeq
 
     fetchDashboardWorkflowsByWids(topClonedWorkflowsWids)
-  }
-
-  @POST
-  @Path("/view")
-  @Consumes(Array(MediaType.APPLICATION_JSON))
-  def viewWorkflow(
-      @Context request: HttpServletRequest,
-      viewRequest: userRequest
-  ): Int = {
-
-    val workflowId = viewRequest.workflowId
-    val userId = viewRequest.userId
-    val entityType = viewRequest.entityType
-
-    validateEntityType(entityType)
-
-    context
-      .insertInto(WORKFLOW_VIEW_COUNT)
-      .set(WORKFLOW_VIEW_COUNT.WID, workflowId)
-      .set(WORKFLOW_VIEW_COUNT.VIEW_COUNT, UInteger.valueOf(1))
-      .onDuplicateKeyUpdate()
-      .set(WORKFLOW_VIEW_COUNT.VIEW_COUNT, WORKFLOW_VIEW_COUNT.VIEW_COUNT.add(1))
-      .execute()
-    recordUserActivity(request, userId, workflowId, entityType, "view")
-    context
-      .select(WORKFLOW_VIEW_COUNT.VIEW_COUNT)
-      .from(WORKFLOW_VIEW_COUNT)
-      .where(WORKFLOW_VIEW_COUNT.WID.eq(workflowId))
-      .fetchOneInto(classOf[Int])
-  }
-
-  @GET
-  @Path("/viewCount/{wid}")
-  @Produces(Array(MediaType.APPLICATION_JSON))
-  def getViewCount(@PathParam("wid") wid: UInteger): Int = {
-
-    context
-      .insertInto(WORKFLOW_VIEW_COUNT)
-      .set(WORKFLOW_VIEW_COUNT.WID, wid)
-      .set(WORKFLOW_VIEW_COUNT.VIEW_COUNT, UInteger.valueOf(0))
-      .onDuplicateKeyIgnore()
-      .execute()
-
-    context
-      .select(WORKFLOW_VIEW_COUNT.VIEW_COUNT)
-      .from(WORKFLOW_VIEW_COUNT)
-      .where(WORKFLOW_VIEW_COUNT.WID.eq(wid))
-      .fetchOneInto(classOf[Int])
   }
 }

@@ -15,7 +15,7 @@ import edu.uci.ics.texera.dao.jooq.generated.tables.daos.{
   WorkflowUserAccessDao
 }
 import edu.uci.ics.texera.dao.jooq.generated.tables.pojos._
-import edu.uci.ics.texera.web.resource.dashboard.hub.workflow.HubWorkflowResource.recordUserActivity
+import edu.uci.ics.texera.web.resource.dashboard.hub.HubResource.recordCloneActivity
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
 import io.dropwizard.auth.Auth
@@ -475,21 +475,7 @@ class WorkflowResource extends LazyLogging {
       sessionUser
     )
 
-    recordUserActivity(request, sessionUser.getUid, wid, "workflow", "clone")
-
-    val existingCloneRecord = context
-      .selectFrom(WORKFLOW_USER_CLONES)
-      .where(WORKFLOW_USER_CLONES.UID.eq(sessionUser.getUid))
-      .and(WORKFLOW_USER_CLONES.WID.eq(wid))
-      .fetchOne()
-
-    if (existingCloneRecord == null) {
-      context
-        .insertInto(WORKFLOW_USER_CLONES)
-        .set(WORKFLOW_USER_CLONES.UID, sessionUser.getUid)
-        .set(WORKFLOW_USER_CLONES.WID, wid)
-        .execute()
-    }
+    recordCloneActivity(request, sessionUser.getUid, wid, "workflow")
 
     newWorkflow.workflow.getWid
   }
