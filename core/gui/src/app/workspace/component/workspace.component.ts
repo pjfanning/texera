@@ -39,7 +39,6 @@ export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
 })
 export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   public pid?: number = undefined;
-  public gitCommitHash: string = Version.raw;
   public writeAccess: boolean = false;
   public isLoading: boolean = false;
   userSystemEnabled = environment.userSystemEnabled;
