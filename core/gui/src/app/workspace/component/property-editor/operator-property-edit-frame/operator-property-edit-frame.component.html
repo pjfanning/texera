@@ -87,6 +87,10 @@
 <!--</form>-->
 
 
+<!--有个问题，validator可能有问题？// not return field.fieldGroup directly because-->
+<!--// doing so the validator in the field will not be triggered-->
+<!--this.formlyFields = [field];-->
+
 <nz-tabset>
   <!-- Basic 配置 -->
   <nz-tab nzTitle="Basic Settings" *ngIf="basicFields.length > 0">
