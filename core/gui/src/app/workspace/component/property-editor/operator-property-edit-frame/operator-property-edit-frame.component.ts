@@ -125,6 +125,9 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
   // used to tear down subscriptions that takeUntil(teardownObservable)
   private teardownObservable: Subject<void> = new Subject();
 
+  public basicFields: FormlyFieldConfig[] = [];
+  public advancedFields: FormlyFieldConfig[] = [];
+
   constructor(
     private formlyJsonschema: FormlyJsonschema,
     private workflowActionService: WorkflowActionService,
@@ -379,6 +382,14 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
         },
       };
 
+      if (mapSource.description === "advance") {
+        mappedField.props = {
+          ...mappedField.props,
+          tab: "AdvancedSettings"
+        };
+      }
+
+
       // Disable dummy operator for user
       if (mappedField.key === "dummyOperator") {
         mappedField.expressions = {
@@ -431,6 +442,8 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
       if (mappedField.key == "fileName") {
         mappedField.type = "inputautocomplete";
       }
+
+      //若
 
       // if the title is python script (for Python UDF), then make this field a custom template 'codearea'
       if (mapSource?.description?.toLowerCase() === "input your code here") {
@@ -645,7 +658,9 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
     };
 
     const schemaProperties = schema.properties;
-    const fields = field.fieldGroup;
+
+    // const fields = field.fieldGroup;
+    const fields = field.fieldGroup ?? [];
 
     // adding custom options, relational N-to-M mapping.
     if (schemaProperties && fields) {
@@ -669,6 +684,11 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
     // not return field.fieldGroup directly because
     // doing so the validator in the field will not be triggered
     this.formlyFields = [field];
+
+    this.basicFields = fields.filter(f => f.props?.tab !== "AdvancedSettings");
+    this.advancedFields = fields.filter(f => f.props?.tab === "AdvancedSettings");
+
+    console.log("++++++fileds:", this.formlyFields )
   }
 
   allowModifyOperatorLogic(): void {
