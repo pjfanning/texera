@@ -1,9 +1,7 @@
 package edu.uci.ics.amber.operator.loop
 
-
 import edu.uci.ics.amber.core.executor.OperatorExecutor
-import edu.uci.ics.amber.core.marker.State
-import edu.uci.ics.amber.core.tuple.{AttributeType, Tuple, TupleLike}
+import edu.uci.ics.amber.core.tuple.{Tuple, TupleLike}
 import edu.uci.ics.amber.util.JSONUtils.objectMapper
 
 import scala.collection.mutable
