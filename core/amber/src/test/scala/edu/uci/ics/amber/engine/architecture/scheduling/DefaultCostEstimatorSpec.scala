@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.scheduling
 
-import edu.uci.ics.amber.core.storage.model.BufferedItemWriter
+import edu.uci.ics.amber.core.storage.model.{BufferedItemWriter, VirtualDocument}
 import edu.uci.ics.amber.core.storage.result.RuntimeStatisticsSchema
 import edu.uci.ics.amber.core.storage.{DocumentFactory, VFSURIFactory}
 import edu.uci.ics.amber.core.tuple.Tuple
@@ -77,21 +77,23 @@ class DefaultCostEstimatorSpec
 
   private var uri: URI = _
   private var writer: BufferedItemWriter[Tuple] = _
+  private var document: VirtualDocument[_] = _
+
   override protected def beforeEach(): Unit = {
     initializeDBAndReplaceDSLContext()
     uri = VFSURIFactory.createRuntimeStatisticsURI(
       WorkflowIdentity(testWorkflowEntry.getWid.longValue()),
       ExecutionIdentity(testWorkflowExecutionEntry.getEid.longValue())
     )
-    writer = DocumentFactory
-      .createDocument(uri, RuntimeStatisticsSchema.schema)
+    document = DocumentFactory.createDocument(uri, RuntimeStatisticsSchema.schema)
+    writer = document
       .writer(s"runtime_statistics_${testWorkflowExecutionEntry.getEid.longValue()}")
       .asInstanceOf[BufferedItemWriter[Tuple]]
     writer.open()
   }
 
   override protected def afterEach(): Unit = {
-    // TODO: DocumentFactory.deleteDocument(uri)
+    document.clear()
     shutdownDB()
   }
 
