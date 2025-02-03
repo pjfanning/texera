@@ -3,8 +3,9 @@ package edu.uci.ics.texera.web.service
 import com.google.protobuf.timestamp.Timestamp
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.core.storage.model.BufferedItemWriter
+import edu.uci.ics.amber.core.storage.result.RuntimeStatisticsSchema
 import edu.uci.ics.amber.core.storage.{DocumentFactory, VFSURIFactory}
-import edu.uci.ics.amber.core.tuple.{Attribute, AttributeType, Schema, Tuple}
+import edu.uci.ics.amber.core.tuple.Tuple
 import edu.uci.ics.amber.engine.architecture.controller.{
   ExecutionStatsUpdate,
   FatalError,
@@ -35,6 +36,7 @@ import edu.uci.ics.texera.web.model.websocket.event.{
 import edu.uci.ics.texera.web.storage.ExecutionStateStore
 import edu.uci.ics.texera.web.storage.ExecutionStateStore.updateWorkflowState
 import edu.uci.ics.amber.core.workflow.WorkflowContext
+import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource
 
 import java.time.Instant
 import java.util.concurrent.Executors
@@ -59,19 +61,7 @@ class ExecutionStatsService(
     }
 
   private val runtimeStatisticsSchema = if (AmberConfig.isUserSystemEnabled) {
-    Some(
-      new Schema(
-        new Attribute("operatorId", AttributeType.STRING),
-        new Attribute("time", AttributeType.TIMESTAMP),
-        new Attribute("inputTupleCnt", AttributeType.LONG),
-        new Attribute("outputTupleCnt", AttributeType.LONG),
-        new Attribute("dataProcessingTime", AttributeType.LONG),
-        new Attribute("controlProcessingTime", AttributeType.LONG),
-        new Attribute("idleTime", AttributeType.LONG),
-        new Attribute("numWorkers", AttributeType.INTEGER),
-        new Attribute("status", AttributeType.INTEGER)
-      )
-    )
+    Some(RuntimeStatisticsSchema.schema)
   } else {
     None
   }
@@ -92,6 +82,12 @@ class ExecutionStatsService(
   } else {
     None
   }
+
+  WorkflowExecutionsResource.updateRuntimeStatsUri(
+    workflowContext.workflowId.id,
+    workflowContext.executionId.id,
+    uri
+  )
 
   private val writer = if (AmberConfig.isUserSystemEnabled) {
     val w = DocumentFactory

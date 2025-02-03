@@ -131,6 +131,7 @@ CREATE TABLE IF NOT EXISTS workflow_executions
     `name`				     VARCHAR(128) NOT NULL DEFAULT 'Untitled Execution',
     `environment_version`    VARCHAR(128) NOT NULL,
     `log_location`           TEXT, /* uri to log storage */
+    `runtime_stats_uri`      TEXT DEFAULT NULL,
     PRIMARY KEY (`eid`),
     FOREIGN KEY (`vid`) REFERENCES `workflow_version` (`vid`) ON DELETE CASCADE,
     FOREIGN KEY (`uid`) REFERENCES `user` (`uid`) ON DELETE CASCADE
@@ -240,18 +241,4 @@ CREATE TABLE IF NOT EXISTS operator_executions (
     operator_id VARCHAR(100) NOT NULL, 
     UNIQUE (workflow_execution_id, operator_id),
     FOREIGN KEY (workflow_execution_id) REFERENCES workflow_executions (eid) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS operator_runtime_statistics (
-    operator_execution_id BIGINT UNSIGNED NOT NULL, 
-    time TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    input_tuple_cnt BIGINT UNSIGNED NOT NULL DEFAULT 0, 
-    output_tuple_cnt BIGINT UNSIGNED NOT NULL DEFAULT 0, 
-    status TINYINT NOT NULL DEFAULT 1, 
-    data_processing_time BIGINT UNSIGNED NOT NULL DEFAULT 0, 
-    control_processing_time BIGINT UNSIGNED NOT NULL DEFAULT 0, 
-    idle_time BIGINT UNSIGNED NOT NULL DEFAULT 0, 
-    num_workers INT UNSIGNED NOT NULL DEFAULT 0,
-    PRIMARY KEY (operator_execution_id, time),
-    FOREIGN KEY (operator_execution_id) REFERENCES operator_executions (operator_execution_id) ON DELETE CASCADE
 );

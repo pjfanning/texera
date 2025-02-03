@@ -1,27 +1,18 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.workflow
 
-import edu.uci.ics.amber.core.storage.{DocumentFactory, StorageConfig, VFSURIFactory}
+import edu.uci.ics.amber.core.storage.{DocumentFactory, StorageConfig}
 import edu.uci.ics.amber.core.tuple.Tuple
 import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayDestination, ReplayLogRecord}
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
-import edu.uci.ics.amber.core.virtualidentity.{
-  ChannelMarkerIdentity,
-  ExecutionIdentity,
-  WorkflowIdentity
-}
+import edu.uci.ics.amber.core.virtualidentity.{ChannelMarkerIdentity, ExecutionIdentity}
 import edu.uci.ics.texera.dao.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.dao.jooq.generated.Tables.{USER, WORKFLOW_EXECUTIONS, WORKFLOW_VERSION}
 import edu.uci.ics.texera.dao.jooq.generated.tables.daos.{
   OperatorExecutionsDao,
-  OperatorRuntimeStatisticsDao,
   WorkflowExecutionsDao
 }
-import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.{
-  OperatorExecutions,
-  OperatorRuntimeStatistics,
-  WorkflowExecutions
-}
+import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.{OperatorExecutions, WorkflowExecutions}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource._
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService
 import io.dropwizard.auth.Auth
@@ -43,9 +34,6 @@ object WorkflowExecutionsResource {
     .createDSLContext()
   final private lazy val executionsDao = new WorkflowExecutionsDao(context.configuration)
   final private lazy val operatorExecutionsDao = new OperatorExecutionsDao(
-    context.configuration
-  )
-  final private lazy val operatorRuntimeStatisticsDao = new OperatorRuntimeStatisticsDao(
     context.configuration
   )
 
@@ -106,8 +94,23 @@ object WorkflowExecutionsResource {
     result
   }
 
-  def insertOperatorRuntimeStatistics(list: util.ArrayList[OperatorRuntimeStatistics]): Unit = {
-    operatorRuntimeStatisticsDao.insert(list);
+  def updateRuntimeStatsUri(wid: Long, eid: Long, uri: Option[URI]): Unit = {
+    context
+      .update(WORKFLOW_EXECUTIONS)
+      .set(WORKFLOW_EXECUTIONS.RUNTIME_STATS_URI, uri.map(_.toString).orNull)
+      .where(
+        WORKFLOW_EXECUTIONS.EID
+          .eq(UInteger.valueOf(eid))
+          .and(
+            WORKFLOW_EXECUTIONS.VID.in(
+              context
+                .select(WORKFLOW_VERSION.VID)
+                .from(WORKFLOW_VERSION)
+                .where(WORKFLOW_VERSION.WID.eq(UInteger.valueOf(wid)))
+            )
+          )
+      )
+      .execute()
   }
 
   case class WorkflowExecutionEntry(
@@ -239,12 +242,30 @@ class WorkflowExecutionsResource {
       @PathParam("eid") eid: UInteger
   ): List[WorkflowRuntimeStatistics] = {
     // Create URI for runtime statistics
-    val uri = VFSURIFactory.createRuntimeStatisticsURI(
-      WorkflowIdentity(wid.longValue()),
-      ExecutionIdentity(eid.longValue())
-    )
+    val uriString: String = context
+      .select(WORKFLOW_EXECUTIONS.RUNTIME_STATS_URI)
+      .from(WORKFLOW_EXECUTIONS)
+      .where(
+        WORKFLOW_EXECUTIONS.EID
+          .eq(eid)
+          .and(
+            WORKFLOW_EXECUTIONS.VID.in(
+              context
+                .select(WORKFLOW_VERSION.VID)
+                .from(WORKFLOW_VERSION)
+                .where(WORKFLOW_VERSION.WID.eq(wid))
+            )
+          )
+      )
+      .fetchOneInto(classOf[String])
 
-    // Create document factory
+    if (uriString == null || uriString.isEmpty) {
+      throw new NoSuchElementException(
+        "No runtime statistics URI found for the given execution ID."
+      )
+    }
+
+    val uri: URI = new URI(uriString)
     val document = DocumentFactory.openDocument(uri)
 
     // Read all records from Iceberg and convert to WorkflowRuntimeStatistics

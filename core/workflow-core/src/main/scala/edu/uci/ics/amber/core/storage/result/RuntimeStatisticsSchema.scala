@@ -1,0 +1,17 @@
+package edu.uci.ics.amber.core.storage.result
+
+import edu.uci.ics.amber.core.tuple.{Attribute, AttributeType, Schema}
+
+object RuntimeStatisticsSchema {
+  val schema: Schema = new Schema(
+    new Attribute("operatorId", AttributeType.STRING),
+    new Attribute("time", AttributeType.TIMESTAMP),
+    new Attribute("inputTupleCnt", AttributeType.LONG),
+    new Attribute("outputTupleCnt", AttributeType.LONG),
+    new Attribute("dataProcessingTime", AttributeType.LONG),
+    new Attribute("controlProcessingTime", AttributeType.LONG),
+    new Attribute("idleTime", AttributeType.LONG),
+    new Attribute("numWorkers", AttributeType.INTEGER),
+    new Attribute("status", AttributeType.INTEGER)
+  )
+}
