@@ -7,7 +7,7 @@ from loguru import logger
 
 from . import state_manager
 from proto.edu.uci.ics.amber.engine.architecture.worker import WorkerState
-from proto.edu.uci.ics.amber.core import ActorVirtualIdentity
+from proto.edu.uci.ics.amber.core import ActorVirtualIdentity, ChannelIdentity
 from ...models import InternalQueue
 
 
@@ -17,6 +17,7 @@ class PauseType(Enum):
     SCHEDULER_TIME_SLOT_EXPIRED_PAUSE = 2
     DEBUG_PAUSE = 3
     EXCEPTION_PAUSE = 4
+    MARKER_PAUSE = 5
 
 
 class PauseManager:
@@ -31,7 +32,7 @@ class PauseManager:
     ):
         self._input_queue: InternalQueue = input_queue
         self._global_pauses: Set[PauseType] = set()
-        self._specific_input_pauses: Dict[PauseType, Set[ActorVirtualIdentity]] = (
+        self._specific_input_pauses: Dict[PauseType, Set[ChannelIdentity]] = (
             defaultdict(set)
         )
         self._state_manager = state_manager
@@ -47,10 +48,10 @@ class PauseManager:
             self._state_manager.transit_to(WorkerState.PAUSED)
 
     def pause_input_channel(
-        self, pause_type: PauseType, inputs: List[ActorVirtualIdentity]
+        self, pause_type: PauseType, inputs: List[ChannelIdentity]
     ) -> None:
-        # for now we do not have specific data queue for Python side.
-        raise NotImplementedError()
+        for channel_id in inputs:
+            self._specific_input_pauses[pause_type].add(channel_id)
 
     def resume(self, pause_type: PauseType, change_state=True) -> None:
         if pause_type in self._global_pauses:
