@@ -59,21 +59,24 @@ class InternalQueue(IQueue):
         return self._queue.get()
 
     def put(self, item: T) -> None:
-        queue_id = str(item.tag)
-        if item.tag not in self._queue_ids:
-            self._queue.add_sub_queue(queue_id, 1 if item.tag.is_control else 2)
-            self._queue_ids.add(item.tag)
-        if isinstance(item, (DataElement, InternalMarker)):
-            self._queue.put(queue_id, item)
-        elif isinstance(item, ControlElement):
-            self._queue.put(queue_id, item)
+        if issubclass(item, InternalQueueElement):
+            queue_id = str(item.tag)
+            if item.tag not in self._queue_ids:
+                self._queue.add_sub_queue(queue_id, 1 if item.tag.is_control else 2)
+                self._queue_ids.add(item.tag)
+            if isinstance(item, (DataElement, InternalMarker)):
+                self._queue.put(queue_id, item)
+            elif isinstance(item, ControlElement):
+                self._queue.put(queue_id, item)
+            else:
+                raise ValueError(f"item {item} is not recognized by internal queue")
         else:
             self._queue.put("SYSTEM", item)
 
-    def _disable(self, channel_id: ChannelIdentity) -> None:
+    def disable(self, channel_id: ChannelIdentity) -> None:
         self._queue.disable(str(channel_id))
 
-    def _enable(self, channel_id: ChannelIdentity) -> None:
+    def enable(self, channel_id: ChannelIdentity) -> None:
         self._queue.enable(str(channel_id))
 
     def is_control_empty(self) -> bool:

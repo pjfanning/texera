@@ -24,6 +24,7 @@ from core.models import Tuple, Schema, MarkerFrame
 from core.models.marker import Marker
 from core.models.payload import DataPayload, DataFrame
 from core.util import get_one_of
+from proto.edu.uci.ics.amber.engine.architecture.rpc import ChannelMarkerPayload
 from proto.edu.uci.ics.amber.engine.architecture.sendsemantics import (
     HashBasedShufflePartitioning,
     OneToOnePartitioning,
@@ -98,6 +99,27 @@ class OutputManager:
                 (
                     (receiver, self.tuple_to_frame(tuples))
                     for receiver, tuples in partitioner.add_tuple_to_batch(tuple_)
+                )
+                for partitioner in self._partitioners.values()
+            )
+        )
+
+    def emit_marker_to_channel(
+        self, channel_id: ChannelIdentity, marker: ChannelMarkerPayload
+    ) -> Iterable[typing.Tuple[ActorVirtualIdentity, DataPayload]]:
+        return chain(
+            *(
+                (
+                    (
+                        receiver,
+                        (
+                            MarkerFrame(payload)
+                            if isinstance(payload, Marker)
+                            else self.tuple_to_frame(payload)
+                        ),
+                    )
+                    for receiver, payload in partitioner.flush(marker)
+                    if receiver == channel_id.to_worker_id
                 )
                 for partitioner in self._partitioners.values()
             )

@@ -72,7 +72,12 @@ class AsyncRPCClient:
                 command_id=self._send_sequences[to],
             )
             payload = set_one_of(ControlPayloadV2, control_command)
-            self._output_queue.put(ControlElement(tag=to, payload=payload))
+            self._output_queue.put(
+                ControlElement(
+                    tag=ChannelIdentity(self._context.worker_id, to, True),
+                    payload=payload,
+                )
+            )
             return self._create_future(to)
 
         return wrapper

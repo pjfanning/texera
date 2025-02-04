@@ -104,13 +104,15 @@ class AsyncRPCServer:
             return
 
         # Reply to the sender.
-        to = ChannelIdentity(from_.to_worker_id, from_.from_worker_id, True)
+        target_channel_id = ChannelIdentity(
+            from_.to_worker_id, from_.from_worker_id, True
+        )
         logger.debug(
             f"PYTHON returns a ReturnInvocation {payload}, replying the command"
             f" {command}"
         )
         # Put the control element in the output queue.
-        self._output_queue.put(ControlElement(tag=to, payload=payload))
+        self._output_queue.put(ControlElement(tag=target_channel_id, payload=payload))
 
     def look_up(self, method_name: str) -> grpclib.const.Handler:
         logger.debug(method_name)
