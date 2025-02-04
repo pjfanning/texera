@@ -4,13 +4,7 @@ import edu.uci.ics.amber.core.storage.StorageConfig
 import edu.uci.ics.texera.dao.SqlServer
 import edu.uci.ics.texera.dao.jooq.generated.Tables._
 import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.Workflow
-import HubResource.{
-  fetchDashboardWorkflowsByWids,
-  isLikedHelper,
-  recordUserActivity,
-  userRequest,
-  validateEntityType
-}
+import HubResource.{fetchDashboardWorkflowsByWids, getUserLCCount, isLikedHelper, recordLikeActivity, recordUserActivity, userRequest, validateEntityType}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource.DashboardWorkflow
 import org.jooq.impl.DSL
 import org.jooq.types.UInteger
@@ -35,6 +29,143 @@ object HubResource {
     "^([0-9]{1,3}\\.){3}[0-9]{1,3}$"
   )
 
+  def validateEntityType(entityType: String): Unit = {
+    val allowedTypes = Set("workflow", "dataset")
+
+    if (!allowedTypes.contains(entityType)) {
+      throw new IllegalArgumentException(
+        s"Invalid entity type: $entityType. Allowed types: ${allowedTypes.mkString(", ")}."
+      )
+    }
+  }
+
+  def isLikedHelper(userId: UInteger, workflowId: UInteger, entityType: String): Boolean = {
+    validateEntityType(entityType)
+    val entityTables = LikeTable(entityType)
+    val (table, uidColumn, idColumn) =
+      (entityTables.table, entityTables.uidColumn, entityTables.idColumn)
+
+    context
+      .selectFrom(table)
+      .where(
+        uidColumn
+          .eq(userId)
+          .and(idColumn.eq(workflowId))
+      )
+      .fetchOne() != null
+  }
+
+  def recordUserActivity(
+      request: HttpServletRequest,
+      userId: UInteger = UInteger.valueOf(0),
+      entityId: UInteger,
+      entityType: String,
+      action: String
+  ): Unit = {
+    validateEntityType(entityType)
+
+    val userIp = request.getRemoteAddr()
+
+    val query = context
+      .insertInto(USER_ACTIVITY)
+      .set(USER_ACTIVITY.UID, userId)
+      .set(USER_ACTIVITY.ID, entityId)
+      .set(USER_ACTIVITY.TYPE, entityType)
+      .set(USER_ACTIVITY.ACTIVATE, action)
+
+    if (ipv4Pattern.matcher(userIp).matches()) {
+      query.set(USER_ACTIVITY.IP, userIp)
+    }
+
+    query.execute()
+  }
+
+  def recordLikeActivity(
+      request: HttpServletRequest,
+      userRequest: userRequest,
+      isLike: Boolean
+  ): Boolean = {
+    val (entityId, userId, entityType) =
+      (userRequest.entityId, userRequest.userId, userRequest.entityType)
+    validateEntityType(entityType)
+    val entityTables = LikeTable(entityType)
+    val (table, uidColumn, idColumn) =
+      (entityTables.table, entityTables.uidColumn, entityTables.idColumn)
+
+    val alreadyLiked = isLikedHelper(userId, entityId, entityType)
+
+    if (isLike && !alreadyLiked) {
+      context
+        .insertInto(table)
+        .set(uidColumn, userId)
+        .set(idColumn, entityId)
+        .execute()
+
+      recordUserActivity(request, userId, entityId, entityType, "like")
+      true
+    } else if (!isLike && alreadyLiked) {
+      context
+        .deleteFrom(table)
+        .where(uidColumn.eq(userId).and(idColumn.eq(entityId)))
+        .execute()
+
+      recordUserActivity(request, userId, entityId, entityType, "unlike")
+      true
+    } else {
+      false
+    }
+  }
+
+  def recordCloneActivity(
+      request: HttpServletRequest,
+      userId: UInteger,
+      entityId: UInteger,
+      entityType: String
+  ): Unit = {
+
+    validateEntityType(entityType)
+    val entityTables = CloneTable(entityType)
+    val (table, uidColumn, idColumn) =
+      (entityTables.table, entityTables.uidColumn, entityTables.idColumn)
+
+    recordUserActivity(request, userId, entityId, entityType, "clone")
+
+    val existingCloneRecord = context
+      .selectFrom(table)
+      .where(uidColumn.eq(userId))
+      .and(idColumn.eq(entityId))
+      .fetchOne()
+
+    if (existingCloneRecord == null) {
+      context
+        .insertInto(table)
+        .set(uidColumn, userId)
+        .set(idColumn, entityId)
+        .execute()
+    }
+  }
+
+  def getUserLCCount(
+    entityId: UInteger,
+    entityType: String,
+    isLike: Boolean
+  ): Int = {
+    validateEntityType(entityType)
+
+    val entityTables =
+      if (isLike) LikeTable(entityType)
+      else CloneTable(entityType)
+
+    val (table, idColumn) = (entityTables.table, entityTables.idColumn)
+
+    context
+      .selectCount()
+      .from(table)
+      .where(idColumn.eq(entityId))
+      .fetchOne(0, classOf[Int])
+  }
+
+  // todo: refactor api related to landing page
   def fetchDashboardWorkflowsByWids(wids: Seq[UInteger]): util.List[DashboardWorkflow] = {
     if (wids.nonEmpty) {
       context
@@ -81,87 +212,6 @@ object HubResource {
       Collections.emptyList[DashboardWorkflow]()
     }
   }
-
-  def recordUserActivity(
-      request: HttpServletRequest,
-      userId: UInteger = UInteger.valueOf(0),
-      entityId: UInteger,
-      entityType: String,
-      action: String
-  ): Unit = {
-    validateEntityType(entityType)
-
-    val userIp = request.getRemoteAddr()
-
-    val query = context
-      .insertInto(USER_ACTIVITY)
-      .set(USER_ACTIVITY.UID, userId)
-      .set(USER_ACTIVITY.ID, entityId)
-      .set(USER_ACTIVITY.TYPE, entityType)
-      .set(USER_ACTIVITY.ACTIVATE, action)
-
-    if (ipv4Pattern.matcher(userIp).matches()) {
-      query.set(USER_ACTIVITY.IP, userIp)
-    }
-
-    query.execute()
-  }
-
-  def validateEntityType(entityType: String): Unit = {
-    val allowedTypes = Set("workflow", "dataset")
-
-    if (!allowedTypes.contains(entityType)) {
-      throw new IllegalArgumentException(
-        s"Invalid entity type: $entityType. Allowed types: ${allowedTypes.mkString(", ")}."
-      )
-    }
-  }
-
-  def isLikedHelper(userId: UInteger, workflowId: UInteger, entityType: String): Boolean = {
-
-    validateEntityType(entityType)
-    val entityTables = LikeTable(entityType)
-    val (table, uidColumn, idColumn) =
-      (entityTables.table, entityTables.uidColumn, entityTables.idColumn)
-
-    context
-      .selectFrom(table)
-      .where(
-        uidColumn
-          .eq(userId)
-          .and(idColumn.eq(workflowId))
-      )
-      .fetchOne() != null
-  }
-
-  def recordCloneActivity(
-      request: HttpServletRequest,
-      userId: UInteger,
-      entityId: UInteger,
-      entityType: String
-  ): Unit = {
-
-    validateEntityType(entityType)
-    val entityTables = CloneTable(entityType)
-    val (table, uidColumn, idColumn) =
-      (entityTables.table, entityTables.uidColumn, entityTables.idColumn)
-
-    recordUserActivity(request, userId, entityId, entityType, "clone")
-
-    val existingCloneRecord = context
-      .selectFrom(table)
-      .where(uidColumn.eq(userId))
-      .and(idColumn.eq(entityId))
-      .fetchOne()
-
-    if (existingCloneRecord == null) {
-      context
-        .insertInto(table)
-        .set(uidColumn, userId)
-        .set(idColumn, entityId)
-        .execute()
-    }
-  }
 }
 
 @Produces(Array(MediaType.APPLICATION_JSON))
@@ -204,26 +254,7 @@ class HubResource {
       @Context request: HttpServletRequest,
       likeRequest: userRequest
   ): Boolean = {
-    val (entityId, userId, entityType) =
-      (likeRequest.entityId, likeRequest.userId, likeRequest.entityType)
-
-    validateEntityType(entityType)
-    val entityTables = LikeTable(entityType)
-    val (table, uidColumn, idColumn) =
-      (entityTables.table, entityTables.uidColumn, entityTables.idColumn)
-
-    if (!isLikedHelper(userId, entityId, entityType)) {
-      context
-        .insertInto(table)
-        .set(uidColumn, userId)
-        .set(idColumn, entityId)
-        .execute()
-
-      recordUserActivity(request, userId, entityId, entityType, "like")
-      true
-    } else {
-      false
-    }
+    recordLikeActivity(request, likeRequest, isLike = true)
   }
 
   @POST
@@ -233,29 +264,7 @@ class HubResource {
       @Context request: HttpServletRequest,
       unlikeRequest: userRequest
   ): Boolean = {
-    val (entityId, userId, entityType) =
-      (unlikeRequest.entityId, unlikeRequest.userId, unlikeRequest.entityType)
-
-    validateEntityType(entityType)
-    val entityTables = LikeTable(entityType)
-    val (table, uidColumn, idColumn) =
-      (entityTables.table, entityTables.uidColumn, entityTables.idColumn)
-
-    if (isLikedHelper(userId, entityId, entityType)) {
-      context
-        .deleteFrom(table)
-        .where(
-          uidColumn
-            .eq(userId)
-            .and(idColumn.eq(entityId))
-        )
-        .execute()
-
-      recordUserActivity(request, userId, entityId, entityType, "unlike")
-      true
-    } else {
-      false
-    }
+    recordLikeActivity(request, unlikeRequest, isLike = false)
   }
 
   @GET
@@ -265,17 +274,7 @@ class HubResource {
       @QueryParam("entityId") entityId: UInteger,
       @QueryParam("entityType") entityType: String
   ): Int = {
-    validateEntityType(entityType)
-    val entityTables = LikeTable(entityType)
-    val (table, idColumn) = (entityTables.table, entityTables.idColumn)
-
-    val likeCount = context
-      .selectCount()
-      .from(table)
-      .where(idColumn.eq(entityId))
-      .fetchOne(0, classOf[Int])
-
-    likeCount
+    getUserLCCount(entityId, entityType, isLike = true)
   }
 
   @GET
@@ -285,17 +284,7 @@ class HubResource {
       @QueryParam("entityId") entityId: UInteger,
       @QueryParam("entityType") entityType: String
   ): Int = {
-    validateEntityType(entityType)
-    val entityTables = CloneTable(entityType)
-    val (table, idColumn) = (entityTables.table, entityTables.idColumn)
-
-    val cloneCount = context
-      .selectCount()
-      .from(table)
-      .where(idColumn.eq(entityId))
-      .fetchOne(0, classOf[Int])
-
-    cloneCount
+    getUserLCCount(entityId, entityType, isLike = false)
   }
 
   @POST

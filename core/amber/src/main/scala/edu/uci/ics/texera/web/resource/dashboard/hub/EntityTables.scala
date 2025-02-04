@@ -44,13 +44,17 @@ object EntityTables {
     }
   }
 
-  // ==================== LIKE TABLE ====================
-  sealed trait LikeTable {
+  // ==================== BASE LC (like & clone) TABLE ====================
+  sealed trait BaseLCTable {
     type R <: Record
+
     val table: Table[R]
     val uidColumn: TableField[R, UInteger]
     val idColumn: TableField[R, UInteger]
   }
+
+  // ==================== LIKE TABLE ====================
+  sealed trait LikeTable extends BaseLCTable
 
   object LikeTable {
     case object WorkflowLikeTable extends LikeTable {
@@ -70,12 +74,7 @@ object EntityTables {
   }
 
   // ==================== CLONE TABLE ====================
-  sealed trait CloneTable {
-    type R <: Record
-    val table: Table[R]
-    val uidColumn: TableField[R, UInteger]
-    val idColumn: TableField[R, UInteger]
-  }
+  sealed trait CloneTable extends  BaseLCTable
 
   object CloneTable {
     case object WorkflowCloneTable extends CloneTable {
