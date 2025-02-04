@@ -7,21 +7,23 @@ import com.google.api.services.drive.Drive
 import com.google.api.services.drive.model.{File, FileList, Permission}
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.{Spreadsheet, SpreadsheetProperties, ValueRange}
-import edu.uci.ics.amber.core.storage.{DocumentFactory, VFSURIFactory}
+import edu.uci.ics.amber.core.storage.DocumentFactory
 import edu.uci.ics.amber.core.storage.model.VirtualDocument
 import edu.uci.ics.amber.core.tuple.Tuple
 import edu.uci.ics.amber.engine.common.Utils.retry
 import edu.uci.ics.amber.util.PathUtils
-import edu.uci.ics.amber.core.virtualidentity.{OperatorIdentity, WorkflowIdentity}
+import edu.uci.ics.amber.core.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.User
 import edu.uci.ics.texera.web.model.websocket.request.ResultExportRequest
 import edu.uci.ics.texera.web.model.websocket.response.ResultExportResponse
 import edu.uci.ics.texera.web.resource.GoogleResource
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.createNewDatasetVersionByAddingFiles
-import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowVersionResource
+import edu.uci.ics.texera.web.resource.dashboard.user.workflow.{
+  WorkflowExecutionsResource,
+  WorkflowVersionResource
+}
 import org.jooq.types.UInteger
 import edu.uci.ics.amber.util.ArrowUtils
-import edu.uci.ics.amber.core.workflow.PortIdentity
 import edu.uci.ics.texera.web.service.WorkflowExecutionService.getLatestExecutionId
 
 import java.io.{PipedInputStream, PipedOutputStream}
@@ -71,16 +73,13 @@ class ResultExportService(workflowIdentity: WorkflowIdentity) {
 
     // By now the workflow should finish running
     // Only supports external port 0 for now. TODO: support multiple ports
-    val storageUri = VFSURIFactory.createResultURI(
-      workflowIdentity,
-      getLatestExecutionId(workflowIdentity).getOrElse(
-        return ResultExportResponse("error", "The workflow contains no results")
-      ),
-      OperatorIdentity(request.operatorId),
-      PortIdentity()
+    val storageUri = WorkflowExecutionsResource.getResultUriByExecutionAndPort(
+      getLatestExecutionId(workflowIdentity).get.id,
+      request.operatorId,
+      0
     )
     val operatorResult: VirtualDocument[Tuple] =
-      DocumentFactory.openDocument(storageUri)._1.asInstanceOf[VirtualDocument[Tuple]]
+      DocumentFactory.openDocument(storageUri.get)._1.asInstanceOf[VirtualDocument[Tuple]]
     if (operatorResult.getCount == 0) {
       return ResultExportResponse("error", "The workflow contains no results")
     }

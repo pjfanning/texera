@@ -11,6 +11,7 @@ import edu.uci.ics.texera.dao.jooq.generated.Tables.{
   USER,
   WORKFLOW_EXECUTIONS,
   OPERATOR_EXECUTIONS,
+  OPERATOR_PORT_EXECUTIONS,
   WORKFLOW_VERSION
 }
 import edu.uci.ics.texera.dao.jooq.generated.tables.daos.{WorkflowExecutionsDao}
@@ -81,6 +82,15 @@ object WorkflowExecutionsResource {
     }
   }
 
+  def insertOperatorPortExecutions(
+      eid: Long,
+      opId: String,
+      portId: Int,
+      uri: URI
+  ): Unit = {
+    context.insertInto(OPERATOR_PORT_EXECUTIONS).values(eid, opId, portId, uri.toString).execute()
+  }
+
   def insertOperatorExecutions(
       eid: Long,
       opId: String,
@@ -109,6 +119,32 @@ object WorkflowExecutionsResource {
           )
       )
       .execute()
+  }
+
+  def getResultUrisByExecutionId(eid: Long): List[URI] = {
+    context
+      .select(OPERATOR_PORT_EXECUTIONS.RESULT_URI)
+      .from(OPERATOR_PORT_EXECUTIONS)
+      .where(OPERATOR_PORT_EXECUTIONS.WORKFLOW_EXECUTION_ID.eq(UInteger.valueOf(eid)))
+      .fetchInto(classOf[String])
+      .asScala
+      .toList
+      .map(URI.create)
+  }
+
+  def getResultUriByExecutionAndPort(eid: Long, opId: String, portId: Int): Option[URI] = {
+    Option(
+      context
+        .select(OPERATOR_PORT_EXECUTIONS.RESULT_URI)
+        .from(OPERATOR_PORT_EXECUTIONS)
+        .where(
+          OPERATOR_PORT_EXECUTIONS.WORKFLOW_EXECUTION_ID
+            .eq(UInteger.valueOf(eid))
+            .and(OPERATOR_PORT_EXECUTIONS.OPERATOR_ID.eq(opId))
+            .and(OPERATOR_PORT_EXECUTIONS.PORT_ID.eq(portId))
+        )
+        .fetchOneInto(classOf[String])
+    ).map(URI.create)
   }
 
   case class WorkflowExecutionEntry(

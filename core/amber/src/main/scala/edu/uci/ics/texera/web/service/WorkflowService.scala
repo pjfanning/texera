@@ -4,7 +4,6 @@ import com.google.protobuf.timestamp.Timestamp
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.core.WorkflowRuntimeException
 import edu.uci.ics.amber.core.storage.DocumentFactory
-import edu.uci.ics.amber.core.storage.result.ExecutionResourcesMapping
 import edu.uci.ics.amber.core.workflow.WorkflowContext
 import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
 import edu.uci.ics.amber.engine.architecture.rpc.controlreturns.WorkflowAggregatedState.{
@@ -27,6 +26,7 @@ import edu.uci.ics.amber.core.workflowruntimestate.WorkflowFatalError
 import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.User
 import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
+import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
 import edu.uci.ics.texera.web.storage.ExecutionStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.storage.{ExecutionStateStore, WorkflowStateStore}
@@ -89,8 +89,8 @@ class WorkflowService(
       WorkflowExecutionService
         .getLatestExecutionId(workflowId)
         .foreach(eid => {
-          ExecutionResourcesMapping
-            .getResourceURIs(eid)
+          WorkflowExecutionsResource
+            .getResultUrisByExecutionId(eid.id)
             .foreach(uri =>
               try {
                 DocumentFactory.openDocument(uri)._1.clear()
@@ -98,7 +98,7 @@ class WorkflowService(
                 case _: Throwable => // exception can be raised if the document is already cleared
               }
             )
-          ExecutionResourcesMapping.removeExecutionResources(eid)
+          // TODO: consider removing the URI from the DB
         })
       WorkflowService.workflowServiceMapping.remove(mkWorkflowStateId(workflowId))
       if (executionService.getValue != null) {
@@ -174,8 +174,8 @@ class WorkflowService(
     // clean up results from previous run
     val previousExecutionId = WorkflowExecutionService.getLatestExecutionId(workflowId)
     previousExecutionId.foreach(eid => {
-      ExecutionResourcesMapping
-        .getResourceURIs(eid)
+      WorkflowExecutionsResource
+        .getResultUrisByExecutionId(eid.id)
         .foreach(uri =>
           try {
             DocumentFactory.openDocument(uri)._1.clear()
@@ -183,7 +183,7 @@ class WorkflowService(
             case _: Throwable =>
           }
         )
-      ExecutionResourcesMapping.removeExecutionResources(eid)
+      // TODO: consider removing the URI from the DB
     }) // TODO: change this behavior after enabling cache.
 
     workflowContext.executionId = ExecutionsMetadataPersistService.insertNewExecution(

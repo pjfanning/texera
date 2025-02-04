@@ -1,6 +1,8 @@
 CREATE SCHEMA IF NOT EXISTS `texera_db`;
 USE `texera_db`;
 
+DROP TABLE IF EXISTS operator_executions;
+DROP TABLE IF EXISTS operator_port_executions;
 DROP TABLE IF EXISTS `workflow_user_access`;
 DROP TABLE IF EXISTS `workflow_of_user`;
 DROP TABLE IF EXISTS `user_config`;
@@ -13,8 +15,6 @@ DROP TABLE IF EXISTS `workflow_executions`;
 DROP TABLE IF EXISTS `dataset`;
 DROP TABLE IF EXISTS `dataset_user_access`;
 DROP TABLE IF EXISTS `dataset_version`;
-DROP TABLE IF EXISTS operator_executions;
-DROP TABLE IF EXISTS operator_runtime_statistics;
 
 SET PERSIST time_zone = '+00:00'; -- this line is mandatory
 SET PERSIST sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
@@ -240,5 +240,15 @@ CREATE TABLE IF NOT EXISTS operator_executions (
     operator_id VARCHAR(100) NOT NULL, 
     console_messages_uri TEXT DEFAULT NULL,
     UNIQUE (workflow_execution_id, operator_id),
+    FOREIGN KEY (workflow_execution_id) REFERENCES workflow_executions (eid) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS operator_port_executions 
+(
+    workflow_execution_id INT UNSIGNED NOT NULL,
+    operator_id VARCHAR(100) NOT NULL,
+    port_id INT NOT NULL,
+    result_uri TEXT DEFAULT NULL,
+    UNIQUE (workflow_execution_id, operator_id, port_id),
     FOREIGN KEY (workflow_execution_id) REFERENCES workflow_executions (eid) ON DELETE CASCADE
 );

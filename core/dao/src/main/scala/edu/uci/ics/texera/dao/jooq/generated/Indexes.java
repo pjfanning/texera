@@ -8,6 +8,7 @@ import edu.uci.ics.texera.dao.jooq.generated.tables.Dataset;
 import edu.uci.ics.texera.dao.jooq.generated.tables.DatasetUserAccess;
 import edu.uci.ics.texera.dao.jooq.generated.tables.DatasetVersion;
 import edu.uci.ics.texera.dao.jooq.generated.tables.OperatorExecutions;
+import edu.uci.ics.texera.dao.jooq.generated.tables.OperatorPortExecutions;
 import edu.uci.ics.texera.dao.jooq.generated.tables.Project;
 import edu.uci.ics.texera.dao.jooq.generated.tables.ProjectUserAccess;
 import edu.uci.ics.texera.dao.jooq.generated.tables.PublicProject;
@@ -47,6 +48,7 @@ public class Indexes {
     public static final Index DATASET_VERSION_IDX_DATASET_VERSION_NAME = Indexes0.DATASET_VERSION_IDX_DATASET_VERSION_NAME;
     public static final Index DATASET_VERSION_PRIMARY = Indexes0.DATASET_VERSION_PRIMARY;
     public static final Index OPERATOR_EXECUTIONS_WORKFLOW_EXECUTION_ID = Indexes0.OPERATOR_EXECUTIONS_WORKFLOW_EXECUTION_ID;
+    public static final Index OPERATOR_PORT_EXECUTIONS_WORKFLOW_EXECUTION_ID = Indexes0.OPERATOR_PORT_EXECUTIONS_WORKFLOW_EXECUTION_ID;
     public static final Index PROJECT_IDX_USER_PROJECT_NAME_DESCRIPTION = Indexes0.PROJECT_IDX_USER_PROJECT_NAME_DESCRIPTION;
     public static final Index PROJECT_OWNER_ID = Indexes0.PROJECT_OWNER_ID;
     public static final Index PROJECT_PRIMARY = Indexes0.PROJECT_PRIMARY;
@@ -91,6 +93,7 @@ public class Indexes {
         public static Index DATASET_VERSION_IDX_DATASET_VERSION_NAME = Internal.createIndex("idx_dataset_version_name", DatasetVersion.DATASET_VERSION, new OrderField[] { DatasetVersion.DATASET_VERSION.NAME }, false);
         public static Index DATASET_VERSION_PRIMARY = Internal.createIndex("PRIMARY", DatasetVersion.DATASET_VERSION, new OrderField[] { DatasetVersion.DATASET_VERSION.DVID }, true);
         public static Index OPERATOR_EXECUTIONS_WORKFLOW_EXECUTION_ID = Internal.createIndex("workflow_execution_id", OperatorExecutions.OPERATOR_EXECUTIONS, new OrderField[] { OperatorExecutions.OPERATOR_EXECUTIONS.WORKFLOW_EXECUTION_ID, OperatorExecutions.OPERATOR_EXECUTIONS.OPERATOR_ID }, true);
+        public static Index OPERATOR_PORT_EXECUTIONS_WORKFLOW_EXECUTION_ID = Internal.createIndex("workflow_execution_id", OperatorPortExecutions.OPERATOR_PORT_EXECUTIONS, new OrderField[] { OperatorPortExecutions.OPERATOR_PORT_EXECUTIONS.WORKFLOW_EXECUTION_ID, OperatorPortExecutions.OPERATOR_PORT_EXECUTIONS.OPERATOR_ID, OperatorPortExecutions.OPERATOR_PORT_EXECUTIONS.PORT_ID }, true);
         public static Index PROJECT_IDX_USER_PROJECT_NAME_DESCRIPTION = Internal.createIndex("idx_user_project_name_description", Project.PROJECT, new OrderField[] { Project.PROJECT.NAME, Project.PROJECT.DESCRIPTION }, false);
         public static Index PROJECT_OWNER_ID = Internal.createIndex("owner_id", Project.PROJECT, new OrderField[] { Project.PROJECT.OWNER_ID, Project.PROJECT.NAME }, true);
         public static Index PROJECT_PRIMARY = Internal.createIndex("PRIMARY", Project.PROJECT, new OrderField[] { Project.PROJECT.PID }, true);

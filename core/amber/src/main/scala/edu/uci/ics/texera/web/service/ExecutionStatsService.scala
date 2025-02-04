@@ -54,15 +54,15 @@ class ExecutionStatsService(
         workflowContext.workflowId,
         workflowContext.executionId
       )
+      val writer = DocumentFactory
+        .createDocument(uri, IcebergTableSchema.runtimeStatisticsSchema)
+        .writer("runtime_statistics")
+        .asInstanceOf[BufferedItemWriter[Tuple]]
       WorkflowExecutionsResource.updateRuntimeStatsUri(
         workflowContext.workflowId.id,
         workflowContext.executionId.id,
         uri
       )
-      val writer = DocumentFactory
-        .createDocument(uri, IcebergTableSchema.runtimeStatisticsSchema)
-        .writer("runtime_statistics")
-        .asInstanceOf[BufferedItemWriter[Tuple]]
       writer.open()
       (Some(thread), Some(writer))
     } else {

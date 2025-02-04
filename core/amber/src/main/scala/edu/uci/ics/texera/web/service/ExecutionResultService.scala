@@ -27,7 +27,6 @@ import edu.uci.ics.amber.core.virtualidentity.{
   WorkflowIdentity
 }
 import edu.uci.ics.amber.core.workflow.OutputPort.OutputMode
-import edu.uci.ics.amber.core.workflow.PortIdentity
 import edu.uci.ics.texera.web.SubscriptionManager
 import edu.uci.ics.texera.web.model.websocket.event.{
   PaginatedResultEvent,
@@ -35,6 +34,7 @@ import edu.uci.ics.texera.web.model.websocket.event.{
   WebResultUpdateEvent
 }
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
+import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource
 import edu.uci.ics.texera.web.service.WorkflowExecutionService.getLatestExecutionId
 import edu.uci.ics.texera.web.storage.{ExecutionStateStore, WorkflowStateStore}
 
@@ -93,14 +93,13 @@ object ExecutionResultService {
       }
     }
 
-    val storageUri = VFSURIFactory.createResultURI(
-      workflowIdentity,
-      executionId,
-      physicalOps.head.id.logicalOpId,
-      PortIdentity()
+    val storageUri = WorkflowExecutionsResource.getResultUriByExecutionAndPort(
+      executionId.id,
+      physicalOps.head.id.logicalOpId.id,
+      0
     )
     val storage: VirtualDocument[Tuple] =
-      DocumentFactory.openDocument(storageUri)._1.asInstanceOf[VirtualDocument[Tuple]]
+      DocumentFactory.openDocument(storageUri.get)._1.asInstanceOf[VirtualDocument[Tuple]]
     val webUpdate = webOutputMode match {
       case PaginationMode() =>
         val numTuples = storage.getCount
@@ -252,13 +251,9 @@ class ExecutionResultService(
               )
               if (StorageConfig.resultStorageMode == MONGODB) {
                 // using the first port for now. TODO: support multiple ports
-                val storageUri = VFSURIFactory.createResultURI(
-                  workflowIdentity,
-                  executionId,
-                  opId,
-                  PortIdentity()
-                )
-                val opStorage = DocumentFactory.openDocument(storageUri)._1
+                val storageUri = WorkflowExecutionsResource
+                  .getResultUriByExecutionAndPort(executionId.id, opId.id, 0)
+                val opStorage = DocumentFactory.openDocument(storageUri.get)._1
                 opStorage match {
                   case mongoDocument: MongoDocument[Tuple] =>
                     val tableCatStats = mongoDocument.getCategoricalStats
@@ -298,15 +293,14 @@ class ExecutionResultService(
       throw new IllegalStateException("No execution is recorded")
     )
     // using the first port for now. TODO: support multiple ports
-    val storageUri = VFSURIFactory.createResultURI(
-      workflowIdentity,
-      latestExecutionId,
-      OperatorIdentity(request.operatorID),
-      PortIdentity()
+    val storageUri = WorkflowExecutionsResource.getResultUriByExecutionAndPort(
+      latestExecutionId.id,
+      request.operatorID,
+      0
     )
     val paginationIterable = {
       DocumentFactory
-        .openDocument(storageUri)
+        .openDocument(storageUri.get)
         ._1
         .asInstanceOf[VirtualDocument[Tuple]]
         .getRange(from, from + request.pageSize)
@@ -324,8 +318,8 @@ class ExecutionResultService(
   private def onResultUpdate(executionId: ExecutionIdentity, physicalPlan: PhysicalPlan): Unit = {
     workflowStateStore.resultStore.updateState { _ =>
       val newInfo: Map[OperatorIdentity, OperatorResultMetadata] = {
-        ExecutionResourcesMapping
-          .getResourceURIs(executionId)
+        WorkflowExecutionsResource
+          .getResultUrisByExecutionId(executionId.id)
           .filter(uri => {
             val (_, _, _, _, resourceType) = VFSURIFactory.decodeURI(uri)
             resourceType != MATERIALIZED_RESULT

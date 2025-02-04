@@ -8,6 +8,7 @@ import edu.uci.ics.texera.dao.jooq.generated.tables.Dataset;
 import edu.uci.ics.texera.dao.jooq.generated.tables.DatasetUserAccess;
 import edu.uci.ics.texera.dao.jooq.generated.tables.DatasetVersion;
 import edu.uci.ics.texera.dao.jooq.generated.tables.OperatorExecutions;
+import edu.uci.ics.texera.dao.jooq.generated.tables.OperatorPortExecutions;
 import edu.uci.ics.texera.dao.jooq.generated.tables.Project;
 import edu.uci.ics.texera.dao.jooq.generated.tables.ProjectUserAccess;
 import edu.uci.ics.texera.dao.jooq.generated.tables.PublicProject;
@@ -39,7 +40,7 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class TexeraDb extends SchemaImpl {
 
-    private static final long serialVersionUID = 80297987;
+    private static final long serialVersionUID = -1741145476;
 
     /**
      * The reference instance of <code>texera_db</code>
@@ -65,6 +66,11 @@ public class TexeraDb extends SchemaImpl {
      * The table <code>texera_db.operator_executions</code>.
      */
     public final OperatorExecutions OPERATOR_EXECUTIONS = edu.uci.ics.texera.dao.jooq.generated.tables.OperatorExecutions.OPERATOR_EXECUTIONS;
+
+    /**
+     * The table <code>texera_db.operator_port_executions</code>.
+     */
+    public final OperatorPortExecutions OPERATOR_PORT_EXECUTIONS = edu.uci.ics.texera.dao.jooq.generated.tables.OperatorPortExecutions.OPERATOR_PORT_EXECUTIONS;
 
     /**
      * The table <code>texera_db.project</code>.
@@ -167,6 +173,7 @@ public class TexeraDb extends SchemaImpl {
             DatasetUserAccess.DATASET_USER_ACCESS,
             DatasetVersion.DATASET_VERSION,
             OperatorExecutions.OPERATOR_EXECUTIONS,
+            OperatorPortExecutions.OPERATOR_PORT_EXECUTIONS,
             Project.PROJECT,
             ProjectUserAccess.PROJECT_USER_ACCESS,
             PublicProject.PUBLIC_PROJECT,

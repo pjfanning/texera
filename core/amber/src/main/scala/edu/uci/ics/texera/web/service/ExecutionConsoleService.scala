@@ -58,15 +58,15 @@ class ExecutionConsoleService(
       opId.id, {
         val uri = VFSURIFactory
           .createConsoleMessagesURI(workflowContext.workflowId, workflowContext.executionId, opId)
+        val writer = DocumentFactory
+          .createDocument(uri, IcebergTableSchema.consoleMessagesSchema)
+          .writer("console_messages")
+          .asInstanceOf[BufferedItemWriter[Tuple]]
         WorkflowExecutionsResource.insertOperatorExecutions(
           workflowContext.executionId.id,
           opId.id,
           uri
         )
-        val writer = DocumentFactory
-          .createDocument(uri, IcebergTableSchema.consoleMessagesSchema)
-          .writer("console_messages")
-          .asInstanceOf[BufferedItemWriter[Tuple]]
         writer.open()
         writer
       }
