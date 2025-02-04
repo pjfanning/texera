@@ -3,7 +3,7 @@ package edu.uci.ics.texera.web.service
 import com.google.protobuf.timestamp.Timestamp
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.core.storage.model.BufferedItemWriter
-import edu.uci.ics.amber.core.storage.result.RuntimeStatisticsSchema
+import edu.uci.ics.amber.core.storage.result.IcebergTableSchema
 import edu.uci.ics.amber.core.storage.{DocumentFactory, VFSURIFactory}
 import edu.uci.ics.amber.core.tuple.Tuple
 import edu.uci.ics.amber.engine.architecture.controller.{
@@ -47,58 +47,29 @@ class ExecutionStatsService(
     workflowContext: WorkflowContext
 ) extends SubscriptionManager
     with LazyLogging {
-  private val metricsPersistThread = if (AmberConfig.isUserSystemEnabled) {
-    Some(Executors.newSingleThreadExecutor())
-  } else {
-    None
-  }
-
-  private var lastPersistedMetrics: Option[Map[String, OperatorMetrics]] =
+  private var (metricsPersistThread, lastPersistedMetrics, runtimeStatsWriter) =
     if (AmberConfig.isUserSystemEnabled) {
-      Some(Map())
-    } else {
-      None
-    }
-
-  private val runtimeStatisticsSchema = if (AmberConfig.isUserSystemEnabled) {
-    Some(RuntimeStatisticsSchema.schema)
-  } else {
-    None
-  }
-
-  private val identifier = if (AmberConfig.isUserSystemEnabled) {
-    Some(s"runtime_statistics_${workflowContext.executionId.id}")
-  } else {
-    None
-  }
-
-  private val uri = if (AmberConfig.isUserSystemEnabled) {
-    Some(
-      VFSURIFactory.createRuntimeStatisticsURI(
+      val thread = Some(Executors.newSingleThreadExecutor())
+      val metrics = Some(Map[String, OperatorMetrics]())
+      val uri = VFSURIFactory.createRuntimeStatisticsURI(
         workflowContext.workflowId,
         workflowContext.executionId
       )
-    )
-  } else {
-    None
-  }
-
-  WorkflowExecutionsResource.updateRuntimeStatsUri(
-    workflowContext.workflowId.id,
-    workflowContext.executionId.id,
-    uri
-  )
-
-  private val writer = if (AmberConfig.isUserSystemEnabled) {
-    val w = DocumentFactory
-      .createDocument(uri.get, runtimeStatisticsSchema.get)
-      .writer(identifier.get)
-      .asInstanceOf[BufferedItemWriter[Tuple]]
-    w.open()
-    Some(w)
-  } else {
-    None
-  }
+      WorkflowExecutionsResource.updateRuntimeStatsUri(
+        workflowContext.workflowId.id,
+        workflowContext.executionId.id,
+        uri
+      )
+      val writer = DocumentFactory
+        .createDocument(uri, IcebergTableSchema.runtimeStatisticsSchema)
+        .writer("runtime_statistics")
+        .asInstanceOf[BufferedItemWriter[Tuple]]
+      writer.open()
+      val writerOption = Some(writer)
+      (thread, metrics, writerOption)
+    } else {
+      (None, None, None)
+    }
 
   registerCallbacks()
 
@@ -255,28 +226,33 @@ class ExecutionStatsService(
   private def storeRuntimeStatistics(
       operatorStatistics: scala.collection.immutable.Map[String, OperatorMetrics]
   ): Unit = {
-    try {
-      operatorStatistics.foreach {
-        case (operatorId, stat) =>
-          val runtimeStats = new Tuple(
-            runtimeStatisticsSchema.get,
-            Array(
-              operatorId,
-              new java.sql.Timestamp(System.currentTimeMillis()),
-              stat.operatorStatistics.inputCount.map(_.tupleCount).sum,
-              stat.operatorStatistics.outputCount.map(_.tupleCount).sum,
-              stat.operatorStatistics.dataProcessingTime,
-              stat.operatorStatistics.controlProcessingTime,
-              stat.operatorStatistics.idleTime,
-              stat.operatorStatistics.numWorkers,
-              maptoStatusCode(stat.operatorState).toInt
-            )
-          )
-          writer.foreach(_.putOne(runtimeStats))
-      }
-      writer.foreach(_.close())
-    } catch {
-      case err: Throwable => logger.error("error occurred when storing runtime statistics", err)
+    runtimeStatsWriter match {
+      case Some(writer) =>
+        try {
+          operatorStatistics.foreach {
+            case (operatorId, stat) =>
+              val runtimeStats = new Tuple(
+                IcebergTableSchema.runtimeStatisticsSchema,
+                Array(
+                  operatorId,
+                  new java.sql.Timestamp(System.currentTimeMillis()),
+                  stat.operatorStatistics.inputCount.map(_.tupleCount).sum,
+                  stat.operatorStatistics.outputCount.map(_.tupleCount).sum,
+                  stat.operatorStatistics.dataProcessingTime,
+                  stat.operatorStatistics.controlProcessingTime,
+                  stat.operatorStatistics.idleTime,
+                  stat.operatorStatistics.numWorkers,
+                  maptoStatusCode(stat.operatorState).toInt
+                )
+              )
+              writer.putOne(runtimeStats)
+          }
+          writer.close()
+        } catch {
+          case err: Throwable => logger.error("error occurred when storing runtime statistics", err)
+        }
+      case None =>
+        logger.warn("Runtime statistics writer is not available.")
     }
   }
 

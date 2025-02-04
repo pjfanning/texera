@@ -94,10 +94,10 @@ object WorkflowExecutionsResource {
     result
   }
 
-  def updateRuntimeStatsUri(wid: Long, eid: Long, uri: Option[URI]): Unit = {
+  def updateRuntimeStatsUri(wid: Long, eid: Long, uri: URI): Unit = {
     context
       .update(WORKFLOW_EXECUTIONS)
-      .set(WORKFLOW_EXECUTIONS.RUNTIME_STATS_URI, uri.map(_.toString).orNull)
+      .set(WORKFLOW_EXECUTIONS.RUNTIME_STATS_URI, uri.toString)
       .where(
         WORKFLOW_EXECUTIONS.EID
           .eq(UInteger.valueOf(eid))
@@ -266,10 +266,10 @@ class WorkflowExecutionsResource {
     }
 
     val uri: URI = new URI(uriString)
-    val document = DocumentFactory.openDocument(uri)
+    val document = DocumentFactory.openDocument(uri)._1
 
     // Read all records from Iceberg and convert to WorkflowRuntimeStatistics
-    document._1
+    document
       .get()
       .map(tuple => {
         val record = tuple.asInstanceOf[Tuple]
