@@ -33,7 +33,7 @@ import edu.uci.ics.amber.core.storage.{DocumentFactory, VFSURIFactory}
 import edu.uci.ics.amber.core.tuple.Tuple
 import edu.uci.ics.amber.core.workflow.WorkflowContext
 
-import java.util.concurrent.Executors
+import java.util.concurrent.{ExecutorService, Executors}
 import java.time.Instant
 import scala.collection.mutable
 
@@ -47,16 +47,10 @@ class ExecutionConsoleService(
 
   val bufferSize: Int = AmberConfig.operatorConsoleBufferSize
 
-  private val consoleWriters = mutable.Map[String, BufferedItemWriter[Tuple]]()
+  private val consoleWriters: mutable.Map[String, BufferedItemWriter[Tuple]] = mutable.Map()
 
-  private val (consoleWriterThread) = {
-    if (AmberConfig.isUserSystemEnabled) {
-      val thread = Executors.newSingleThreadExecutor()
-      Some(thread)
-    } else {
-      None
-    }
-  }
+  private val consoleWriterThread: Option[ExecutorService] =
+    Option.when(AmberConfig.isUserSystemEnabled)(Executors.newSingleThreadExecutor())
 
   private def getOrCreateWriter(opId: OperatorIdentity): BufferedItemWriter[Tuple] = {
     consoleWriters.getOrElseUpdate(
@@ -120,12 +114,15 @@ class ExecutionConsoleService(
     consoleWriterThread.foreach { thread =>
       thread.execute(() => {
         val writer = getOrCreateWriter(OperatorIdentity(opId))
-        val tuple = new Tuple(
-          IcebergTableSchema.consoleMessagesSchema,
-          Array(consoleMessage.toProtoString)
-        )
-        writer.putOne(tuple)
-        writer.close()
+        try {
+          val tuple = new Tuple(
+            IcebergTableSchema.consoleMessagesSchema,
+            Array(consoleMessage.toProtoString)
+          )
+          writer.putOne(tuple)
+        } finally {
+          writer.close()
+        }
       })
     }
 

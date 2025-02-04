@@ -70,9 +70,8 @@ class ExecutionStatsService(
     }
   }
 
-  private var lastPersistedMetrics: Option[Map[String, OperatorMetrics]] = {
-    if (AmberConfig.isUserSystemEnabled) Some(Map.empty[String, OperatorMetrics]) else None
-  }
+  private var lastPersistedMetrics: Option[Map[String, OperatorMetrics]] =
+    Option.when(AmberConfig.isUserSystemEnabled)(Map.empty[String, OperatorMetrics])
 
   registerCallbacks()
 
