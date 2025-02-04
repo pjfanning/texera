@@ -280,27 +280,34 @@ class ExecutionResultService(
     val latestExecutionId = getLatestExecutionId(workflowIdentity).getOrElse(
       throw new IllegalStateException("No execution is recorded")
     )
-    // using the first port for now. TODO: support multiple ports
-    val storageUri = WorkflowExecutionsResource.getResultUriByExecutionAndPort(
+    val storageUriOption = WorkflowExecutionsResource.getResultUriByExecutionAndPort(
       latestExecutionId.id,
       request.operatorID,
       0
     )
-    val paginationIterable = {
-      DocumentFactory
-        .openDocument(storageUri.get)
-        ._1
-        .asInstanceOf[VirtualDocument[Tuple]]
-        .getRange(from, from + request.pageSize)
-        .to(Iterable)
+
+    storageUriOption match {
+      case Some(storageUri) =>
+        val paginationIterable = {
+          DocumentFactory
+            .openDocument(storageUri)
+            ._1
+            .asInstanceOf[VirtualDocument[Tuple]]
+            .getRange(from, from + request.pageSize)
+            .to(Iterable)
+        }
+        val mappedResults = paginationIterable
+          .map(tuple => tuple.asKeyValuePairJson())
+          .toList
+        val attributes = paginationIterable.headOption
+          .map(_.getSchema.getAttributes)
+          .getOrElse(List.empty)
+        PaginatedResultEvent.apply(request, mappedResults, attributes)
+
+      case None =>
+        // Handle the case when storageUri is empty
+        PaginatedResultEvent.apply(request, List.empty, List.empty)
     }
-    val mappedResults = paginationIterable
-      .map(tuple => tuple.asKeyValuePairJson())
-      .toList
-    val attributes = paginationIterable.headOption
-      .map(_.getSchema.getAttributes)
-      .getOrElse(List.empty)
-    PaginatedResultEvent.apply(request, mappedResults, attributes)
   }
 
   private def onResultUpdate(executionId: ExecutionIdentity, physicalPlan: PhysicalPlan): Unit = {

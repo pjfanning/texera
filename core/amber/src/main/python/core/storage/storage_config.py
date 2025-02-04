@@ -1,4 +1,4 @@
-core/amber/src/main/python/core/storage/storage_config.pyclass StorageConfig:
+class StorageConfig:
     """
     A static class to keep the storage-related configs.
     This class should be initialized with the configs passed from Java side and
