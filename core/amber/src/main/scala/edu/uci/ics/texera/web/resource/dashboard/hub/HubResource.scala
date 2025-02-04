@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServletRequest
 import javax.ws.rs._
 import javax.ws.rs.core.{Context, MediaType}
 import scala.jdk.CollectionConverters._
+import EntityTables._
 
 object HubResource {
   case class userRequest(entityId: UInteger, userId: UInteger, entityType: String)
@@ -106,13 +107,22 @@ object HubResource {
     query.execute()
   }
 
-  def isLikedHelper(userId: UInteger, workflowId: UInteger, entityType: String): Boolean = {
-    validateEntityType(entityType)
+  def validateEntityType(entityType: String): Unit = {
+    val allowedTypes = Set("workflow", "dataset")
 
-    val (table, uidColumn, idColumn) = entityType match {
-      case "workflow" => (WORKFLOW_USER_LIKES, WORKFLOW_USER_LIKES.UID, WORKFLOW_USER_LIKES.WID)
-      case _          => return false
+    if (!allowedTypes.contains(entityType)) {
+      throw new IllegalArgumentException(
+        s"Invalid entity type: $entityType. Allowed types: ${allowedTypes.mkString(", ")}."
+      )
     }
+  }
+
+  def isLikedHelper(userId: UInteger, workflowId: UInteger, entityType: String): Boolean = {
+
+    validateEntityType(entityType)
+    val entityTables = LikeTable(entityType)
+    val (table, uidColumn, idColumn) =
+      (entityTables.table, entityTables.uidColumn, entityTables.idColumn)
 
     context
       .selectFrom(table)
@@ -124,40 +134,30 @@ object HubResource {
       .fetchOne() != null
   }
 
-  def validateEntityType(entityType: String): Unit = {
-    val allowedTypes = Set("workflow", "dataset")
-
-    if (!allowedTypes.contains(entityType)) {
-      throw new IllegalArgumentException(
-        s"Invalid entity type: $entityType. Allowed types: ${allowedTypes.mkString(", ")}."
-      )
-    }
-  }
-
   def recordCloneActivity(
       request: HttpServletRequest,
       userId: UInteger,
       entityId: UInteger,
       entityType: String
   ): Unit = {
-    validateEntityType(entityType)
-    recordUserActivity(request, userId, entityId, entityType, "clone")
 
-    val (table, idColumn) = entityType match {
-      case "workflow" => (WORKFLOW_USER_CLONES, WORKFLOW_USER_CLONES.WID)
-      case _          => return
-    }
+    validateEntityType(entityType)
+    val entityTables = CloneTable(entityType)
+    val (table, uidColumn, idColumn) =
+      (entityTables.table, entityTables.uidColumn, entityTables.idColumn)
+
+    recordUserActivity(request, userId, entityId, entityType, "clone")
 
     val existingCloneRecord = context
       .selectFrom(table)
-      .where(table.UID.eq(userId))
+      .where(uidColumn.eq(userId))
       .and(idColumn.eq(entityId))
       .fetchOne()
 
     if (existingCloneRecord == null) {
       context
         .insertInto(table)
-        .set(table.UID, userId)
+        .set(uidColumn, userId)
         .set(idColumn, entityId)
         .execute()
     }
@@ -174,13 +174,10 @@ class HubResource {
   @GET
   @Path("/count")
   def getPublishedWorkflowCount(@QueryParam("entityType") entityType: String): Integer = {
-    validateEntityType(entityType)
 
-    val (table, isPublicColumn) = entityType match {
-      case "workflow" => (WORKFLOW, WORKFLOW.IS_PUBLIC)
-      case "dataset"  => (DATASET, DATASET.IS_PUBLIC)
-      case _          => return 0
-    }
+    validateEntityType(entityType)
+    val entityTables = BaseEntityTable(entityType)
+    val (table, isPublicColumn) = (entityTables.table, entityTables.isPublicColumn)
 
     context
       .selectCount()
@@ -207,16 +204,13 @@ class HubResource {
       @Context request: HttpServletRequest,
       likeRequest: userRequest
   ): Boolean = {
-    val entityId = likeRequest.entityId
-    val userId = likeRequest.userId
-    val entityType = likeRequest.entityType
+    val (entityId, userId, entityType) =
+      (likeRequest.entityId, likeRequest.userId, likeRequest.entityType)
 
     validateEntityType(entityType)
-
-    val (table, uidColumn, idColumn) = entityType match {
-      case "workflow" => (WORKFLOW_USER_LIKES, WORKFLOW_USER_LIKES.UID, WORKFLOW_USER_LIKES.WID)
-      case _          => return false
-    }
+    val entityTables = LikeTable(entityType)
+    val (table, uidColumn, idColumn) =
+      (entityTables.table, entityTables.uidColumn, entityTables.idColumn)
 
     if (!isLikedHelper(userId, entityId, entityType)) {
       context
@@ -239,16 +233,13 @@ class HubResource {
       @Context request: HttpServletRequest,
       unlikeRequest: userRequest
   ): Boolean = {
-    val entityId = unlikeRequest.entityId
-    val userId = unlikeRequest.userId
-    val entityType = unlikeRequest.entityType
+    val (entityId, userId, entityType) =
+      (unlikeRequest.entityId, unlikeRequest.userId, unlikeRequest.entityType)
 
     validateEntityType(entityType)
-
-    val (table, uidColumn, idColumn) = entityType match {
-      case "workflow" => (WORKFLOW_USER_LIKES, WORKFLOW_USER_LIKES.UID, WORKFLOW_USER_LIKES.WID)
-      case _          => return false
-    }
+    val entityTables = LikeTable(entityType)
+    val (table, uidColumn, idColumn) =
+      (entityTables.table, entityTables.uidColumn, entityTables.idColumn)
 
     if (isLikedHelper(userId, entityId, entityType)) {
       context
@@ -275,11 +266,8 @@ class HubResource {
       @QueryParam("entityType") entityType: String
   ): Int = {
     validateEntityType(entityType)
-
-    val (table, idColumn) = entityType match {
-      case "workflow" => (WORKFLOW_USER_LIKES, WORKFLOW_USER_LIKES.WID)
-      case _          => return 0
-    }
+    val entityTables = LikeTable(entityType)
+    val (table, idColumn) = (entityTables.table, entityTables.idColumn)
 
     val likeCount = context
       .selectCount()
@@ -298,11 +286,8 @@ class HubResource {
       @QueryParam("entityType") entityType: String
   ): Int = {
     validateEntityType(entityType)
-
-    val (table, idColumn) = entityType match {
-      case "workflow" => (WORKFLOW_USER_CLONES, WORKFLOW_USER_CLONES.WID)
-      case _          => return 0
-    }
+    val entityTables = CloneTable(entityType)
+    val (table, idColumn) = (entityTables.table, entityTables.idColumn)
 
     val cloneCount = context
       .selectCount()
@@ -321,17 +306,13 @@ class HubResource {
       viewRequest: userRequest
   ): Int = {
 
-    val entityID = viewRequest.entityId
-    val userId = viewRequest.userId
-    val entityType = viewRequest.entityType
+    val (entityID, userId, entityType) =
+      (viewRequest.entityId, viewRequest.userId, viewRequest.entityType)
 
     validateEntityType(entityType)
-
-    val (table, idColumn, viewCountColumn) = entityType match {
-      case "workflow" =>
-        (WORKFLOW_VIEW_COUNT, WORKFLOW_VIEW_COUNT.WID, WORKFLOW_VIEW_COUNT.VIEW_COUNT)
-      case _ => return 0
-    }
+    val entityTables = ViewCountTable(entityType)
+    val (table, idColumn, viewCountColumn) =
+      (entityTables.table, entityTables.idColumn, entityTables.viewCountColumn)
 
     context
       .insertInto(table)
@@ -359,12 +340,9 @@ class HubResource {
   ): Int = {
 
     validateEntityType(entityType)
-
-    val (table, idColumn, viewCountColumn) = entityType match {
-      case "workflow" =>
-        (WORKFLOW_VIEW_COUNT, WORKFLOW_VIEW_COUNT.WID, WORKFLOW_VIEW_COUNT.VIEW_COUNT)
-      case _ => return 0
-    }
+    val entityTables = ViewCountTable(entityType)
+    val (table, idColumn, viewCountColumn) =
+      (entityTables.table, entityTables.idColumn, entityTables.viewCountColumn)
 
     context
       .insertInto(table)
