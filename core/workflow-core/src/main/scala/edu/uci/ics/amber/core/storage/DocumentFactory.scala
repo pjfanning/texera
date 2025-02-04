@@ -101,6 +101,20 @@ object DocumentFactory {
     }
   }
 
+  private def handleIcebergLoading(
+      namespace: String,
+      storageKey: String
+  ): (IcebergDocument[Tuple], Option[Schema]) = {
+    StorageConfig.resultStorageMode.toLowerCase match {
+      case ICEBERG =>
+        loadIcebergDocument(namespace, storageKey)
+      case _ =>
+        throw new IllegalArgumentException(
+          s"Storage mode '${StorageConfig.resultStorageMode}' is not supported"
+        )
+    }
+  }
+
   /**
     * Open a document specified by the uri for read purposes only.
     * @param fileUri the uri of the document
@@ -134,19 +148,14 @@ object DocumentFactory {
         val (_, _, _, _, resourceType) = decodeURI(uri)
         val storageKey = sanitizeURIPath(uri)
 
-        resourceType match {
-          case RESULT | MATERIALIZED_RESULT =>
-            handleIcebergCreation(StorageConfig.icebergTableNamespace, storageKey, schema)
-
-          case RUNTIME_STATISTICS | CONSOLE_MESSAGES =>
-            handleIcebergCreation(StorageConfig.icebergTableExecutionNamespace, storageKey, schema)
-
+        val namespace = resourceType match {
+          case RESULT | MATERIALIZED_RESULT => StorageConfig.icebergTableResultNamespace
+          case CONSOLE_MESSAGES             => StorageConfig.icebergTableConsoleMessagesNamespace
+          case RUNTIME_STATISTICS           => StorageConfig.icebergTableRuntimeStatisticsNamespace
           case _ =>
-            throw new IllegalArgumentException(
-              s"Resource type $resourceType is not supported"
-            )
+            throw new IllegalArgumentException(s"Resource type $resourceType is not supported")
         }
-
+        handleIcebergCreation(namespace, storageKey, schema)
       case _ =>
         throw new UnsupportedOperationException(
           s"Unsupported URI scheme: ${uri.getScheme} for creating the document"
@@ -167,40 +176,15 @@ object DocumentFactory {
 
       case VFS_FILE_URI_SCHEME =>
         val (_, _, _, _, resourceType) = decodeURI(uri)
-
-        resourceType match {
-          case RESULT | MATERIALIZED_RESULT =>
-            val storageKey = sanitizeURIPath(uri)
-
-            StorageConfig.resultStorageMode.toLowerCase match {
-              case ICEBERG =>
-                loadIcebergDocument(StorageConfig.icebergTableNamespace, storageKey)
-
-              case _ =>
-                throw new IllegalArgumentException(
-                  s"Storage mode '${StorageConfig.resultStorageMode}' is not supported"
-                )
-            }
-
-          case RUNTIME_STATISTICS =>
-            val storageKey = sanitizeURIPath(uri)
-
-            StorageConfig.resultStorageMode.toLowerCase match {
-              case ICEBERG =>
-                loadIcebergDocument(StorageConfig.icebergTableExecutionNamespace, storageKey)
-
-              case _ =>
-                throw new IllegalArgumentException(
-                  s"Storage mode '${StorageConfig.resultStorageMode}' is not supported"
-                )
-            }
-
+        val storageKey = sanitizeURIPath(uri)
+        val namespace = resourceType match {
+          case RESULT | MATERIALIZED_RESULT => StorageConfig.icebergTableResultNamespace
+          case CONSOLE_MESSAGES             => StorageConfig.icebergTableConsoleMessagesNamespace
+          case RUNTIME_STATISTICS           => StorageConfig.icebergTableRuntimeStatisticsNamespace
           case _ =>
-            throw new IllegalArgumentException(
-              s"Resource type $resourceType is not supported"
-            )
+            throw new IllegalArgumentException(s"Resource type $resourceType is not supported")
         }
-
+        handleIcebergLoading(namespace, storageKey)
       case _ =>
         throw new UnsupportedOperationException(
           s"Unsupported URI scheme: ${uri.getScheme} for opening the document"
