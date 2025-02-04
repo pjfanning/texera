@@ -32,6 +32,7 @@ import edu.uci.ics.amber.core.storage.result.IcebergTableSchema
 import edu.uci.ics.amber.core.storage.{DocumentFactory, VFSURIFactory}
 import edu.uci.ics.amber.core.tuple.Tuple
 import edu.uci.ics.amber.core.workflow.WorkflowContext
+import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource
 
 import java.util.concurrent.{ExecutorService, Executors}
 import java.time.Instant
@@ -57,6 +58,11 @@ class ExecutionConsoleService(
       opId.id, {
         val uri = VFSURIFactory
           .createConsoleMessagesURI(workflowContext.workflowId, workflowContext.executionId, opId)
+        WorkflowExecutionsResource.insertOperatorExecutions(
+          workflowContext.executionId.id,
+          opId.id,
+          uri
+        )
         val writer = DocumentFactory
           .createDocument(uri, IcebergTableSchema.consoleMessagesSchema)
           .writer("console_messages")

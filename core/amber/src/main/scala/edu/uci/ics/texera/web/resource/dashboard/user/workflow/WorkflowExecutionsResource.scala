@@ -7,12 +7,14 @@ import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
 import edu.uci.ics.amber.core.virtualidentity.{ChannelMarkerIdentity, ExecutionIdentity}
 import edu.uci.ics.texera.dao.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.dao.jooq.generated.Tables.{USER, WORKFLOW_EXECUTIONS, WORKFLOW_VERSION}
-import edu.uci.ics.texera.dao.jooq.generated.tables.daos.{
-  OperatorExecutionsDao,
-  WorkflowExecutionsDao
+import edu.uci.ics.texera.dao.jooq.generated.Tables.{
+  USER,
+  WORKFLOW_EXECUTIONS,
+  OPERATOR_EXECUTIONS,
+  WORKFLOW_VERSION
 }
-import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.{OperatorExecutions, WorkflowExecutions}
+import edu.uci.ics.texera.dao.jooq.generated.tables.daos.{WorkflowExecutionsDao}
+import edu.uci.ics.texera.dao.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource._
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService
 import io.dropwizard.auth.Auth
@@ -20,7 +22,6 @@ import org.jooq.types.{UInteger, ULong}
 
 import java.net.URI
 import java.sql.Timestamp
-import java.util
 import java.util.concurrent.TimeUnit
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs._
@@ -33,9 +34,6 @@ object WorkflowExecutionsResource {
     .getInstance(StorageConfig.jdbcUrl, StorageConfig.jdbcUsername, StorageConfig.jdbcPassword)
     .createDSLContext()
   final private lazy val executionsDao = new WorkflowExecutionsDao(context.configuration)
-  final private lazy val operatorExecutionsDao = new OperatorExecutionsDao(
-    context.configuration
-  )
 
   def getExecutionById(eId: UInteger): WorkflowExecutions = {
     executionsDao.fetchOneByEid(eId)
@@ -84,14 +82,14 @@ object WorkflowExecutionsResource {
   }
 
   def insertOperatorExecutions(
-      list: util.ArrayList[OperatorExecutions]
-  ): util.HashMap[String, ULong] = {
-    operatorExecutionsDao.insert(list);
-    val result = new util.HashMap[String, ULong]()
-    list.forEach(execution => {
-      result.put(execution.getOperatorId, execution.getOperatorExecutionId)
-    })
-    result
+      eid: Long,
+      opId: String,
+      uri: URI
+  ): Unit = {
+    context
+      .insertInto(OPERATOR_EXECUTIONS)
+      .values(eid, opId, uri.toString)
+      .execute()
   }
 
   def updateRuntimeStatsUri(wid: Long, eid: Long, uri: URI): Unit = {

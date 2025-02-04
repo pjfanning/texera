@@ -46,7 +46,6 @@ import org.jooq.Identity;
 import org.jooq.UniqueKey;
 import org.jooq.impl.Internal;
 import org.jooq.types.UInteger;
-import org.jooq.types.ULong;
 
 
 /**
@@ -62,7 +61,6 @@ public class Keys {
 
     public static final Identity<DatasetRecord, UInteger> IDENTITY_DATASET = Identities0.IDENTITY_DATASET;
     public static final Identity<DatasetVersionRecord, UInteger> IDENTITY_DATASET_VERSION = Identities0.IDENTITY_DATASET_VERSION;
-    public static final Identity<OperatorExecutionsRecord, ULong> IDENTITY_OPERATOR_EXECUTIONS = Identities0.IDENTITY_OPERATOR_EXECUTIONS;
     public static final Identity<ProjectRecord, UInteger> IDENTITY_PROJECT = Identities0.IDENTITY_PROJECT;
     public static final Identity<UserRecord, UInteger> IDENTITY_USER = Identities0.IDENTITY_USER;
     public static final Identity<WorkflowRecord, UInteger> IDENTITY_WORKFLOW = Identities0.IDENTITY_WORKFLOW;
@@ -76,7 +74,6 @@ public class Keys {
     public static final UniqueKey<DatasetRecord> KEY_DATASET_PRIMARY = UniqueKeys0.KEY_DATASET_PRIMARY;
     public static final UniqueKey<DatasetUserAccessRecord> KEY_DATASET_USER_ACCESS_PRIMARY = UniqueKeys0.KEY_DATASET_USER_ACCESS_PRIMARY;
     public static final UniqueKey<DatasetVersionRecord> KEY_DATASET_VERSION_PRIMARY = UniqueKeys0.KEY_DATASET_VERSION_PRIMARY;
-    public static final UniqueKey<OperatorExecutionsRecord> KEY_OPERATOR_EXECUTIONS_PRIMARY = UniqueKeys0.KEY_OPERATOR_EXECUTIONS_PRIMARY;
     public static final UniqueKey<OperatorExecutionsRecord> KEY_OPERATOR_EXECUTIONS_WORKFLOW_EXECUTION_ID = UniqueKeys0.KEY_OPERATOR_EXECUTIONS_WORKFLOW_EXECUTION_ID;
     public static final UniqueKey<ProjectRecord> KEY_PROJECT_PRIMARY = UniqueKeys0.KEY_PROJECT_PRIMARY;
     public static final UniqueKey<ProjectRecord> KEY_PROJECT_OWNER_ID = UniqueKeys0.KEY_PROJECT_OWNER_ID;
@@ -132,7 +129,6 @@ public class Keys {
     private static class Identities0 {
         public static Identity<DatasetRecord, UInteger> IDENTITY_DATASET = Internal.createIdentity(Dataset.DATASET, Dataset.DATASET.DID);
         public static Identity<DatasetVersionRecord, UInteger> IDENTITY_DATASET_VERSION = Internal.createIdentity(DatasetVersion.DATASET_VERSION, DatasetVersion.DATASET_VERSION.DVID);
-        public static Identity<OperatorExecutionsRecord, ULong> IDENTITY_OPERATOR_EXECUTIONS = Internal.createIdentity(OperatorExecutions.OPERATOR_EXECUTIONS, OperatorExecutions.OPERATOR_EXECUTIONS.OPERATOR_EXECUTION_ID);
         public static Identity<ProjectRecord, UInteger> IDENTITY_PROJECT = Internal.createIdentity(Project.PROJECT, Project.PROJECT.PID);
         public static Identity<UserRecord, UInteger> IDENTITY_USER = Internal.createIdentity(User.USER, User.USER.UID);
         public static Identity<WorkflowRecord, UInteger> IDENTITY_WORKFLOW = Internal.createIdentity(Workflow.WORKFLOW, Workflow.WORKFLOW.WID);
@@ -144,7 +140,6 @@ public class Keys {
         public static final UniqueKey<DatasetRecord> KEY_DATASET_PRIMARY = Internal.createUniqueKey(Dataset.DATASET, "KEY_dataset_PRIMARY", Dataset.DATASET.DID);
         public static final UniqueKey<DatasetUserAccessRecord> KEY_DATASET_USER_ACCESS_PRIMARY = Internal.createUniqueKey(DatasetUserAccess.DATASET_USER_ACCESS, "KEY_dataset_user_access_PRIMARY", DatasetUserAccess.DATASET_USER_ACCESS.DID, DatasetUserAccess.DATASET_USER_ACCESS.UID);
         public static final UniqueKey<DatasetVersionRecord> KEY_DATASET_VERSION_PRIMARY = Internal.createUniqueKey(DatasetVersion.DATASET_VERSION, "KEY_dataset_version_PRIMARY", DatasetVersion.DATASET_VERSION.DVID);
-        public static final UniqueKey<OperatorExecutionsRecord> KEY_OPERATOR_EXECUTIONS_PRIMARY = Internal.createUniqueKey(OperatorExecutions.OPERATOR_EXECUTIONS, "KEY_operator_executions_PRIMARY", OperatorExecutions.OPERATOR_EXECUTIONS.OPERATOR_EXECUTION_ID);
         public static final UniqueKey<OperatorExecutionsRecord> KEY_OPERATOR_EXECUTIONS_WORKFLOW_EXECUTION_ID = Internal.createUniqueKey(OperatorExecutions.OPERATOR_EXECUTIONS, "KEY_operator_executions_workflow_execution_id", OperatorExecutions.OPERATOR_EXECUTIONS.WORKFLOW_EXECUTION_ID, OperatorExecutions.OPERATOR_EXECUTIONS.OPERATOR_ID);
         public static final UniqueKey<ProjectRecord> KEY_PROJECT_PRIMARY = Internal.createUniqueKey(Project.PROJECT, "KEY_project_PRIMARY", Project.PROJECT.PID);
         public static final UniqueKey<ProjectRecord> KEY_PROJECT_OWNER_ID = Internal.createUniqueKey(Project.PROJECT, "KEY_project_owner_id", Project.PROJECT.OWNER_ID, Project.PROJECT.NAME);

@@ -236,9 +236,9 @@ ALTER TABLE workflow
 CHANGE COLUMN is_published is_public BOOLEAN NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS operator_executions (
-    operator_execution_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, 
     workflow_execution_id INT UNSIGNED NOT NULL, 
     operator_id VARCHAR(100) NOT NULL, 
+    console_messages_uri TEXT DEFAULT NULL,
     UNIQUE (workflow_execution_id, operator_id),
     FOREIGN KEY (workflow_execution_id) REFERENCES workflow_executions (eid) ON DELETE CASCADE
 );
