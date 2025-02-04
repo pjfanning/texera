@@ -47,10 +47,9 @@ class ExecutionStatsService(
     workflowContext: WorkflowContext
 ) extends SubscriptionManager
     with LazyLogging {
-  private var (metricsPersistThread, lastPersistedMetrics, runtimeStatsWriter) =
+  private val (metricsPersistThread, runtimeStatsWriter) = {
     if (AmberConfig.isUserSystemEnabled) {
-      val thread = Some(Executors.newSingleThreadExecutor())
-      val metrics = Some(Map[String, OperatorMetrics]())
+      val thread = Executors.newSingleThreadExecutor()
       val uri = VFSURIFactory.createRuntimeStatisticsURI(
         workflowContext.workflowId,
         workflowContext.executionId
@@ -65,11 +64,15 @@ class ExecutionStatsService(
         .writer("runtime_statistics")
         .asInstanceOf[BufferedItemWriter[Tuple]]
       writer.open()
-      val writerOption = Some(writer)
-      (thread, metrics, writerOption)
+      (Some(thread), Some(writer))
     } else {
-      (None, None, None)
+      (None, None)
     }
+  }
+
+  private var lastPersistedMetrics: Option[Map[String, OperatorMetrics]] = {
+    if (AmberConfig.isUserSystemEnabled) Some(Map.empty[String, OperatorMetrics]) else None
+  }
 
   registerCallbacks()
 
@@ -152,13 +155,11 @@ class ExecutionStatsService(
           stateStore.statsStore.updateState { statsStore =>
             statsStore.withOperatorInfo(evt.operatorMetrics)
           }
-          if (AmberConfig.isUserSystemEnabled) {
-            metricsPersistThread.foreach { thread =>
-              thread.execute(() => {
-                storeRuntimeStatistics(computeStatsDiff(evt.operatorMetrics))
-                lastPersistedMetrics = Some(evt.operatorMetrics)
-              })
-            }
+          metricsPersistThread.foreach { thread =>
+            thread.execute(() => {
+              storeRuntimeStatistics(computeStatsDiff(evt.operatorMetrics))
+              lastPersistedMetrics = Some(evt.operatorMetrics)
+            })
           }
         })
     )

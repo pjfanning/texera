@@ -126,7 +126,8 @@ class WorkflowExecutionService(
       executionReconfigurationService,
       controllerConfig.faultToleranceConfOpt
     )
-    executionConsoleService = new ExecutionConsoleService(client, executionStateStore, wsInput)
+    executionConsoleService =
+      new ExecutionConsoleService(client, executionStateStore, wsInput, workflowContext)
 
     logger.info("Starting the workflow execution.")
     resultService.attachToExecution(

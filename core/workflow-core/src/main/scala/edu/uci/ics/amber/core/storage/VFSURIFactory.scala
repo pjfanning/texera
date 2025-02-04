@@ -118,9 +118,23 @@ object VFSURIFactory {
     createVFSURI(
       VFSResourceType.RUNTIME_STATISTICS,
       workflowId,
+      executionId
+    )
+  }
+
+  /**
+    * Create a URI pointing to console messages
+    */
+  def createConsoleMessagesURI(
+      workflowId: WorkflowIdentity,
+      executionId: ExecutionIdentity,
+      operatorId: OperatorIdentity
+  ): URI = {
+    createVFSURI(
+      VFSResourceType.CONSOLE_MESSAGES,
+      workflowId,
       executionId,
-      None,
-      None
+      Some(operatorId)
     )
   }
 
@@ -139,12 +153,12 @@ object VFSURIFactory {
       resourceType: VFSResourceType.Value,
       workflowId: WorkflowIdentity,
       executionId: ExecutionIdentity,
-      operatorId: Option[OperatorIdentity],
+      operatorId: Option[OperatorIdentity] = None,
       portIdentity: Option[PortIdentity] = None
   ): URI = {
 
     if (
-      (resourceType == VFSResourceType.RESULT || resourceType == VFSResourceType.MATERIALIZED_RESULT) && portIdentity.isEmpty
+      (resourceType == VFSResourceType.RESULT || resourceType == VFSResourceType.MATERIALIZED_RESULT) && (portIdentity.isEmpty || operatorId.isEmpty)
     ) {
       throw new IllegalArgumentException(
         "PortIdentity must be provided when resourceType is RESULT or MATERIALIZED_RESULT."
@@ -156,6 +170,14 @@ object VFSURIFactory {
     ) {
       throw new IllegalArgumentException(
         "Runtime statistics URI should not contain operatorId or portIdentity."
+      )
+    }
+
+    if (
+      resourceType == VFSResourceType.CONSOLE_MESSAGES && (operatorId.isEmpty || portIdentity.isDefined)
+    ) {
+      throw new IllegalArgumentException(
+        "Console messages URI should contain operatorId."
       )
     }
 

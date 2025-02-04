@@ -15,7 +15,7 @@ object IcebergTableSchema {
     new Attribute("status", AttributeType.INTEGER)
   )
 
-  val consoleMessageSchema: Schema = new Schema(
+  val consoleMessagesSchema: Schema = new Schema(
     new Attribute("message", AttributeType.STRING)
   )
 }

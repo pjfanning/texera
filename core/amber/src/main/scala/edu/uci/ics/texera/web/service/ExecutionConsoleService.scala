@@ -16,7 +16,7 @@ import edu.uci.ics.amber.engine.common.executionruntimestate.{
   OperatorConsole
 }
 import edu.uci.ics.amber.util.VirtualIdentityUtils
-import edu.uci.ics.amber.core.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.core.virtualidentity.{ActorVirtualIdentity, OperatorIdentity}
 import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 import edu.uci.ics.texera.web.model.websocket.event.python.ConsoleUpdateEvent
 import edu.uci.ics.texera.web.model.websocket.request.RetryRequest
@@ -27,18 +27,51 @@ import edu.uci.ics.texera.web.model.websocket.request.python.{
 import edu.uci.ics.texera.web.model.websocket.response.python.PythonExpressionEvaluateResponse
 import edu.uci.ics.texera.web.storage.ExecutionStateStore
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
+import edu.uci.ics.amber.core.storage.model.BufferedItemWriter
+import edu.uci.ics.amber.core.storage.result.IcebergTableSchema
+import edu.uci.ics.amber.core.storage.{DocumentFactory, VFSURIFactory}
+import edu.uci.ics.amber.core.tuple.Tuple
+import edu.uci.ics.amber.core.workflow.WorkflowContext
 
+import java.util.concurrent.Executors
 import java.time.Instant
 import scala.collection.mutable
 
 class ExecutionConsoleService(
     client: AmberClient,
     stateStore: ExecutionStateStore,
-    wsInput: WebsocketInput
+    wsInput: WebsocketInput,
+    workflowContext: WorkflowContext
 ) extends SubscriptionManager {
   registerCallbackOnPythonConsoleMessage()
 
   val bufferSize: Int = AmberConfig.operatorConsoleBufferSize
+
+  private val consoleWriters = mutable.Map[String, BufferedItemWriter[Tuple]]()
+
+  private val (consoleWriterThread) = {
+    if (AmberConfig.isUserSystemEnabled) {
+      val thread = Executors.newSingleThreadExecutor()
+      Some(thread)
+    } else {
+      None
+    }
+  }
+
+  private def getOrCreateWriter(opId: OperatorIdentity): BufferedItemWriter[Tuple] = {
+    consoleWriters.getOrElseUpdate(
+      opId.id, {
+        val uri = VFSURIFactory
+          .createConsoleMessagesURI(workflowContext.workflowId, workflowContext.executionId, opId)
+        val writer = DocumentFactory
+          .createDocument(uri, IcebergTableSchema.consoleMessagesSchema)
+          .writer("console_messages")
+          .asInstanceOf[BufferedItemWriter[Tuple]]
+        writer.open()
+        writer
+      }
+    )
+  }
 
   addSubscription(
     stateStore.consoleStore.registerDiffHandler((oldState, newState) => {
@@ -84,6 +117,18 @@ class ExecutionConsoleService(
       opId: String,
       consoleMessage: ConsoleMessage
   ): ExecutionConsoleStore = {
+    consoleWriterThread.foreach { thread =>
+      thread.execute(() => {
+        val writer = getOrCreateWriter(OperatorIdentity(opId))
+        val tuple = new Tuple(
+          IcebergTableSchema.consoleMessagesSchema,
+          Array(consoleMessage.toProtoString)
+        )
+        writer.putOne(tuple)
+        writer.close()
+      })
+    }
+
     val opInfo = consoleStore.operatorConsole.getOrElse(opId, OperatorConsole())
 
     if (opInfo.consoleMessages.size < bufferSize) {

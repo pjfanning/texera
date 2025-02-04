@@ -8,6 +8,7 @@ import edu.uci.ics.amber.core.storage.model.{
 }
 import FileResolver.DATASET_FILE_URI_SCHEME
 import edu.uci.ics.amber.core.storage.VFSResourceType.{
+  CONSOLE_MESSAGES,
   MATERIALIZED_RESULT,
   RESULT,
   RUNTIME_STATISTICS
@@ -85,6 +86,21 @@ object DocumentFactory {
     )
   }
 
+  private def handleIcebergCreation(
+      namespace: String,
+      storageKey: String,
+      schema: Schema
+  ): IcebergDocument[Tuple] = {
+    StorageConfig.resultStorageMode.toLowerCase match {
+      case ICEBERG =>
+        createIcebergDocument(namespace, storageKey, schema)
+      case _ =>
+        throw new IllegalArgumentException(
+          s"Storage mode '${StorageConfig.resultStorageMode}' is not supported"
+        )
+    }
+  }
+
   /**
     * Open a document specified by the uri for read purposes only.
     * @param fileUri the uri of the document
@@ -120,28 +136,10 @@ object DocumentFactory {
 
         resourceType match {
           case RESULT | MATERIALIZED_RESULT =>
-            StorageConfig.resultStorageMode.toLowerCase match {
-              case ICEBERG =>
-                createIcebergDocument(StorageConfig.icebergTableNamespace, storageKey, schema)
-              case _ =>
-                throw new IllegalArgumentException(
-                  s"Storage mode '${StorageConfig.resultStorageMode}' is not supported"
-                )
-            }
+            handleIcebergCreation(StorageConfig.icebergTableNamespace, storageKey, schema)
 
-          case RUNTIME_STATISTICS =>
-            StorageConfig.resultStorageMode.toLowerCase match {
-              case ICEBERG =>
-                createIcebergDocument(
-                  StorageConfig.icebergTableExecutionNamespace,
-                  storageKey,
-                  schema
-                )
-              case _ =>
-                throw new IllegalArgumentException(
-                  s"Storage mode '${StorageConfig.resultStorageMode}' is not supported"
-                )
-            }
+          case RUNTIME_STATISTICS | CONSOLE_MESSAGES =>
+            handleIcebergCreation(StorageConfig.icebergTableExecutionNamespace, storageKey, schema)
 
           case _ =>
             throw new IllegalArgumentException(

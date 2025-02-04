@@ -18,6 +18,7 @@ object VFSResourceType extends Enumeration {
   val RESULT: Value = Value("result")
   val MATERIALIZED_RESULT: Value = Value("materializedResult")
   val RUNTIME_STATISTICS: Value = Value("runtimeStatistics")
+  val CONSOLE_MESSAGES: Value = Value("consoleMessages")
 }
 
 /**
