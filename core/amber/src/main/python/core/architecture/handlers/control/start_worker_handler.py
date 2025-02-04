@@ -1,4 +1,4 @@
-from proto.edu.uci.ics.amber.core import ChannelIdentity
+from proto.edu.uci.ics.amber.core import ChannelIdentity, ActorVirtualIdentity
 from proto.edu.uci.ics.amber.engine.architecture.rpc import (
     WorkerStateResponse,
     EmptyRequest,
@@ -22,7 +22,7 @@ class StartWorkerHandler(ControlHandler):
             self.context.input_queue.put(
                 DataElement(
                     tag=ChannelIdentity(
-                        InputManager.SOURCE_STARTER, self.context.worker_id, False
+                        InputManager.SOURCE_STARTER, ActorVirtualIdentity(self.context.worker_id), False
                     ),
                     payload=None,
                 )

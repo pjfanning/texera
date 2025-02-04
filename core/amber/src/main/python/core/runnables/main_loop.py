@@ -178,7 +178,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
                 ):
                     self._output_queue.put(
                         DataElement(
-                            tag=ChannelIdentity(self.context.worker_id, to, False),
+                            tag=ChannelIdentity(ActorVirtualIdentity(self.context.worker_id), to, False),
                             payload=batch,
                         )
                     )
@@ -191,7 +191,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
             for to, batch in self.context.output_manager.emit_marker(output_state):
                 self._output_queue.put(
                     DataElement(
-                        tag=ChannelIdentity(self.context.worker_id, to, False),
+                        tag=ChannelIdentity(ActorVirtualIdentity(self.context.worker_id), to, False),
                         payload=batch,
                     )
                 )
@@ -276,7 +276,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
         for to, batch in self.context.output_manager.emit_marker(StartOfInputChannel()):
             self._output_queue.put(
                 DataElement(
-                    tag=ChannelIdentity(self.context.worker_id, to, False),
+                    tag=ChannelIdentity(ActorVirtualIdentity(self.context.worker_id), to, False),
                     payload=batch,
                 )
             )
@@ -294,7 +294,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
         for to, batch in self.context.output_manager.emit_marker(EndOfInputChannel()):
             self._output_queue.put(
                 DataElement(
-                    tag=ChannelIdentity(self.context.worker_id, to, False),
+                    tag=ChannelIdentity(ActorVirtualIdentity(self.context.worker_id), to, False),
                     payload=batch,
                 )
             )
@@ -333,7 +333,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
             downstream_channels_in_scope = {
                 scope
                 for scope in marker_payload.scope
-                if scope.from_worker_id == self.context.worker_id
+                if scope.from_worker_id == ActorVirtualIdentity(self.context.worker_id)
             }
             if downstream_channels_in_scope:
                 for (
@@ -343,9 +343,15 @@ class MainLoop(StoppableQueueBlockingRunnable):
                         logger.info(
                             f"send marker to {active_channel_id}, id = {marker_id}, cmd = {command}"
                         )
-                        self.context.output_manager.emit_marker_to_channel(
+                        for to, batch in self.context.output_manager.emit_marker_to_channel(
                             active_channel_id, marker_payload
-                        )
+                        ):
+                            self._output_queue.put(
+                                DataElement(
+                                    tag=ChannelIdentity(ActorVirtualIdentity(self.context.worker_id), to, False),
+                                    payload=batch,
+                                )
+                            )
 
             if (
                 marker_payload.marker_type

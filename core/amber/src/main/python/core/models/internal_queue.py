@@ -59,7 +59,7 @@ class InternalQueue(IQueue):
         return self._queue.get()
 
     def put(self, item: T) -> None:
-        if issubclass(item, InternalQueueElement):
+        if isinstance(item, InternalQueueElement):
             queue_id = str(item.tag)
             if item.tag not in self._queue_ids:
                 self._queue.add_sub_queue(queue_id, 1 if item.tag.is_control else 2)
@@ -129,7 +129,7 @@ class InternalQueue(IQueue):
             self._queue_state.add(disable_type)
             for queue_id in self._queue_ids:
                 if not queue_id.is_control:
-                    self._queue.enable(str(queue_id))
+                    self._queue.disable(str(queue_id))
 
     def in_mem_size(self) -> int:
         return sum(
