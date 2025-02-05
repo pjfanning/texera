@@ -103,7 +103,8 @@ class BatchSizePropagationSpec
 
     val customWorkflowSettings = WorkflowSettings(dataTransferBatchSize = expectedBatchSize)
 
-    val context = new WorkflowContext(workflowSettings = customWorkflowSettings)
+    val context =
+      new WorkflowContext(workflowSettings = customWorkflowSettings, isTestContext = true)
 
     val headerlessCsvOpDesc = TestOperators.headerlessSmallCsvScanOpDesc()
 
@@ -124,7 +125,8 @@ class BatchSizePropagationSpec
 
     val customWorkflowSettings = WorkflowSettings(dataTransferBatchSize = expectedBatchSize)
 
-    val context = new WorkflowContext(workflowSettings = customWorkflowSettings)
+    val context =
+      new WorkflowContext(workflowSettings = customWorkflowSettings, isTestContext = true)
 
     val headerlessCsvOpDesc = TestOperators.headerlessSmallCsvScanOpDesc()
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("column-1", "Asia")
@@ -153,7 +155,8 @@ class BatchSizePropagationSpec
 
     val customWorkflowSettings = WorkflowSettings(dataTransferBatchSize = expectedBatchSize)
 
-    val context = new WorkflowContext(workflowSettings = customWorkflowSettings)
+    val context =
+      new WorkflowContext(workflowSettings = customWorkflowSettings, isTestContext = true)
 
     val csvOpDesc = TestOperators.smallCsvScanOpDesc()
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("Region", "Asia")
@@ -190,7 +193,8 @@ class BatchSizePropagationSpec
 
     val customWorkflowSettings = WorkflowSettings(dataTransferBatchSize = expectedBatchSize)
 
-    val context = new WorkflowContext(workflowSettings = customWorkflowSettings)
+    val context =
+      new WorkflowContext(workflowSettings = customWorkflowSettings, isTestContext = true)
 
     val csvOpDesc = TestOperators.smallCsvScanOpDesc()
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("Region", "Asia")
@@ -230,7 +234,8 @@ class BatchSizePropagationSpec
 
     val customWorkflowSettings = WorkflowSettings(dataTransferBatchSize = expectedBatchSize)
 
-    val context = new WorkflowContext(workflowSettings = customWorkflowSettings)
+    val context =
+      new WorkflowContext(workflowSettings = customWorkflowSettings, isTestContext = true)
 
     val headerlessCsvOpDesc1 = TestOperators.headerlessSmallCsvScanOpDesc()
     val headerlessCsvOpDesc2 = TestOperators.headerlessSmallCsvScanOpDesc()

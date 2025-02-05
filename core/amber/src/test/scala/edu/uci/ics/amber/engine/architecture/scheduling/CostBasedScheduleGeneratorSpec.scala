@@ -41,7 +41,7 @@ class CostBasedScheduleGeneratorSpec extends AnyFlatSpec with MockFactory {
           PortIdentity(1)
         )
       ),
-      new WorkflowContext()
+      new WorkflowContext(isTestContext = true)
     )
 
     val globalSearchNoPruningResult = new CostBasedScheduleGenerator(
