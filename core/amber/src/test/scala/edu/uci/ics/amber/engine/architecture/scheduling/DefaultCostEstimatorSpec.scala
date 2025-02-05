@@ -149,6 +149,7 @@ class DefaultCostEstimatorSpec
     userDao.insert(testUser)
     workflowDao.insert(testWorkflowEntry)
     workflowVersionDao.insert(testWorkflowVersionEntry)
+    testWorkflowExecutionEntry.setRuntimeStatsUri(uri.toString)
     workflowExecutionsDao.insert(testWorkflowExecutionEntry)
 
     val headerlessCsvOpRuntimeStatistics = new Tuple(
@@ -228,6 +229,7 @@ class DefaultCostEstimatorSpec
     userDao.insert(testUser)
     workflowDao.insert(testWorkflowEntry)
     workflowVersionDao.insert(testWorkflowVersionEntry)
+    testWorkflowExecutionEntry.setRuntimeStatsUri(uri.toString)
     workflowExecutionsDao.insert(testWorkflowExecutionEntry)
 
     val headerlessCsvOpRuntimeStatistics = new Tuple(
