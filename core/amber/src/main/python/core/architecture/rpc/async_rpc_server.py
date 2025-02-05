@@ -16,7 +16,7 @@ from proto.edu.uci.ics.amber.engine.architecture.rpc import (
     ErrorLanguage,
 )
 from proto.edu.uci.ics.amber.engine.common import ControlPayloadV2
-from proto.edu.uci.ics.amber.core import ActorVirtualIdentity, ChannelIdentity
+from proto.edu.uci.ics.amber.core import ChannelIdentity
 
 
 class AsyncRPCServer:

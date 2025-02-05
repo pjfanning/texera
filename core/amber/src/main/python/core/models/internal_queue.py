@@ -5,15 +5,13 @@ from enum import Enum
 from threading import RLock
 from typing import TypeVar, Set
 
-from loguru import logger
-
 from core.models.internal_marker import InternalMarker
 from core.models.payload import DataPayload
 from core.util.customized_queue.linked_blocking_multi_queue import (
     LinkedBlockingMultiQueue,
 )
 from core.util.customized_queue.queue_base import IQueue, QueueElement
-from proto.edu.uci.ics.amber.core import ActorVirtualIdentity, ChannelIdentity
+from proto.edu.uci.ics.amber.core import ChannelIdentity
 from proto.edu.uci.ics.amber.engine.architecture.rpc import ChannelMarkerPayload
 from proto.edu.uci.ics.amber.engine.common import ControlPayloadV2
 

@@ -13,7 +13,7 @@ from proto.edu.uci.ics.amber.engine.common import (
     PythonControlMessage,
     PythonDataHeader,
 )
-from proto.edu.uci.ics.amber.core import ActorVirtualIdentity, ChannelIdentity
+from proto.edu.uci.ics.amber.core import ChannelIdentity
 
 
 class NetworkSender(StoppableQueueBlockingRunnable):

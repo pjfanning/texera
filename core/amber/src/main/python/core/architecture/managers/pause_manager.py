@@ -7,7 +7,7 @@ from loguru import logger
 
 from . import state_manager
 from proto.edu.uci.ics.amber.engine.architecture.worker import WorkerState
-from proto.edu.uci.ics.amber.core import ActorVirtualIdentity, ChannelIdentity
+from proto.edu.uci.ics.amber.core import ChannelIdentity
 from ...models import InternalQueue
 
 

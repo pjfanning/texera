@@ -316,10 +316,11 @@ class MainLoop(StoppableQueueBlockingRunnable):
 
     def _process_channel_marker_payload(self, marker_payload: ChannelMarkerPayload):
         marker_id = marker_payload.id
-        command = marker_payload.command_mapping.get(self.actor_id.name)
+        command = marker_payload.command_mapping.get(self.context.worker_id)
         channel_id = self.context.tuple_processing_manager.current_input_channel_id
         logger.info(
-            f"receive channel marker from {channel_id}, id = {marker_id}, cmd = {command}"
+            f"receive channel marker from {channel_id},"
+            f" id = {marker_id}, cmd = {command}"
         )
 
         if (
@@ -332,7 +333,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
             channel_id, marker_payload
         ):
             logger.info(
-                f"process channel marker from {channel_id}, id = {marker_id}, cmd = {command}"
+                f"process channel marker from {channel_id},"
+                f" id = {marker_id}, cmd = {command}"
             )
 
             if command is not None:
@@ -349,7 +351,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
                 ) in self.context.output_manager.get_output_channel_ids():
                     if active_channel_id in downstream_channels_in_scope:
                         logger.info(
-                            f"send marker to {active_channel_id}, id = {marker_id}, cmd = {command}"
+                            f"send marker to {active_channel_id},"
+                            f" id = {marker_id}, cmd = {command}"
                         )
                         for (
                             to,
