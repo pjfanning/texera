@@ -93,25 +93,33 @@ class TestMainLoop:
     @pytest.fixture
     def mock_data_input_channel(self):
         return ChannelIdentity(
-            ActorVirtualIdentity("sender"), ActorVirtualIdentity("dummy_worker_id"), False
+            ActorVirtualIdentity("sender"),
+            ActorVirtualIdentity("dummy_worker_id"),
+            False,
         )
 
     @pytest.fixture
     def mock_data_output_channel(self):
         return ChannelIdentity(
-            ActorVirtualIdentity("dummy_worker_id"), ActorVirtualIdentity("dummy_worker_id"), False
+            ActorVirtualIdentity("dummy_worker_id"),
+            ActorVirtualIdentity("dummy_worker_id"),
+            False,
         )
 
     @pytest.fixture
     def mock_control_input_channel(self):
         return ChannelIdentity(
-            ActorVirtualIdentity("CONTROLLER"), ActorVirtualIdentity("dummy_worker_id"), True
+            ActorVirtualIdentity("CONTROLLER"),
+            ActorVirtualIdentity("dummy_worker_id"),
+            True,
         )
 
     @pytest.fixture
     def mock_control_output_channel(self):
         return ChannelIdentity(
-            ActorVirtualIdentity("dummy_worker_id"), ActorVirtualIdentity("CONTROLLER"), True
+            ActorVirtualIdentity("dummy_worker_id"),
+            ActorVirtualIdentity("CONTROLLER"),
+            True,
         )
 
     @pytest.fixture
@@ -212,7 +220,7 @@ class TestMainLoop:
     def mock_assign_input_port_binary(
         self,
         mock_binary_raw_schema,
-            mock_control_input_channel,
+        mock_control_input_channel,
         mock_link,
         command_sequence,
     ):
@@ -251,7 +259,7 @@ class TestMainLoop:
     @pytest.fixture
     def mock_add_input_channel(
         self,
-            mock_control_input_channel,
+        mock_control_input_channel,
         mock_sender_actor,
         mock_receiver_actor,
         mock_link,
@@ -289,7 +297,7 @@ class TestMainLoop:
     @pytest.fixture
     def mock_initialize_executor(
         self,
-            mock_control_input_channel,
+        mock_control_input_channel,
         mock_sender_actor,
         mock_link,
         command_sequence,
@@ -319,7 +327,7 @@ class TestMainLoop:
     @pytest.fixture
     def mock_initialize_batch_count_executor(
         self,
-            mock_control_input_channel,
+        mock_control_input_channel,
         mock_sender_actor,
         mock_link,
         command_sequence,
@@ -350,7 +358,11 @@ class TestMainLoop:
 
     @pytest.fixture
     def mock_add_partitioning(
-        self, mock_control_input_channel, mock_receiver_actor, command_sequence, mock_link
+        self,
+        mock_control_input_channel,
+        mock_receiver_actor,
+        command_sequence,
+        mock_link,
     ):
         command = set_one_of(
             ControlRequest,
@@ -397,7 +409,9 @@ class TestMainLoop:
         return ControlElement(tag=mock_control_input_channel, payload=payload)
 
     @pytest.fixture
-    def mock_pause(self, mock_control_input_channel, mock_sender_actor, command_sequence):
+    def mock_pause(
+        self, mock_control_input_channel, mock_sender_actor, command_sequence
+    ):
         command = set_one_of(ControlRequest, EmptyRequest())
         payload = set_one_of(
             ControlPayloadV2,
@@ -408,7 +422,9 @@ class TestMainLoop:
         return ControlElement(tag=mock_control_input_channel, payload=payload)
 
     @pytest.fixture
-    def mock_resume(self, mock_control_input_channel, mock_sender_actor, command_sequence):
+    def mock_resume(
+        self, mock_control_input_channel, mock_sender_actor, command_sequence
+    ):
         command = set_one_of(ControlRequest, EmptyRequest())
         payload = set_one_of(
             ControlPayloadV2,
@@ -466,10 +482,10 @@ class TestMainLoop:
     def test_main_loop_thread_can_process_messages(
         self,
         mock_link,
-            mock_data_input_channel,
-            mock_data_output_channel,
-            mock_control_input_channel,
-            mock_control_output_channel,
+        mock_data_input_channel,
+        mock_data_output_channel,
+        mock_control_input_channel,
+        mock_control_output_channel,
         input_queue,
         output_queue,
         mock_data_element,
@@ -669,10 +685,10 @@ class TestMainLoop:
     @pytest.mark.timeout(5)
     def test_batch_dp_thread_can_process_batch(
         self,
-            mock_control_input_channel,
-            mock_control_output_channel,
-            mock_data_input_channel,
-            mock_data_output_channel,
+        mock_control_input_channel,
+        mock_control_output_channel,
+        mock_data_input_channel,
+        mock_data_output_channel,
         mock_link,
         input_queue,
         output_queue,
@@ -866,10 +882,10 @@ class TestMainLoop:
     def test_main_loop_thread_can_process_single_tuple_with_binary(
         self,
         mock_link,
-            mock_data_input_channel,
-            mock_data_output_channel,
-            mock_control_output_channel,
-            mock_control_input_channel,
+        mock_data_input_channel,
+        mock_data_output_channel,
+        mock_control_output_channel,
+        mock_control_input_channel,
         input_queue,
         output_queue,
         mock_binary_tuple,
@@ -959,7 +975,11 @@ class TestMainLoop:
 
     @staticmethod
     def send_pause(
-        command_sequence, input_queue, mock_control_output_channel, mock_pause, output_queue
+        command_sequence,
+        input_queue,
+        mock_control_output_channel,
+        mock_pause,
+        output_queue,
     ):
         input_queue.put(mock_pause)
         assert output_queue.get() == ControlElement(
@@ -978,7 +998,7 @@ class TestMainLoop:
     def send_resume(
         command_sequence,
         input_queue,
-            mock_control_output_channel,
+        mock_control_output_channel,
         mock_resume,
         output_queue,
     ):

@@ -38,10 +38,14 @@ class TestConsoleMessage:
 
     @pytest.fixture
     def mock_controller_channel(self):
-        return ChannelIdentity(ActorVirtualIdentity("CONTROLLER"), ActorVirtualIdentity("test"), True)
+        return ChannelIdentity(
+            ActorVirtualIdentity("CONTROLLER"), ActorVirtualIdentity("test"), True
+        )
 
     @pytest.mark.timeout(2)
-    def test_console_message_serialization(self, mock_controller_channel, console_message):
+    def test_console_message_serialization(
+        self, mock_controller_channel, console_message
+    ):
         """
         Test the serialization of the console message
         :param mock_controller_channel: the mock control channel id

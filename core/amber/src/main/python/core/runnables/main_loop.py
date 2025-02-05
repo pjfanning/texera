@@ -178,7 +178,9 @@ class MainLoop(StoppableQueueBlockingRunnable):
                 ):
                     self._output_queue.put(
                         DataElement(
-                            tag=ChannelIdentity(ActorVirtualIdentity(self.context.worker_id), to, False),
+                            tag=ChannelIdentity(
+                                ActorVirtualIdentity(self.context.worker_id), to, False
+                            ),
                             payload=batch,
                         )
                     )
@@ -191,7 +193,9 @@ class MainLoop(StoppableQueueBlockingRunnable):
             for to, batch in self.context.output_manager.emit_marker(output_state):
                 self._output_queue.put(
                     DataElement(
-                        tag=ChannelIdentity(ActorVirtualIdentity(self.context.worker_id), to, False),
+                        tag=ChannelIdentity(
+                            ActorVirtualIdentity(self.context.worker_id), to, False
+                        ),
                         payload=batch,
                     )
                 )
@@ -276,7 +280,9 @@ class MainLoop(StoppableQueueBlockingRunnable):
         for to, batch in self.context.output_manager.emit_marker(StartOfInputChannel()):
             self._output_queue.put(
                 DataElement(
-                    tag=ChannelIdentity(ActorVirtualIdentity(self.context.worker_id), to, False),
+                    tag=ChannelIdentity(
+                        ActorVirtualIdentity(self.context.worker_id), to, False
+                    ),
                     payload=batch,
                 )
             )
@@ -294,7 +300,9 @@ class MainLoop(StoppableQueueBlockingRunnable):
         for to, batch in self.context.output_manager.emit_marker(EndOfInputChannel()):
             self._output_queue.put(
                 DataElement(
-                    tag=ChannelIdentity(ActorVirtualIdentity(self.context.worker_id), to, False),
+                    tag=ChannelIdentity(
+                        ActorVirtualIdentity(self.context.worker_id), to, False
+                    ),
                     payload=batch,
                 )
             )
@@ -343,12 +351,19 @@ class MainLoop(StoppableQueueBlockingRunnable):
                         logger.info(
                             f"send marker to {active_channel_id}, id = {marker_id}, cmd = {command}"
                         )
-                        for to, batch in self.context.output_manager.emit_marker_to_channel(
+                        for (
+                            to,
+                            batch,
+                        ) in self.context.output_manager.emit_marker_to_channel(
                             active_channel_id, marker_payload
                         ):
                             self._output_queue.put(
                                 DataElement(
-                                    tag=ChannelIdentity(ActorVirtualIdentity(self.context.worker_id), to, False),
+                                    tag=ChannelIdentity(
+                                        ActorVirtualIdentity(self.context.worker_id),
+                                        to,
+                                        False,
+                                    ),
                                     payload=batch,
                                 )
                             )

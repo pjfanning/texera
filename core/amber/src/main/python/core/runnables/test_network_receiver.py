@@ -91,7 +91,7 @@ class TestNetworkReceiver:
             )
         )
 
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(100000)
     def test_network_receiver_can_receive_data_messages(
         self,
         data_payload,

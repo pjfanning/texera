@@ -22,7 +22,9 @@ class StartWorkerHandler(ControlHandler):
             self.context.input_queue.put(
                 DataElement(
                     tag=ChannelIdentity(
-                        InputManager.SOURCE_STARTER, ActorVirtualIdentity(self.context.worker_id), False
+                        InputManager.SOURCE_STARTER,
+                        ActorVirtualIdentity(self.context.worker_id),
+                        False,
                     ),
                     payload=None,
                 )

@@ -74,7 +74,9 @@ class AsyncRPCClient:
             payload = set_one_of(ControlPayloadV2, control_command)
             self._output_queue.put(
                 ControlElement(
-                    tag=ChannelIdentity(ActorVirtualIdentity(self._context.worker_id), to, True),
+                    tag=ChannelIdentity(
+                        ActorVirtualIdentity(self._context.worker_id), to, True
+                    ),
                     payload=payload,
                 )
             )
