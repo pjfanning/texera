@@ -6,7 +6,6 @@ from proto.edu.uci.ics.amber.engine.architecture.rpc import (
     ChannelMarkerPayload,
     ChannelMarkerType,
 )
-from loguru import logger
 
 
 class ChannelMarkerManager:
@@ -45,7 +44,6 @@ class ChannelMarkerManager:
             for channel_id in marker.scope
             if channel_id.to_worker_id == self.actor_id
         }
-        logger.info(upstreams)
         return {
             channel_id
             for channel_id in self.input_gateway.get_all_channel_ids()
