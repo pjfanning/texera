@@ -77,11 +77,15 @@ class WorkflowCompiler(
               .filterNot(_._1.internal)
               .foreach {
                 case (outputPortId, (outputPort, _, schema)) =>
-                  var storageUri = WorkflowExecutionsResource.getResultUriByExecutionAndPort(
-                    context.executionId.id,
-                    physicalOp.id.logicalOpId.id,
-                    outputPortId.id
-                  )
+                  var storageUri = (if (context.isTestContext) {
+                                      None
+                                    } else {
+                                      WorkflowExecutionsResource.getResultUriByExecutionAndPort(
+                                        context.executionId.id,
+                                        physicalOp.id.logicalOpId.id,
+                                        outputPortId.id
+                                      )
+                                    })
                   if (storageUri.isEmpty) {
                     // Create storage if it doesn't exist
                     storageUri = Option(
@@ -104,12 +108,14 @@ class WorkflowCompiler(
                     // create the storage resource and record the URI
                     DocumentFactory.createDocument(storageUri.get, sinkStorageSchema)
                     // insert the operator port execution
-                    WorkflowExecutionsResource.insertOperatorPortExecutions(
-                      context.executionId.id,
-                      physicalOp.id.logicalOpId.id,
-                      outputPortId.id,
-                      storageUri.get
-                    )
+                    if (!context.isTestContext) {
+                      WorkflowExecutionsResource.insertOperatorPortExecutions(
+                        context.executionId.id,
+                        physicalOp.id.logicalOpId.id,
+                        outputPortId.id,
+                        storageUri.get
+                      )
+                    }
 
                     // Add sink collection name to the JSON array of sinks
                     sinksPointers.add(

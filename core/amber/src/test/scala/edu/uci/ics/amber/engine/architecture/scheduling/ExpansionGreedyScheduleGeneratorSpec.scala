@@ -25,7 +25,7 @@ class ExpansionGreedyScheduleGeneratorSpec extends AnyFlatSpec with MockFactory 
           PortIdentity(0)
         )
       ),
-      new WorkflowContext()
+      new WorkflowContext(isTestContext = true)
     )
 
     val (schedule, _) = new ExpansionGreedyScheduleGenerator(

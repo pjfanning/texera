@@ -17,5 +17,6 @@ object WorkflowContext {
 class WorkflowContext(
     var workflowId: WorkflowIdentity = DEFAULT_WORKFLOW_ID,
     var executionId: ExecutionIdentity = DEFAULT_EXECUTION_ID,
-    var workflowSettings: WorkflowSettings = DEFAULT_WORKFLOW_SETTINGS
+    var workflowSettings: WorkflowSettings = DEFAULT_WORKFLOW_SETTINGS,
+    val isTestContext: Boolean = false
 )

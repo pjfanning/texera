@@ -187,12 +187,14 @@ abstract class ScheduleGenerator(
     // create the document
     DocumentFactory.createDocument(storageUri, schema)
     // insert the operator port execution
-    WorkflowExecutionsResource.insertOperatorPortExecutions(
-      workflowContext.executionId.id,
-      physicalLink.fromOpId.logicalOpId.id,
-      physicalLink.fromPortId.id,
-      storageUri
-    )
+    if (!workflowContext.isTestContext) {
+      WorkflowExecutionsResource.insertOperatorPortExecutions(
+        workflowContext.executionId.id,
+        physicalLink.fromOpId.logicalOpId.id,
+        physicalLink.fromPortId.id,
+        storageUri
+      )
+    }
 
     // create cache reader and link
     val matReaderPhysicalOp: PhysicalOp = SpecialPhysicalOpFactory.newSourcePhysicalOp(
