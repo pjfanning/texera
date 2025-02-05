@@ -14,11 +14,6 @@ class InternalMarker(Marker):
 
 
 @dataclass
-class SenderChange(InternalMarker):
-    channel_id: ChannelIdentity
-
-
-@dataclass
 class StartOfInputPort(InternalMarker):
     pass
 

@@ -82,6 +82,9 @@ class NetworkReceiver(Runnable, Stoppable):
                 MarkerFrame(EndOfInputChannel()),
             )
             if isinstance(payload, ChannelMarkerPayload):
+                for channel_id in payload.scope:
+                    if not channel_id.is_control:
+                        channel_id.is_control = False
                 shared_queue.put(ChannelMarkerElement(tag=data_header.tag, payload=payload))
             else:
                 shared_queue.put(DataElement(tag=data_header.tag, payload=payload))

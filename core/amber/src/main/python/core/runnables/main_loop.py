@@ -13,7 +13,6 @@ from core.architecture.rpc.async_rpc_client import AsyncRPCClient
 from core.architecture.rpc.async_rpc_server import AsyncRPCServer
 from core.models import (
     InternalQueue,
-    SenderChange,
     Tuple,
 )
 from core.models.internal_marker import (
@@ -21,7 +20,7 @@ from core.models.internal_marker import (
     EndOfInputPort,
     StartOfInputPort,
 )
-from core.models.internal_queue import DataElement, ControlElement, ChannelMarkerElement
+from core.models.internal_queue import DataElement, ControlElement, ChannelMarkerElement, InternalQueueElement
 from core.models.marker import State, EndOfInputChannel, StartOfInputChannel
 from core.runnables.data_processor import DataProcessor
 from core.util import StoppableQueueBlockingRunnable, get_one_of
@@ -119,6 +118,11 @@ class MainLoop(StoppableQueueBlockingRunnable):
                     1. a ControlElement;
                     2. a DataElement.
         """
+        if isinstance(next_entry, InternalQueueElement):
+            self.context.tuple_processing_manager.current_input_channel_id = (
+                next_entry.tag
+            )
+
         match(
             next_entry,
             DataElement,
@@ -255,20 +259,6 @@ class MainLoop(StoppableQueueBlockingRunnable):
                 )
             )
 
-    def _process_sender_change_marker(self, sender_change_marker: SenderChange) -> None:
-        """
-        Upon receipt of a SenderChangeMarker, change the current input link to the
-        sender.
-
-        :param sender_change_marker: SenderChangeMarker which contains sender link.
-        """
-        self.context.tuple_processing_manager.current_input_channel_id = (
-            sender_change_marker.channel_id
-        )
-        self.context.tuple_processing_manager.current_input_port_id = (
-            self.context.input_manager.get_port_id(sender_change_marker.channel_id)
-        )
-
     def _process_start_of_output_ports(self, _: StartOfOutputPorts) -> None:
         """
         Upon receipt of an StartOfAllMarker,
@@ -384,6 +374,11 @@ class MainLoop(StoppableQueueBlockingRunnable):
 
         :param data_element: DataElement, a batch of data.
         """
+
+        self.context.tuple_processing_manager.current_input_port_id = (
+            self.context.input_manager.get_port_id(self.context.tuple_processing_manager.current_input_channel_id)
+        )
+
         # Update state to RUNNING
         if self.context.state_manager.confirm_state(WorkerState.READY):
             self.context.state_manager.transit_to(WorkerState.RUNNING)
@@ -414,8 +409,6 @@ class MainLoop(StoppableQueueBlockingRunnable):
                     self._process_start_of_input_port,
                     EndOfInputPort,
                     self._process_end_of_input_port,
-                    SenderChange,
-                    self._process_sender_change_marker,
                     StartOfOutputPorts,
                     self._process_start_of_output_ports,
                     EndOfOutputPorts,

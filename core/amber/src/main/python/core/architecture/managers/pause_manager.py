@@ -60,7 +60,7 @@ class PauseManager:
             # need to resume specific input channels
             for channel_id in self._specific_input_pauses[pause_type]:
                 self._input_queue.enable(channel_id)
-                del self._specific_input_pauses[pause_type]
+            del self._specific_input_pauses[pause_type]
 
         # still globally paused no action, don't need to resume anything
         if self._global_pauses:

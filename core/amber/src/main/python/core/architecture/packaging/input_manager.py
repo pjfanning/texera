@@ -5,7 +5,6 @@ from core.models.internal_marker import (
     InternalMarker,
     StartOfOutputPorts,
     EndOfOutputPorts,
-    SenderChange,
     EndOfInputPort,
     StartOfInputPort,
 )
@@ -90,27 +89,14 @@ class InputManager:
     def process_data_payload(
         self, from_: ChannelIdentity, payload: DataPayload
     ) -> Iterator[Union[Tuple, InternalMarker]]:
+
+        self._current_channel_id = from_
+
         # special case used to yield for source op
         if from_.from_worker_id == InputManager.SOURCE_STARTER:
             yield EndOfInputPort()
             yield EndOfOutputPorts()
             return
-
-        current_channel_id = next(
-            (
-                channel_id
-                for channel_id, channel in self._channels.items()
-                if channel_id == from_
-            ),
-            None,
-        )
-
-        if (
-            self._current_channel_id is None
-            or self._current_channel_id != current_channel_id
-        ):
-            self._current_channel_id = current_channel_id
-            yield SenderChange(current_channel_id)
 
         if isinstance(payload, DataFrame):
             yield from self._process_data(payload.frame)
