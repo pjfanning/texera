@@ -7,24 +7,10 @@ import edu.uci.ics.amber.operator.split.SplitOpDesc
 import edu.uci.ics.amber.operator.udf.python.{DualInputPortsPythonUDFOpDescV2, PythonUDFOpDescV2}
 import edu.uci.ics.amber.core.virtualidentity.OperatorIdentity
 import edu.uci.ics.amber.core.workflow.PortIdentity
-import edu.uci.ics.texera.dao.MockTexeraDB
 import edu.uci.ics.texera.workflow.LogicalLink
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.BeforeAndAfterEach
-class ExpansionGreedyScheduleGeneratorSpec
-    extends AnyFlatSpec
-    with MockFactory
-    with MockTexeraDB
-    with BeforeAndAfterEach {
-
-  override def beforeEach(): Unit = {
-    initializeDBAndReplaceDSLContext()
-  }
-
-  override def afterEach(): Unit = {
-    shutdownDB()
-  }
+class ExpansionGreedyScheduleGeneratorSpec extends AnyFlatSpec with MockFactory {
 
   "RegionPlanGenerator" should "correctly find regions in headerlessCsv->keyword workflow" in {
     val headerlessCsvOpDesc = TestOperators.headerlessSmallCsvScanOpDesc()
