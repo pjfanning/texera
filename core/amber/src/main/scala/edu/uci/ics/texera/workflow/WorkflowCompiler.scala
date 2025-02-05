@@ -101,7 +101,7 @@ class WorkflowCompiler(
                     val sinkStorageSchema =
                       schema.getOrElse(throw new IllegalStateException("Schema is missing"))
 
-                    // create the storage resource and record the URI to the global mapping
+                    // create the storage resource and record the URI
                     DocumentFactory.createDocument(storageUri.get, sinkStorageSchema)
                     // insert the operator port execution
                     WorkflowExecutionsResource.insertOperatorPortExecutions(
