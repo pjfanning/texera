@@ -2,8 +2,12 @@ from collections import defaultdict
 from typing import Set, Dict
 
 from proto.edu.uci.ics.amber.core import ActorVirtualIdentity, ChannelIdentity
-from proto.edu.uci.ics.amber.engine.architecture.rpc import ChannelMarkerPayload, ChannelMarkerType
+from proto.edu.uci.ics.amber.engine.architecture.rpc import (
+    ChannelMarkerPayload,
+    ChannelMarkerType,
+)
 from loguru import logger
+
 
 class ChannelMarkerManager:
     def __init__(self, actor_id: ActorVirtualIdentity, input_gateway):
@@ -37,7 +41,9 @@ class ChannelMarkerManager:
 
     def get_channels_within_scope(self, marker: ChannelMarkerPayload):
         upstreams = {
-            channel_id for channel_id in marker.scope if channel_id.to_worker_id == self.actor_id
+            channel_id
+            for channel_id in marker.scope
+            if channel_id.to_worker_id == self.actor_id
         }
         logger.info(upstreams)
         return {

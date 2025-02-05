@@ -11,6 +11,7 @@ from core.util.thread.atomic import AtomicInteger
 K = TypeVar("K")
 T = TypeVar("T")
 
+
 class LinkedBlockingMultiQueue(IKeyedQueue):
     @inner
     class Node(Generic[T]):

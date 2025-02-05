@@ -59,9 +59,7 @@ class NetworkSender(StoppableQueueBlockingRunnable):
             self._proxy_client.send_data(bytes(data_header), data_payload.frame)
         elif isinstance(data_payload, ChannelMarkerPayload):
             data_header = PythonDataHeader(tag=to, payload_type="ChannelMarker")
-            schema = pa.schema([
-                ('payload', pa.binary())
-            ])
+            schema = pa.schema([("payload", pa.binary())])
             data = [pa.array([bytes(data_payload)])]
             table = pa.Table.from_arrays(data, schema=schema)
             self._proxy_client.send_data(bytes(data_header), table)

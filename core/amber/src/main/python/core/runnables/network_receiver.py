@@ -17,7 +17,12 @@ from core.models import (
     DataFrame,
     MarkerFrame,
 )
-from core.models.internal_queue import DataElement, ControlElement, InternalQueue, ChannelMarkerElement
+from core.models.internal_queue import (
+    DataElement,
+    ControlElement,
+    InternalQueue,
+    ChannelMarkerElement,
+)
 from core.models.marker import EndOfInputChannel, State, StartOfInputChannel
 from core.proxy import ProxyServer
 from core.util import Stoppable, get_one_of
@@ -66,7 +71,8 @@ class NetworkReceiver(Runnable, Stoppable):
             """
             data_header = PythonDataHeader().parse(command)
             # Explicitly set is_control to trigger lazy computation.
-            # If not set, it may be computed at different times, causing hash inconsistencies.
+            # If not set, it may be computed at different times,
+            # causing hash inconsistencies.
             data_header.tag.is_control = False
             payload = match(
                 data_header.payload_type,
@@ -85,7 +91,9 @@ class NetworkReceiver(Runnable, Stoppable):
                 for channel_id in payload.scope:
                     if not channel_id.is_control:
                         channel_id.is_control = False
-                shared_queue.put(ChannelMarkerElement(tag=data_header.tag, payload=payload))
+                shared_queue.put(
+                    ChannelMarkerElement(tag=data_header.tag, payload=payload)
+                )
             else:
                 shared_queue.put(DataElement(tag=data_header.tag, payload=payload))
             return shared_queue.in_mem_size()

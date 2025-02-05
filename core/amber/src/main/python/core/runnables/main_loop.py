@@ -20,7 +20,12 @@ from core.models.internal_marker import (
     EndOfInputPort,
     StartOfInputPort,
 )
-from core.models.internal_queue import DataElement, ControlElement, ChannelMarkerElement, InternalQueueElement
+from core.models.internal_queue import (
+    DataElement,
+    ControlElement,
+    ChannelMarkerElement,
+    InternalQueueElement,
+)
 from core.models.marker import State, EndOfInputChannel, StartOfInputChannel
 from core.runnables.data_processor import DataProcessor
 from core.util import StoppableQueueBlockingRunnable, get_one_of
@@ -34,7 +39,7 @@ from proto.edu.uci.ics.amber.engine.architecture.rpc import (
     PortCompletedRequest,
     EmptyRequest,
     ConsoleMessageTriggeredRequest,
-    ChannelMarkerPayload, ChannelMarkerType,
+    ChannelMarkerType,
 )
 from proto.edu.uci.ics.amber.engine.architecture.worker import (
     WorkerState,
@@ -313,11 +318,10 @@ class MainLoop(StoppableQueueBlockingRunnable):
             f"receive channel marker from {channel_id},"
             f" id = {marker_id}, cmd = {command}"
         )
-        if (
-            marker_payload.marker_type
-            == ChannelMarkerType.REQUIRE_ALIGNMENT
-        ):
-            self.context.pause_manager.pause_input_channel(PauseType.MARKER_PAUSE, channel_id)
+        if marker_payload.marker_type == ChannelMarkerType.REQUIRE_ALIGNMENT:
+            self.context.pause_manager.pause_input_channel(
+                PauseType.MARKER_PAUSE, channel_id
+            )
 
         if self.context.channel_marker_manager.is_marker_aligned(
             channel_id, marker_payload
@@ -361,10 +365,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
                                 )
                             )
 
-            if (
-                marker_payload.marker_type
-                == ChannelMarkerType.REQUIRE_ALIGNMENT
-            ):
+            if marker_payload.marker_type == ChannelMarkerType.REQUIRE_ALIGNMENT:
                 self.context.pause_manager.resume(PauseType.MARKER_PAUSE)
 
     def _process_data_element(self, data_element: DataElement) -> None:
@@ -376,7 +377,9 @@ class MainLoop(StoppableQueueBlockingRunnable):
         """
 
         self.context.tuple_processing_manager.current_input_port_id = (
-            self.context.input_manager.get_port_id(self.context.tuple_processing_manager.current_input_channel_id)
+            self.context.input_manager.get_port_id(
+                self.context.tuple_processing_manager.current_input_channel_id
+            )
         )
 
         # Update state to RUNNING
